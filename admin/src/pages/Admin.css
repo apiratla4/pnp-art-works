@@ -1,0 +1,89 @@
+
+.admin-app {
+  background: #f1efef; /* page surface */
+}
+
+/* Sidebar */
+.admin-sidebar {
+  width: 260px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  border-right: 1px solid #000; /* monochrome border */
+  background: #fff;
+  overflow-y: auto;
+}
+
+/* Sidebar links: black/white theme with clear states */
+.admin-sidebar .nav-link {
+  color: #000;
+  border-radius: .5rem;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: background-color .16s ease, color .16s ease, border-color .16s ease, box-shadow .12s ease;
+}
+.admin-sidebar .nav-link:hover {
+  background: #fff;            /* keep white panel */
+  border-color: #000;          /* subtle hover affordance */
+  color: #000;
+}
+.admin-sidebar .nav-link.active,
+.admin-sidebar .nav-link[aria-current="page"] {
+  background: #000;
+  color: #fff !important;
+  border-color: #000;
+}
+
+/* Keyboard-only focus ring for accessibility */
+.admin-sidebar .nav-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; /* visible for keyboard */
+}
+.admin-sidebar .nav-link:focus {
+  outline: 2px solid #000; outline-offset: 2px;
+}
+.admin-sidebar .nav-link:focus:not(:focus-visible) {
+  outline: none; box-shadow: none;            /* suppress on pointer */
+}
+
+/* Image uploader (monochrome) */
+.img-uploader {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .5rem .75rem;
+  border: 1px dashed #000;         /* monochrome dashed border */
+  border-radius: 10px;
+  color: #000;
+  cursor: pointer;
+  background: #fff;
+  transition: background-color .16s ease, color .16s ease, box-shadow .12s ease, border-color .16s ease;
+}
+.img-uploader:hover { background: #f6f6f6; }
+
+/* Show focus when any inner control is focused */
+.img-uploader:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; /* keyboard-visible ring */
+}
+
+/* Tiles */
+.img-tile {
+  position: relative; width: 72px; height: 72px; border-radius: 10px; overflow: hidden;
+  border: 1px solid #000; /* ensure visible boundary */
+}
+.img-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Remove button (monochrome) */
+.img-tile .remove {
+  position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; line-height: 1;
+  padding: 0; border-radius: 999px; border: 1px solid #000; background: #fff; color: #000;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
+}
+.img-tile .remove:hover { background: #000; color: #fff; }
+.img-tile .remove:active { transform: scale(0.96); }
+.img-tile .remove:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
+.img-tile .remove:focus { outline: 2px solid #000; outline-offset: 2px; }
+
+/* Cards and tables subtle polish */
+.card.rounded-4 { border-radius: 1rem; background: #fff; color: #000; }
+.table td, .table th { vertical-align: middle; color: #000; }

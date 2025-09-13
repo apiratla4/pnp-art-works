@@ -1,0 +1,177 @@
+/* src/components/Header.css */
+
+/* Theme */
+:root {
+  --bg: #fff;       /* required background */
+  --black: #000000;
+  --white: #ffffff;
+  --text: #111111;
+  --hover: rgba(0,0,0,0.06);
+  --hover-strong: rgba(0,0,0,0.12);
+  --underline: #000000;
+}
+
+/* Header background */
+.header-bg,
+.header-bg .navbar {
+  background-color: var(--bg) !important;
+}
+
+/* Base nav link styles */
+.nav-link.nav-hover {
+  position: relative;
+  color: var(--text);
+  transition: color 160ms ease-in-out, opacity 160ms ease-in-out;
+}
+
+/* Solid black underline for non-dropdown links */
+.nav-link.nav-hover::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0.25rem;
+  height: 2px;
+  width: 0;
+  background: var(--underline);
+  transition: width 200ms ease;
+}
+
+/* Hover/focus shows underline */
+.nav-link.nav-hover:hover::after,
+.nav-link.nav-hover:focus::after {
+  width: 100%;
+}
+
+/* Active route keeps underline visible */
+.nav-link.nav-hover.active::after {
+  width: 100%;
+}
+
+/* Active link text */
+.nav-link.nav-hover.active {
+  color: var(--black) !important;
+  font-weight: 600;
+}
+
+/* SHOP dropdown toggle: keep underline separate from caret */
+.nav-link.dropdown-toggle.nav-hover {
+  position: relative;
+}
+
+/* Underline for Shop via ::before to avoid caret conflict */
+.nav-link.dropdown-toggle.nav-hover::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0.25rem;
+  height: 2px;
+  width: 0;
+  background: var(--underline);
+  transition: width 200ms ease;
+}
+
+/* Hover/focus for Shop underline */
+.nav-link.dropdown-toggle.nav-hover:hover::before,
+.nav-link.dropdown-toggle.nav-hover:focus::before {
+  width: 100%;
+}
+
+/* Active Shop keeps underline visible on /shop routes */
+.nav-link.dropdown-toggle.nav-hover.active::before {
+  width: 100%;
+}
+
+/* Dropdown items: monochrome hover/active */
+.dropdown-item.nav-hover {
+  transition: background-color 150ms ease, color 150ms ease;
+  background-image: none;
+  color: var(--text);
+}
+.dropdown-item.nav-hover:hover,
+.dropdown-item.nav-hover:focus {
+  background-color: var(--hover);
+  color: var(--black);
+}
+.dropdown-item.nav-hover.active {
+  background-color: var(--hover-strong);
+  color: var(--black);
+}
+
+/* Dropdown menu entrance */
+.dropdown-menu {
+  transition: opacity 140ms ease, transform 140ms ease;
+  transform-origin: top center;
+  opacity: 0;
+  transform: translateY(-4px);
+  background-color: var(--white);
+}
+/* Show state */
+.dropdown-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Remove the down caret arrow only for the Shop toggle */
+#shopDropdown.dropdown-toggle::after {
+  display: none !important;
+}
+
+/* Submenu (dropend) open on hover for desktop/trackpad only */
+@media (hover: hover) and (pointer: fine) {
+  .dropdown-menu li.dropend { position: relative; }
+  .dropdown-menu li.dropend > .dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: -0.25rem;
+    border-radius: 0 0.25rem 0.25rem 0;
+    display: none;
+  }
+  .dropdown-menu li.dropend:hover > .dropdown-menu {
+    display: block;
+  }
+  .dropdown-menu li.dropend:hover > .dropdown-toggle {
+    background-color: var(--hover);
+  }
+}
+
+/* Header: no border on click (pointer), keep for keyboard */
+.header-bg .nav-link:focus:not(:focus-visible),
+.header-bg .dropdown-item:focus:not(:focus-visible),
+.header-bg .navbar-toggler:focus:not(:focus-visible),
+.header-bg .btn:focus:not(:focus-visible),
+.header-bg .btn.nav-link:focus:not(:focus-visible),
+.header-bg .fancy:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* Also suppress on active press */
+.header-bg .nav-link:active,
+.header-bg .dropdown-item:active,
+.header-bg .navbar-toggler:active,
+.header-bg .btn:active,
+.header-bg .btn.nav-link:active,
+.header-bg .fancy:active {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* Remove Bootstrap toggler border/shadow entirely */
+.navbar-toggler { border: 0 !important; }
+.navbar-toggler:focus { box-shadow: none !important; }
+
+/* Keep an accessible ring for keyboard users only */
+.header-bg a:focus-visible,
+.header-bg button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; /* visible keyboard ring */
+}
+
+/* Cart count badge: black background, white text */
+.badge-count {
+  background-color: var(--black) !important;
+  color: var(--white) !important;
+  line-height: 1;
+}

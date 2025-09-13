@@ -1,0 +1,18 @@
+.footer-link {
+  color: rgb(159, 227, 117) !important;
+}
+/* Subtle link hover */
+.footer-link:hover { color: white !important; }
+
+/* Optional input focus ring that matches brand */
+.form-control:focus {
+  border-color: #ffd1dc;
+  box-shadow: 0 0 0 .2rem rgba(214, 51, 132, .15);
+}
+/* Footer brand logo */
+.footer-logo {
+  height: 100px; /* aligns with header scale */
+  width: auto;
+  display: block;
+  border-radius: 8px; /* optional, remove if logo already rounded */
+}
