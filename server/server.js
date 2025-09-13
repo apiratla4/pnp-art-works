@@ -4,45 +4,45 @@ import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import cors from 'cors'; // Make sure to import cors
 import { rateLimit } from 'express-rate-limit';
-
 import { connectDB } from './src/config/db.js';
-import { corsAllWithCreds } from './src/config/cors.js';
 import routes from './src/routes/index.js';
 import { notFound, errorHandler } from './src/middleware/error.js';
 import { configureCloudinary } from './src/config/cloudinary.js';
-
 const app = express();
 const isProd = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 4000;
-
-// Ensure correct client IP/proto when behind reverse proxies (e.g., Nginx)
+// --- CORS CONFIGURATION ---
+const corsOptions = {
+  origin: 'http://localhost:5175',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // PATCH is included
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+// --- MIDDLEWARE SETUP ---
 app.set('trust proxy', isProd ? 1 : 0);
 app.disable('x-powered-by');
-
-// Security + logging
-app.use(helmet());                 // sets sensible security headers
+app.use(helmet());
 app.use(morgan(isProd ? 'combined' : 'dev'));
-
+// IMPORTANT: Use the CORS middleware before your routes.
+// This single line will handle preflight requests automatically.
+app.use(cors(corsOptions));
+// This line was causing the crash and is now REMOVED:
+// app.options('*', cors(corsOptions));
 // Parsers
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-// CORS with credentials, reflecting Origin (avoids using cors package)
-app.use(corsAllWithCreds);
-
-// Basic API rate limiting (exclude OPTIONS if desired to avoid counting preflights)
+// Rate Limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 100,
-  standardHeaders: true,     // send RFC RateLimit headers
-  legacyHeaders: false,      // disable X-RateLimit-* legacy headers
-  // skip: (req) => req.method === 'OPTIONS', // uncomment to ignore preflight
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use('/api', apiLimiter);
-
-// Health
+// Health check endpoint
 app.get('/health', (req, res) =>
   res.status(200).json({
     ok: true,
@@ -51,18 +51,15 @@ app.get('/health', (req, res) =>
     timestamp: new Date().toISOString(),
   })
 );
-
-// API
+// API routes
 app.use('/api', routes);
-
-// 404 + error
+// Error Handling
 app.use(notFound);
 app.use(errorHandler);
-
-// Start
+// --- SERVER START ---
 async function start() {
   try {
-    configureCloudinary(); // optional
+    configureCloudinary();
     await connectDB(process.env.MONGODB_URI);
     app.listen(PORT, () => console.log(`API listening on http://localhost:${PORT}`));
   } catch (err) {
@@ -70,4 +67,4 @@ async function start() {
     process.exit(1);
   }
 }
-start();
+start(); 
