@@ -15,7 +15,7 @@ const isProd = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 4000;
 // --- CORS CONFIGURATION ---
 const corsOptions = {
-  origin: 'https://adminpnp.fineflux.com',
+  origin: 'https://adminpnp.fineflux.com, https://pnparts.fineflux.com',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // PATCH is included
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization'],
