@@ -8,7 +8,7 @@ export default defineConfig({
     port: 5175,
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        target: 'https://pnp-art-works.onrender.com',
         changeOrigin: true,
         secure: false
       }
