@@ -6,6 +6,20 @@ import { Plus, Minus, X, ShoppingBag, ArrowLeft, Truck, Shield } from 'lucide-re
 import { useCart } from '../context/CartContext';
 import FancyButton from '../components/FancyButton';
 
+const FALLBACK_IMG = '/placeholder.png';
+
+// Match ProductViewPage image picking: first of images[] else image string
+const firstImageUrl = (item) => {
+  const arr = Array.isArray(item?.images) ? item.images : null;
+  const arrFirst = arr?. length > 0 ? arr[0] : null;
+  const fromArray = typeof arrFirst === 'string'
+    ? arrFirst
+    : (typeof arrFirst === 'object' ? (arrFirst?.url ?? arrFirst?.secure_url ?? arrFirst?.src ?? arrFirst?.path) : null);
+  const single = typeof item?.image === 'string' ? item.image
+    : (typeof item?.image === 'object' ? (item.image?.url ?? item.image?.secure_url ?? item.image?.src ?? item.image?.path) : null);
+  return fromArray ?? single ?? FALLBACK_IMG;
+};
+
 const CartPage = () => {
   const { state, dispatch, totalPrice, totalItems } = useCart();
 
@@ -17,13 +31,8 @@ const CartPage = () => {
     }
   };
 
-  const removeItem = (id) => {
-    dispatch({ type: 'REMOVE_ITEM', payload: id });
-  };
-
-  const clearCart = () => {
-    dispatch({ type: 'CLEAR_CART' });
-  };
+  const removeItem = (id) => dispatch({ type: 'REMOVE_ITEM', payload: id });
+  const clearCart = () => dispatch({ type: 'CLEAR_CART' });
 
   const shippingCost = totalPrice > 100 ? 0 : 15;
   const tax = totalPrice * 0.08;
@@ -32,10 +41,7 @@ const CartPage = () => {
   // Empty state
   if (state.items.length === 0) {
     return (
-      <div
-        className="min-vh-100 d-flex align-items-center justify-content-center"
-        style={{ backgroundColor: '#f1efef' }}
-      >
+      <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f1efef' }}>
         <div className="text-center container" style={{ maxWidth: 520 }}>
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -51,9 +57,7 @@ const CartPage = () => {
             Looks like no beautiful artworks have been added yet. Explore the collection and find a favorite.
           </p>
 
-          <FancyButton to="/shop" className="fancy-sm">
-            Start Shopping
-          </FancyButton>
+          <FancyButton to="/shop" className="fancy-sm">Start Shopping</FancyButton>
         </div>
       </div>
     );
@@ -71,11 +75,7 @@ const CartPage = () => {
             </p>
           </div>
 
-          <Link
-            to="/shop"
-            className="d-inline-flex align-items-center gap-2 text-decoration-none"
-            style={{ color: '#000' }}
-          >
+          <Link to="/shop" className="d-inline-flex align-items-center gap-2 text-decoration-none" style={{ color: '#000' }}>
             <ArrowLeft size={18} />
             <span className="fw-medium">Continue Shopping</span>
           </Link>
@@ -88,13 +88,7 @@ const CartPage = () => {
             <div className="card shadow-sm border-0 rounded-4 mb-4" style={{ color: '#000', background: '#fff' }}>
               <div className="card-header bg-white border-0 p-4 d-flex align-items-center justify-content-between" style={{ color: '#000' }}>
                 <h2 className="h5 fw-semibold mb-0">Your Items</h2>
-                <button
-                  onClick={clearCart}
-                  className="cart-link-btn"
-                  type="button"
-                >
-                  Clear Cart
-                </button>
+                <button onClick={clearCart} className="cart-link-btn" type="button">Clear Cart</button>
               </div>
 
               <div className="list-group list-group-flush">
@@ -111,10 +105,11 @@ const CartPage = () => {
                       {/* Image */}
                       <div className="flex-shrink-0">
                         <img
-                          src={item.image}
+                          src={firstImageUrl(item)}
                           alt={item.title}
                           className="rounded-3 object-fit-cover"
                           style={{ width: 96, height: 96, border: '1px solid #000' }}
+                          loading="lazy"
                         />
                       </div>
 
@@ -178,15 +173,13 @@ const CartPage = () => {
               </div>
             </div>
 
-            {/* Benefits (Gift Wrapping removed) */}
+            {/* Benefits */}
             <div className="row g-3">
               <div className="col-12 col-md-6">
                 <div className="card h-100 text-center shadow-sm border-0 rounded-4" style={{ background: '#fff', color: '#000' }}>
                   <div className="card-body">
-                    <div
-                      className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                      style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}
-                    >
+                    <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                         style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}>
                       <Truck size={22} />
                     </div>
                     <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>Free Shipping</h3>
@@ -198,10 +191,8 @@ const CartPage = () => {
               <div className="col-12 col-md-6">
                 <div className="card h-100 text-center shadow-sm border-0 rounded-4" style={{ background: '#fff', color: '#000' }}>
                   <div className="card-body">
-                    <div
-                      className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                      style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}
-                    >
+                    <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                         style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}>
                       <Shield size={22} />
                     </div>
                     <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>Secure Packaging</h3>
@@ -248,9 +239,7 @@ const CartPage = () => {
               </div>
 
               <div className="d-grid gap-2">
-                <FancyButton to="/checkout" className="fancy-sm">
-                  Proceed to Checkout
-                </FancyButton>
+                <FancyButton to="/checkout" className="fancy-sm">Proceed to Checkout</FancyButton>
               </div>
 
               <div className="mt-4 pt-3" style={{ borderTop: '1px solid #000' }}>
@@ -269,56 +258,33 @@ const CartPage = () => {
         {/* Local styles for monochrome controls and focus visibility */}
         <style>{`
           .cart-icon-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: transparent;
-            color: #000;
-            border: 2px solid #000;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            width: 32px; height: 32px; border-radius: 50%;
+            background: transparent; color: #000; border: 2px solid #000;
+            display: inline-flex; align-items: center; justify-content: center;
             transition: background-color 160ms ease, color 160ms ease, transform 120ms ease;
           }
           .cart-icon-btn:hover { background: #000; color: #fff; }
           .cart-icon-btn:active { transform: scale(0.96); }
           .cart-icon-btn:focus-visible {
-            outline: none;
-            box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
+            outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
           }
           .cart-icon-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
 
           .cart-link-btn {
-            background: transparent;
-            border: none;
-            color: #000;
-            padding: 0;
-            font-weight: 600;
-            cursor: pointer;
+            background: transparent; border: none; color: #000; padding: 0; font-weight: 600; cursor: pointer;
           }
           .cart-link-btn:hover { text-decoration: underline; }
           .cart-link-btn:focus-visible {
-            outline: none;
-            box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
+            outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
           }
           .cart-link-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
 
           .mono-badge {
-            padding: 0.5rem 0.75rem;
-            border: 1px solid #000;
-            border-radius: 999px;
-            background: #fff;
-            color: #000;
-            font-weight: 600;
-            line-height: 1;
+            padding: 0.5rem 0.75rem; border: 1px solid #000; border-radius: 999px;
+            background: #fff; color: #000; font-weight: 600; line-height: 1;
           }
-
           .mono-alert {
-            border: 1px solid #000;
-            background: #fff;
-            color: #000;
-            border-radius: 0.5rem;
-            padding: 0.5rem 0.75rem;
+            border: 1px solid #000; background: #fff; color: #000; border-radius: 0.5rem; padding: 0.5rem 0.75rem;
           }
         `}</style>
       </div>

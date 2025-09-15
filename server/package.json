@@ -28,6 +28,7 @@
     "npm": "^11.6.0"
   },
   "dependencies": {
+    "@paypal/checkout-server-sdk": "^1.0.3",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.6"
   }

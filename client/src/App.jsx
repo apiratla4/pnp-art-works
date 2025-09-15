@@ -42,9 +42,15 @@ import BackToTop from "./components/BackToTop";
 // Floating cart
 import FallingCart from "./components/FallingCart";
 
+// NEW: WhatsApp FAB
+import WhatsAppButton from "./components/WhatsAppButton";
+
+// NEW: Timed signup popup (shows after 5s)
+import DiscountPopup from "./components/DiscountPopup";
+
 // Helper rendered inside Router so useLocation works
 const RouteAwareFallingCart = () => {
-  const location = useLocation(); // safe inside <Router> [10]
+  const location = useLocation(); // safe inside <Router>
   const showFallingCart = location.pathname === "/" || location.pathname.startsWith("/shop");
   if (!showFallingCart) return null;
   return (
@@ -66,7 +72,7 @@ const App = () => {
         <ScrollToTop />
 
         {/* Sticky-footer wrapper */}
-        <div className="d-flex flex-column min-vh-100"> {/* [8][17] */}
+        <div className="d-flex flex-column min-vh-100">
           <Header />
 
           <main className="flex-grow-1 pt-nav">
@@ -102,7 +108,16 @@ const App = () => {
           {/* Render only on "/" and "/shop..." */}
           <RouteAwareFallingCart />
 
+          {/* Site-wide floating actions */}
           <BackToTop />
+          <WhatsAppButton
+            // Use env or hardcode your E.164 number without plus/dashes/spaces (e.g., 17135769741)
+            phone={import.meta.env.VITE_WHATSAPP_NUMBER}
+            text="Hi! I’d like to know more about your artworks and classes."
+          />
+
+          {/* Timed popup (opens after 5s, respects localStorage to reduce repeats) */}
+          <DiscountPopup delayMs={5000} />
         </div>
 
         {/* Global toast provider */}
@@ -113,7 +128,7 @@ const App = () => {
             duration: 3000,
             style: { fontSize: 14 }
           }}
-        /> {/* [3][4] */}
+        />
       </Router>
     </CartProvider>
   );

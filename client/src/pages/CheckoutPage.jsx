@@ -1,77 +1,21 @@
 // src/pages/CheckoutPage.jsx
 import React, { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
 import { CreditCard, Truck, ShieldCheck, Percent, Tag } from 'lucide-react';
 import axios from 'axios';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { stripePromise } from '../lib/stripe';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import FancyButton from '../components/FancyButton';
 
-
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-
+const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'test';
 
 // USD formatter
 const fmtUSD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
-
-// Helper: ODR-XXXXXXXXXXXX id (timestamp tail + 4 random digits)
-function generateOrderId() {
-  const ts = Date.now().toString().slice(-8);
-  const rnd = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  return `ODR-${ts}${rnd}`;
-}
-
-
-function StripeInnerForm({ orderId, onDone }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState(null);
-
-
-  const onSubmitStripe = async (e) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-
-
-    setSubmitting(true);
-    setMessage(null);
-
-
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/order/confirmation?orderId=${encodeURIComponent(orderId)}`,
-      },
-    });
-
-
-    if (error) setMessage(error.message || 'Payment failed, please check your details and try again.');
-    else setMessage('Processing…');
-    setSubmitting(false);
-    onDone?.();
-  };
-
-
-  return (
-    <form onSubmit={onSubmitStripe}>
-      <PaymentElement />
-      <FancyButton as="button" type="submit" className="fancy-sm w-100 mt-3" disabled={!stripe || !elements || submitting}>
-        {submitting ? 'Processing…' : 'Pay now'}
-      </FancyButton>
-      {message && <div className="small mt-2" style={{ color: '#000' }}>{message}</div>}
-    </form>
-  );
-}
-
-
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { state } = useCart?.() || { state: { items: [] } };
-
+  const { state } = useCart();
 
   const [form, setForm] = useState({
     firstName: '',
@@ -85,25 +29,16 @@ export default function CheckoutPage() {
     zip: '',
     country: 'US',
     sameAsShipping: true,
-    paymentMethod: 'cod', // cod | card
+    paymentMethod: 'cod', // cod | paypal
     promo: ''
   });
-
 
   const [touched, setTouched] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-
-  // Stripe state
-  const [clientSecret, setClientSecret] = useState('');
-  const [orderId, setOrderId] = useState('');
-  const [startingCardPay, setStartingCardPay] = useState(false);
-
-
   // Coupons
   const [coupon, setCoupon] = useState({ code: '', percent: 0, status: '' });
   const [promoMsg, setPromoMsg] = useState('');
-
 
   // Cart totals (USD)
   const items = state.items || [];
@@ -119,7 +54,6 @@ export default function CheckoutPage() {
   );
   const total = Math.max(0, Math.round((subtotal + shipping + tax - discount) * 100) / 100);
 
-
   // Validation
   const required = ['firstName', 'lastName', 'email', 'address1', 'city', 'state', 'zip'];
   const errors = useMemo(() => {
@@ -133,10 +67,8 @@ export default function CheckoutPage() {
     return e;
   }, [form]);
 
-
   const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
   const onBlur = (e) => setTouched((t) => ({ ...t, [e.target.name]: true }));
-
 
   // Validate/apply coupon using backend
   const applyPromo = async (e) => {
@@ -164,13 +96,16 @@ export default function CheckoutPage() {
     }
   };
 
-
   // Payloads for server
   const cartPayload = items.map((it) => ({
     productId: it.id,
+    title: it.title,
+    image: it.image,
+    unitPrice: it.price,
     qty: it.quantity || 1,
+    category: it.category || '',
+    lineTotal: it.price * (it.quantity || 1),
   }));
-
 
   const customerPayload = {
     email: form.email,
@@ -185,7 +120,6 @@ export default function CheckoutPage() {
     },
     phone: form.phone || '',
   };
-
 
   const buildClientSummary = () => {
     const itemsPreview = items.map((it) => ({
@@ -210,53 +144,30 @@ export default function CheckoutPage() {
     };
   };
 
-
-  // Start Stripe flow
-  const startStripeFlow = async () => {
-    try {
-      setStartingCardPay(true);
-      const res = await axios.post(
-        `${API_BASE}/api/checkout/payment-intent`,
-        { cart: cartPayload, customer: customerPayload },
-        { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
-      );
-      setClientSecret(res.data.clientSecret);
-      setOrderId(res.data.orderId);
-    } catch (e) {
-      console.error(e);
-      alert('Could not start payment, please try again.');
-    } finally {
-      setStartingCardPay(false);
-    }
-  };
-
-
   // COD
   const placeCodOrder = async () => {
     setSubmitting(true);
-    const localOid = generateOrderId();
     try {
       const summary = buildClientSummary();
-      await axios.post(
+      const { data } = await axios.post(
         `${API_BASE}/api/checkout/cod-order`,
         {
           cart: cartPayload,
           customer: customerPayload,
           payment: { method: 'cod' },
           summary,
-          note: 'COD checkout',
-          clientOrderId: localOid
+          note: 'COD checkout'
         },
         { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
-      ).catch(() => {});
+      );
+      const oid = data?.orderId || 'ODR-LOCAL';
+      navigate(`/order/success?orderId=${encodeURIComponent(oid)}`, { replace: true });
     } catch {
-      // ignore server failure
+      navigate(`/order/success`, { replace: true });
     } finally {
       setSubmitting(false);
-      navigate(`/order/success?orderId=${encodeURIComponent(localOid)}`, { replace: true });
     }
   };
-
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -267,37 +178,46 @@ export default function CheckoutPage() {
     });
     if (Object.keys(errors).length > 0) return;
 
-
     if (form.paymentMethod === 'cod') {
       await placeCodOrder();
       return;
     }
-    if (form.paymentMethod === 'card') {
-      if (!clientSecret) await startStripeFlow();
-      return;
-    }
   };
 
+  // PayPal Buttons handlers
+  const createPaypalOrder = async () => {
+    if (Object.keys(errors).length > 0) return undefined;
+    const payload = {
+      cart: cartPayload,
+      customer: customerPayload,
+      summary: buildClientSummary(),
+    };
+    const { data } = await axios.post(`${API_BASE}/api/paypal/create-order`, payload, {
+      headers: { 'Content-Type': 'application/json' },
+      withCredentials: true,
+    });
+    return data?.id; // PayPal order id
+  };
 
-  // Stripe Elements appearance (monochrome)
-  const elementsOptions = clientSecret
-    ? {
-        clientSecret,
-        appearance: {
-          theme: 'flat',
-          variables: {
-            colorPrimary: '#000000',
-            colorBackground: '#ffffff',
-            colorText: '#000000',
-            colorDanger: '#000000',
-            fontSizeBase: '16px',
-            spacingUnit: '4px',
-            borderRadius: '4px'
-          }
-        }
-      }
-    : undefined;
+  const onApprovePaypal = async (data) => {
+    const payload = {
+      orderId: data.orderID,
+      cart: cartPayload,
+      customer: customerPayload,
+      summary: buildClientSummary(),
+    };
+    const res = await axios.post(`${API_BASE}/api/paypal/capture-order`, payload, {
+      headers: { 'Content-Type': 'application/json' },
+      withCredentials: true,
+    });
+    const appOrderId = res?.data?.orderId || 'ODR-UNKNOWN';
+    navigate(`/order/success?orderId=${encodeURIComponent(appOrderId)}`, { replace: true });
+  };
 
+  const onErrorPaypal = (err) => {
+    console.error(err);
+    alert('PayPal error. Please try again.');
+  };
 
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#f1efef' }}>
@@ -306,7 +226,6 @@ export default function CheckoutPage() {
           <h1 className="fw-bold h3 mb-1" style={{ color: '#000' }}>Checkout</h1>
           <p className="mb-0" style={{ color: '#000' }}>Secure payment and fast delivery</p>
         </div>
-
 
         <div className="row g-4 g-lg-5">
           {/* Form */}
@@ -318,7 +237,6 @@ export default function CheckoutPage() {
                     <Truck size={18} /> Shipping address
                   </h5>
 
-
                   <div className="row g-3">
                     <div className="col-sm-6">
                       <label className="form-label">First name</label>
@@ -327,11 +245,9 @@ export default function CheckoutPage() {
                         className={`form-control ${touched.firstName && errors.firstName ? 'is-invalid' : ''}`}
                         value={form.firstName}
                         onChange={(e) => setField('firstName', e.target.value)}
-                        onBlur={onBlur} required
-                      />
+                        onBlur={onBlur} required />
                       <div className="invalid-feedback">First name is required</div>
                     </div>
-
 
                     <div className="col-sm-6">
                       <label className="form-label">Last name</label>
@@ -340,11 +256,9 @@ export default function CheckoutPage() {
                         className={`form-control ${touched.lastName && errors.lastName ? 'is-invalid' : ''}`}
                         value={form.lastName}
                         onChange={(e) => setField('lastName', e.target.value)}
-                        onBlur={onBlur} required
-                      />
+                        onBlur={onBlur} required />
                       <div className="invalid-feedback">Last name is required</div>
                     </div>
-
 
                     <div className="col-12">
                       <label className="form-label">Email</label>
@@ -353,11 +267,9 @@ export default function CheckoutPage() {
                         className={`form-control ${touched.email && errors.email ? 'is-invalid' : ''}`}
                         value={form.email}
                         onChange={(e) => setField('email', e.target.value)}
-                        onBlur={onBlur} required
-                      />
+                        onBlur={onBlur} required />
                       <div className="invalid-feedback">{errors.email || 'Valid email required'}</div>
                     </div>
-
 
                     <div className="col-12">
                       <label className="form-label">Phone (optional)</label>
@@ -367,11 +279,9 @@ export default function CheckoutPage() {
                         value={form.phone}
                         onChange={(e) => setField('phone', e.target.value)}
                         onBlur={onBlur}
-                        placeholder="+1 555 555 5555"
-                      />
+                        placeholder="+1 555 555 5555" />
                       <div className="invalid-feedback">{errors.phone}</div>
                     </div>
-
 
                     <div className="col-12">
                       <label className="form-label">Address line 1</label>
@@ -380,38 +290,31 @@ export default function CheckoutPage() {
                         className={`form-control ${touched.address1 && errors.address1 ? 'is-invalid' : ''}`}
                         value={form.address1}
                         onChange={(e) => setField('address1', e.target.value)}
-                        onBlur={onBlur} required
-                      />
+                        onBlur={onBlur} required />
                       <div className="invalid-feedback">Address is required</div>
                     </div>
-
 
                     <div className="col-12">
                       <label className="form-label">Address line 2 (optional)</label>
                       <input
-                        name="address2" type="text"
-                        className="form-control"
+                        name="address2" type="text" className="form-control"
                         value={form.address2}
                         onChange={(e) => setField('address2', e.target.value)}
-                        onBlur={onBlur}
-                      />
+                        onBlur={onBlur} />
                     </div>
-
 
                     <div className="col-md-5">
                       <label className="form-label">Country</label>
                       <select
                         name="country" className="form-select"
                         value={form.country}
-                        onChange={(e) => setField('country', e.target.value)}
-                      >
+                        onChange={(e) => setField('country', e.target.value)}>
                         <option value="US">United States</option>
                         <option value="IN">India</option>
                         <option value="GB">United Kingdom</option>
                         <option value="AE">UAE</option>
                       </select>
                     </div>
-
 
                     <div className="col-md-4">
                       <label className="form-label">State</label>
@@ -420,11 +323,9 @@ export default function CheckoutPage() {
                         className={`form-control ${touched.state && errors.state ? 'is-invalid' : ''}`}
                         value={form.state}
                         onChange={(e) => setField('state', e.target.value)}
-                        onBlur={onBlur} required
-                      />
+                        onBlur={onBlur} required />
                       <div className="invalid-feedback">State is required</div>
                     </div>
-
 
                     <div className="col-md-3">
                       <label className="form-label">ZIP</label>
@@ -433,19 +334,16 @@ export default function CheckoutPage() {
                         className={`form-control ${touched.zip && errors.zip ? 'is-invalid' : ''}`}
                         value={form.zip}
                         onChange={(e) => setField('zip', e.target.value)}
-                        onBlur={onBlur} required
-                      />
+                        onBlur={onBlur} required />
                       <div className="invalid-feedback">ZIP is required</div>
                     </div>
                   </div>
-
 
                   <div className="form-check mt-3">
                     <input
                       id="sameAsShipping" className="form-check-input" type="checkbox"
                       checked={form.sameAsShipping}
-                      onChange={(e) => setField('sameAsShipping', e.target.checked)}
-                    />
+                      onChange={(e) => setField('sameAsShipping', e.target.checked)} />
                     <label className="form-check-label" htmlFor="sameAsShipping">
                       Billing address same as shipping
                     </label>
@@ -453,61 +351,57 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-
               <div className="card border-0 shadow-sm rounded-4 mb-3" style={{ background: '#fff', color: '#000' }}>
                 <div className="card-body">
                   <h5 className="fw-semibold mb-3 d-flex align-items-center gap-2" style={{ color: '#000' }}>
                     <CreditCard size={18} /> Payment
                   </h5>
 
-
                   <div className="form-check mb-2">
                     <input
                       id="pm-cod" className="form-check-input" type="radio" name="paymentMethod"
                       checked={form.paymentMethod === 'cod'}
-                      onChange={() => setField('paymentMethod', 'cod')}
-                    />
+                      onChange={() => setField('paymentMethod', 'cod')} />
                     <label className="form-check-label" htmlFor="pm-cod">
                       Cash on Delivery (COD)
                     </label>
                   </div>
 
-
                   <div className="form-check mb-3">
                     <input
-                      id="pm-card" className="form-check-input" type="radio" name="paymentMethod"
-                      checked={form.paymentMethod === 'card'}
-                      onChange={async () => {
-                        setField('paymentMethod', 'card');
-                        if (!clientSecret && items.length > 0) {
-                          await startStripeFlow();
-                        }
-                      }}
-                    />
-                    <label className="form-check-label" htmlFor="pm-card">
-                      Card / UPI
+                      id="pm-paypal" className="form-check-input" type="radio" name="paymentMethod"
+                      checked={form.paymentMethod === 'paypal'}
+                      onChange={() => setField('paymentMethod', 'paypal')}
+                      disabled={items.length === 0} />
+                    <label className="form-check-label" htmlFor="pm-paypal">
+                      PayPal
                     </label>
                   </div>
 
-
-                  {form.paymentMethod === 'card' && (
-                    clientSecret && elementsOptions ? (
-                      <Elements stripe={stripePromise} options={elementsOptions}>
-                        <StripeInnerForm orderId={orderId} onDone={() => {}} />
-                      </Elements>
-                    ) : (
-                      <div className="mono-alert mb-0">
-                        Preparing secure payment… {startingCardPay ? 'Please wait.' : ''}
+                  {form.paymentMethod === 'paypal' ? (
+                    <div className="mb-0">
+                      <PayPalScriptProvider
+                        options={{ clientId: PAYPAL_CLIENT_ID, currency: 'USD', intent: 'CAPTURE', components: 'buttons' }}>
+                        <PayPalButtons
+                          style={{ layout: 'vertical', color: 'black', shape: 'pill', label: 'paypal' }}
+                          createOrder={createPaypalOrder}
+                          onApprove={onApprovePaypal}
+                          onError={onErrorPaypal}
+                          disabled={items.length === 0 || Object.keys(errors).length > 0}
+                        />
+                      </PayPalScriptProvider>
+                      <div className="mono-alert d-flex align-items-center gap-2 mb-0 mt-2">
+                        <ShieldCheck size={18} />
+                        <div className="small mb-0" style={{ color: '#000' }}>
+                          Pay securely with PayPal; capture occurs immediately after approval.
+                        </div>
                       </div>
-                    )
-                  )}
-
-
-                  {form.paymentMethod !== 'card' && (
+                    </div>
+                  ) : (
                     <div className="mono-alert d-flex align-items-center gap-2 mb-0">
                       <ShieldCheck size={18} />
                       <div className="small mb-0" style={{ color: '#000' }}>
-                        Payments are processed securely; select Card/UPI to pay now.
+                        Select PayPal to pay now, or place a COD order.
                       </div>
                     </div>
                   )}
@@ -515,7 +409,6 @@ export default function CheckoutPage() {
               </div>
             </form>
           </div>
-
 
           {/* Summary */}
           <div className="col-12 col-lg-5">
@@ -531,8 +424,7 @@ export default function CheckoutPage() {
                         <img
                           src={it.image} alt={it.title}
                           className="rounded me-3 object-fit-cover"
-                          style={{ width: 56, height: 56, border: '1px solid #000' }}
-                        />
+                          style={{ width: 56, height: 56, border: '1px solid #000' }} />
                         <div className="flex-grow-1" style={{ color: '#000' }}>
                           <div className="small fw-semibold">{it.title}</div>
                           <div className="small">
@@ -572,7 +464,6 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-
             {/* Promo */}
             <div className="card border-0 shadow-sm rounded-4" style={{ background: '#fff', color: '#000' }}>
               <div className="card-body">
@@ -582,8 +473,7 @@ export default function CheckoutPage() {
                 <form onSubmit={applyPromo} className="d-flex gap-2">
                   <input
                     type="text" className="form-control" placeholder="Enter code"
-                    value={form.promo} onChange={(e) => setField('promo', e.target.value.toUpperCase())}
-                  />
+                    value={form.promo} onChange={(e) => setField('promo', e.target.value.toUpperCase())} />
                   <FancyButton as="button" type="submit" className="fancy-sm d-inline-flex align-items-center gap-2">
                     <Percent size={16} />
                     Apply
@@ -593,52 +483,31 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Place order button under promo code section */}
-            <div className="d-grid mt-3">
-              <FancyButton
-                as="button"
-                type="submit"
-                form="checkoutForm"
-                className="fancy-sm py-3"
-                disabled={submitting || items.length === 0}
-              >
-                {submitting ? 'Placing order...' : `Place order • ${fmtUSD.format(total)}`}
-              </FancyButton>
-            </div>
+            {/* Place order button (COD only) */}
+            {form.paymentMethod === 'cod' && (
+              <div className="d-grid mt-3">
+                <FancyButton
+                  as="button"
+                  type="submit"
+                  form="checkoutForm"
+                  className="fancy-sm py-3"
+                  disabled={submitting || items.length === 0}>
+                  {submitting ? 'Placing order...' : `Place order • ${fmtUSD.format(total)}`}
+                </FancyButton>
+              </div>
+            )}
           </div>
         </div>
 
-
-
         {/* Local overrides for monochrome forms and alerts */}
         <style>{`
-          /* Form controls focus in black, no blue glow */
           .form-control:focus,
-          .form-select:focus {
-            border-color: #000 !important;
-            box-shadow: none !important;
-          }
-          /* Radios/checkboxes in black */
-          .form-check-input {
-            accent-color: #000;
-          }
-          /* Invalid state in black (no red) */
+          .form-select:focus { border-color: #000 !important; box-shadow: none !important; }
+          .form-check-input { accent-color: #000; }
           .form-control.is-invalid,
-          .was-validated .form-control:invalid {
-            border-color: #000 !important;
-            background-image: none !important;
-          }
+          .was-validated .form-control:invalid { border-color: #000 !important; background-image: none !important; }
           .invalid-feedback { color: #000 !important; }
-
-
-          /* Monochrome alert */
-          .mono-alert {
-            border: 1px solid #000;
-            background: #fff;
-            color: #000;
-            border-radius: 0.5rem;
-            padding: 0.5rem 0.75rem;
-          }
+          .mono-alert { border: 1px solid #000; background: #fff; color: #000; border-radius: 0.5rem; padding: 0.5rem 0.75rem; }
         `}</style>
       </div>
     </div>
