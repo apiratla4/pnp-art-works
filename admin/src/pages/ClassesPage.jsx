@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Edit, Trash2, Image as ImageIcon, DollarSign, Calendar, Users, Plus } from "lucide-react";
@@ -382,8 +381,9 @@ export default function ClassesPage() {
 
       <div className="card border-0 shadow-sm rounded-4" style={{ background: "#fff", color: "#000" }}>
         <div className="card-body p-0">
-          <div className="table-responsive-sm">
-            <table className="table align-middle mb-0">
+          {/* Always-on horizontal scroll + vertical scroll with sticky header */}
+          <div className="table-responsive table-scroll-y-420 mono-scroll">
+            <table className="table align-middle mb-0 table-sticky">
               <thead>
                 <tr>
                   <th style={{ width: 64, borderBottom: "1px solid #000", color: "#000" }}>Cover</th>
@@ -451,7 +451,7 @@ export default function ClassesPage() {
         </div>
       </div>
 
-      {/* Local monochrome + focus-visible */}
+      {/* Local monochrome + focus-visible + scroll helpers */}
       <style>{`
         /* Inputs/selects focus in black; checkboxes/radios can use accent-color */
         .form-control:focus, .form-select:focus {
@@ -472,9 +472,7 @@ export default function ClassesPage() {
         .mono-btn-sm { padding: 6px 10px; border-radius: 999px; }
 
         /* Outline variant */
-        .mono-btn-outline {
-          background: #fff; color: #000; border: 1px solid #000;
-        }
+        .mono-btn-outline { background: #fff; color: #000; border: 1px solid #000; }
         .mono-btn-outline:hover { background: #000; color: #fff; }
 
         /* Keyboard-only focus ring */
@@ -503,6 +501,18 @@ export default function ClassesPage() {
           border: 1px solid #000; background: #fff; color: #000; font-weight: 700;
         }
         .mono-badge.active { background: #000; color: #fff; }
+
+        /* Scroll helpers */
+        .mono-scroll { -webkit-overflow-scrolling: touch; }
+        .table-scroll-y-420 { max-height: 420px; overflow-y: auto; }
+
+        /* Sticky table header inside scroll container */
+        .table-sticky thead th {
+          position: sticky;
+          top: 0;
+          background: #fff;
+          z-index: 2;
+        }
       `}</style>
     </div>
   );

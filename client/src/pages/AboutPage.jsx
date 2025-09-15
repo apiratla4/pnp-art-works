@@ -6,15 +6,6 @@ import { Link } from "react-router-dom";
 import FancyButton from '../components/FancyButton';
 
 const AboutPage = () => {
-  const milestones = [
-    { year: 2018, title: 'First Solo Exhibition', description: 'Launched my artistic journey with my first solo exhibition in downtown gallery' },
-    { year: 2019, title: 'Art Workshop Series', description: 'Started teaching art workshops to share knowledge and inspire others' },
-    { year: 2020, title: 'Digital Transformation', description: 'Adapted to digital platforms during pandemic, reaching global audience' },
-    { year: 2021, title: 'Award Recognition', description: "Received 'Emerging Artist of the Year' award from National Art Council" },
-    { year: 2022, title: 'Studio Expansion', description: 'Opened larger studio space to accommodate growing workshop demand' },
-    { year: 2024, title: 'Online Gallery Launch', description: 'Launched comprehensive online platform for art lovers worldwide' }
-  ];
-
   const achievements = [
     { icon: Award, number: '50+', label: 'Awards Won' },
     { icon: Palette, number: '500+', label: 'Artworks Created' },
@@ -34,11 +25,28 @@ const AboutPage = () => {
         .about-root { overflow-x: clip; }
         @supports not (overflow: clip) { .about-root { overflow-x: hidden; } }
         .about-hero-img { display:block; width:100%; height:600px; object-fit:cover; }
-        .timeline-wrap { position: relative; overflow: clip; }
-        @supports not (overflow: clip) { .timeline-wrap { overflow: hidden; } }
-        .timeline-line { position:absolute; top:0; bottom:0; left:50%; width:2px; transform:translateX(-1px); background: rgba(0,0,0,0.15); }
-        .timeline-dot { position:absolute; left:50%; transform:translate(-50%, -50%); width:12px; height:12px; border-radius:50%; background: #000; box-shadow: 0 0 0 3px rgba(255,255,255,.95); }
         .rating-card { left: 16px; bottom: 16px; transform: none; }
+
+        /* Add consistent borders for icon containers and star chips */
+        .icon-circle {
+          width: 64px; height: 64px;
+          background: #ffffff; color: #000;
+          border: 1px solid #000; /* border for icon circles */
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .icon-circle-lg {
+          width: 80px; height: 80px;
+          background: #ffffff; color: #000;
+          border: 1px solid #000; /* border for large icon circles */
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .icon-chip {
+          display: inline-flex; align-items: center; justify-content: center;
+          border: 1px solid #000; /* border around each star */
+          border-radius: 8px; padding: 2px;
+        }
       `}</style>
 
       {/* Hero */}
@@ -86,7 +94,9 @@ const AboutPage = () => {
                   <div className="bg-white p-3 rounded-4 shadow" style={{ color: '#000' }}>
                     <div className="d-flex align-items-center gap-1 mb-1" style={{ color: '#000' }}>
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} size={18} color="#000" fill="#000" />
+                        <span key={i} className="icon-chip">
+                          <Star size={18} color="#000" fill="#000" />
+                        </span>
                       ))}
                     </div>
                     <div className="small" style={{ color: '#000' }}>4.9/5 Customer Rating</div>
@@ -106,7 +116,7 @@ const AboutPage = () => {
             <div className="col-12 col-md-6">
               <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
                           className="rounded-4 p-4 p-lg-5" style={{ backgroundColor: '#ffffff', color: '#000' }}>
-                <div className="rounded-circle d-flex align-items-center justify-content-center mb-3" style={{ width: 64, height: 64, background: '#ffffff', color: '#000' }}>
+                <div className="icon-circle mb-3">
                   <Heart size={28} color="#000" />
                 </div>
                 <h3 className="fw-bold mb-3" style={{ color: '#000' }}>Our Mission</h3>
@@ -119,7 +129,7 @@ const AboutPage = () => {
             <div className="col-12 col-md-6">
               <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
                           className="rounded-4 p-4 p-lg-5" style={{ backgroundColor: '#ffffff', color: '#000' }}>
-                <div className="rounded-circle d-flex align-items-center justify-content-center mb-3" style={{ width: 64, height: 64, background: '#ffffff', color: '#000' }}>
+                <div className="icon-circle mb-3">
                   <Palette size={28} color="#000" />
                 </div>
                 <h3 className="fw-bold mb-3" style={{ color: '#000' }}>Our Vision</h3>
@@ -127,42 +137,6 @@ const AboutPage = () => {
                   To become a global platform where art enthusiasts discover unique, authentic pieces while supporting independent artists and fostering a vibrant creative community.
                 </p>
               </motion.div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Timeline */}
-      <section className="py-5" style={{ backgroundColor: '#f1efef' }}>
-        <div className="container">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
-                      className="text-center mb-4 mb-lg-5">
-            <h2 className="fw-bold display-6 mb-2" style={{ color: '#000' }}>My Artistic Journey</h2>
-            <p className="mb-0" style={{ color: '#000' }}>Key milestones that shaped my career</p>
-          </motion.div>
-
-          <div className="position-relative timeline-wrap">
-            <div className="timeline-line" />
-            <div className="vstack gap-4">
-              {milestones.map((m, i) => {
-                const left = i % 2 === 0;
-                return (
-                  <motion.div key={`${m.year}-${m.title}`} initial={{ opacity: 0, x: left ? -30 : 30 }} whileInView={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.6, delay: i * 0.1 }} className="position-relative">
-                    <div className="row align-items-stretch">
-                      <div className={`col-12 col-lg-6 ${left ? '' : 'order-lg-2'}`}>
-                        <div className={`h-100 p-4 rounded-4 shadow-sm bg-white ${left ? 'me-lg-4 text-lg-end' : 'ms-lg-4 text-lg-start'}`} style={{ color: '#000' }}>
-                          <div className="fw-bold" style={{ fontSize: 24, color: '#000' }}>{m.year}</div>
-                          <h3 className="h5 fw-semibold mb-2" style={{ color: '#000' }}>{m.title}</h3>
-                          <p className="mb-0" style={{ color: '#000' }}>{m.description}</p>
-                        </div>
-                      </div>
-                      <div className={`col-12 col-lg-6 ${left ? 'order-lg-2' : ''}`} />
-                    </div>
-                    {/* <div className="timeline-dot" style={{ top: '50%' }} /> */}
-                  </motion.div>
-                );
-              })}
             </div>
           </div>
         </div>
@@ -181,8 +155,7 @@ const AboutPage = () => {
             {achievements.map((a, i) => (
               <motion.div key={a.label} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.6, delay: i * 0.1 }} className="col text-center">
-                <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                     style={{ width: 80, height: 80, background: '#ffffff', color: '#000' }}>
+                <div className="icon-circle-lg mx-auto mb-3">
                   <a.icon size={40} color="#000" />
                 </div>
                 <div className="fw-bold" style={{ fontSize: 28, color: '#000' }}>{a.number}</div>

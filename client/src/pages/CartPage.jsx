@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Minus, X, ShoppingBag, ArrowLeft, Gift, Truck, Shield } from 'lucide-react';
+import { Plus, Minus, X, ShoppingBag, ArrowLeft, Truck, Shield } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import FancyButton from '../components/FancyButton';
 
@@ -178,9 +178,9 @@ const CartPage = () => {
               </div>
             </div>
 
-            {/* Benefits */}
+            {/* Benefits (Gift Wrapping removed) */}
             <div className="row g-3">
-              <div className="col-12 col-md-4">
+              <div className="col-12 col-md-6">
                 <div className="card h-100 text-center shadow-sm border-0 rounded-4" style={{ background: '#fff', color: '#000' }}>
                   <div className="card-body">
                     <div
@@ -195,7 +195,7 @@ const CartPage = () => {
                 </div>
               </div>
 
-              <div className="col-12 col-md-4">
+              <div className="col-12 col-md-6">
                 <div className="card h-100 text-center shadow-sm border-0 rounded-4" style={{ background: '#fff', color: '#000' }}>
                   <div className="card-body">
                     <div
@@ -206,21 +206,6 @@ const CartPage = () => {
                     </div>
                     <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>Secure Packaging</h3>
                     <p className="small mb-0" style={{ color: '#000' }}>Art-safe materials</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-12 col-md-4">
-                <div className="card h-100 text-center shadow-sm border-0 rounded-4" style={{ background: '#fff', color: '#000' }}>
-                  <div className="card-body">
-                    <div
-                      className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                      style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}
-                    >
-                      <Gift size={22} />
-                    </div>
-                    <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>Gift Wrapping</h3>
-                    <p className="small mb-0" style={{ color: '#000' }}>Available at checkout</p>
                   </div>
                 </div>
               </div>
@@ -265,10 +250,6 @@ const CartPage = () => {
               <div className="d-grid gap-2">
                 <FancyButton to="/checkout" className="fancy-sm">
                   Proceed to Checkout
-                </FancyButton>
-
-                <FancyButton as="button" type="button" className="fancy-sm">
-                  Save for Later
                 </FancyButton>
               </div>
 

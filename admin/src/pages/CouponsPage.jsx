@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -87,7 +86,7 @@ export default function CouponsPage() {
       code: c.code || "",
       percent: c.percent || 10,
       maxUses: c.maxUses || 0,
-      expiresAt: c.expiresAt ? new Date(c.expiresAt).toISOString().slice(0,16) : "",
+      expiresAt: c.expiresAt ? new Date(c.expiresAt).toISOString().slice(0, 16) : "",
       active: !!c.active
     });
   };
@@ -111,9 +110,9 @@ export default function CouponsPage() {
   };
 
   return (
-    <div className="container py-4">
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h2 className="h4 d-flex align-items-center gap-2 mb-0" style={{ color: "#000" }}>
+    <div className="container py-4 theme-monochrome">
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h2 className="h4 d-flex align-items-center gap-2 mb-0">
           <TicketPercent size={20} /> Coupons
         </h2>
         <button
@@ -129,13 +128,14 @@ export default function CouponsPage() {
       </div>
 
       <div className="row g-4">
+        {/* Create form */}
         <div className="col-12 col-lg-5">
-          <div className="card border-0 shadow-sm rounded-4" style={{ background: "#fff", color: "#000" }}>
+          <div className="card border-0 shadow-sm rounded-4">
             <div className="card-body">
-              <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>Create coupon</h6>
+              <h6 className="fw-semibold mb-3">Create coupon</h6>
               <form onSubmit={onCreate} className="vstack gap-3">
                 <div>
-                  <label className="form-label" style={{ color: "#000" }}>Code</label>
+                  <label className="form-label">Code</label>
                   <input
                     className="form-control"
                     placeholder="e.g. ART10"
@@ -145,8 +145,8 @@ export default function CouponsPage() {
                   />
                 </div>
                 <div className="row g-3">
-                  <div className="col-md-6">
-                    <label className="form-label" style={{ color: "#000" }}>Percent off</label>
+                  <div className="col-12 col-sm-6">
+                    <label className="form-label">Percent off</label>
                     <input
                       type="number"
                       min={1}
@@ -157,8 +157,8 @@ export default function CouponsPage() {
                       required
                     />
                   </div>
-                  <div className="col-md-6">
-                    <label className="form-label" style={{ color: "#000" }}>Max uses (0 = unlimited)</label>
+                  <div className="col-12 col-sm-6">
+                    <label className="form-label">Max uses (0 = unlimited)</label>
                     <input
                       type="number"
                       min={0}
@@ -169,7 +169,7 @@ export default function CouponsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="form-label" style={{ color: "#000" }}>Expires at (optional)</label>
+                  <label className="form-label">Expires at (optional)</label>
                   <input
                     type="datetime-local"
                     className="form-control"
@@ -185,61 +185,114 @@ export default function CouponsPage() {
           </div>
         </div>
 
+        {/* List */}
         <div className="col-12 col-lg-7">
-          <div className="card border-0 shadow-sm rounded-4" style={{ background: "#fff", color: "#000" }}>
+          <div className="card border-0 shadow-sm rounded-4">
             <div className="card-body">
-              <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>All coupons</h6>
+              <h6 className="fw-semibold mb-3">All coupons</h6>
+
               {list.length === 0 ? (
-                <div className="small" style={{ color: "#000" }}>No coupons yet</div>
+                <div className="small">No coupons yet</div>
               ) : (
-                <div className="table-responsive">
-                  <table className="table align-middle">
-                    <thead>
-                      <tr>
-                        <th style={{ color: "#000" }}>Code</th>
-                        <th style={{ color: "#000" }}>Percent</th>
-                        <th style={{ color: "#000" }}>Uses</th>
-                        <th style={{ color: "#000" }}>Max</th>
-                        <th style={{ color: "#000" }}>Status</th>
-                        <th style={{ color: "#000" }}>Expires</th>
-                        <th style={{ color: "#000" }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {list.map((c) => (
-                        <tr key={c._id}>
-                          <td className="fw-semibold" style={{ color: "#000" }}>{c.code}</td>
-                          <td style={{ color: "#000" }}>{c.percent}%</td>
-                          <td style={{ color: "#000" }}>{c.uses || 0}</td>
-                          <td style={{ color: "#000" }}>{c.maxUses === 0 ? "∞" : c.maxUses}</td>
-                          <td>
-                            <span className={`mono-badge ${c.active ? "active" : ""}`}>
-                              {c.active ? "Active" : "Inactive"}
-                            </span>
-                          </td>
-                          <td style={{ color: "#000" }}>{c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "—"}</td>
-                          <td className="d-flex gap-2">
+                <>
+                  {/* Mobile cards */}
+                  <div className="d-block d-md-none vstack gap-3">
+                    {list.map((c) => (
+                      <div key={c._id} className="coupon-card p-3 rounded-3 border">
+                        <div className="d-flex align-items-start justify-content-between gap-2">
+                          <div className="min-w-0">
+                            <div className="d-flex align-items-center gap-2 flex-wrap">
+                              <span className="fw-bold text-break">{c.code}</span>
+                              <span className={`mono-badge ${c.active ? "active" : ""}`}>
+                                {c.active ? "Active" : "Inactive"}
+                              </span>
+                            </div>
+                            <div className="small mt-1 text-muted">
+                              {c.percent}% off • Uses {c.uses || 0}
+                              {c.maxUses === 0 ? " / ∞" : ` / ${c.maxUses}`}
+                            </div>
+                            <div className="small mt-1">
+                              Expires: {c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "—"}
+                            </div>
+                          </div>
+                          <div className="d-flex flex-wrap gap-2 justify-content-end">
                             <button className="mono-btn mono-btn-sm" title="Edit" type="button" onClick={() => openEdit(c)}>
+                              <span className="visually-hidden">Edit</span>
                               <Pencil size={16} />
                             </button>
                             {c.active ? (
                               <button className="mono-btn mono-btn-sm" title="Deactivate" type="button" onClick={() => toggleActive(c._id, false)}>
+                                <span className="visually-hidden">Deactivate</span>
                                 <PowerOff size={16} />
                               </button>
                             ) : (
                               <button className="mono-btn mono-btn-sm" title="Activate" type="button" onClick={() => toggleActive(c._id, true)}>
+                                <span className="visually-hidden">Activate</span>
                                 <Power size={16} />
                               </button>
                             )}
                             <button className="mono-btn mono-btn-sm" title="Delete" type="button" onClick={() => del(c._id)}>
+                              <span className="visually-hidden">Delete</span>
                               <Trash2 size={16} />
                             </button>
-                          </td>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop table */}
+                  <div className="d-none d-md-block table-responsive mono-scroll">
+                    <table className="table align-middle">
+                      <thead>
+                        <tr>
+                          <th className="text-nowrap">Code</th>
+                          <th className="text-nowrap">Percent</th>
+                          <th className="text-nowrap">Uses</th>
+                          <th className="text-nowrap">Max</th>
+                          <th className="text-nowrap">Status</th>
+                          <th className="text-nowrap">Expires</th>
+                          <th className="text-nowrap">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {list.map((c) => (
+                          <tr key={c._id}>
+                            <td className="fw-semibold text-break">{c.code}</td>
+                            <td>{c.percent}%</td>
+                            <td>{c.uses || 0}</td>
+                            <td>{c.maxUses === 0 ? "∞" : c.maxUses}</td>
+                            <td>
+                              <span className={`mono-badge ${c.active ? "active" : ""}`}>
+                                {c.active ? "Active" : "Inactive"}
+                              </span>
+                            </td>
+                            <td>{c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "—"}</td>
+                            <td className="text-nowrap">
+                              <div className="d-flex flex-wrap gap-2">
+                                <button className="mono-btn mono-btn-sm" title="Edit" type="button" onClick={() => openEdit(c)}>
+                                  <Pencil size={16} />
+                                </button>
+                                {c.active ? (
+                                  <button className="mono-btn mono-btn-sm" title="Deactivate" type="button" onClick={() => toggleActive(c._id, false)}>
+                                    <PowerOff size={16} />
+                                  </button>
+                                ) : (
+                                  <button className="mono-btn mono-btn-sm" title="Activate" type="button" onClick={() => toggleActive(c._id, true)}>
+                                    <Power size={16} />
+                                  </button>
+                                )}
+                                <button className="mono-btn mono-btn-sm" title="Delete" type="button" onClick={() => del(c._id)}>
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -249,10 +302,10 @@ export default function CouponsPage() {
       {/* Edit modal */}
       {editing && (
         <div className="modal fade show" style={{ display: "block", background: "rgba(0,0,0,.4)" }} onClick={() => setEditing(null)}>
-          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-content" style={{ background: "#fff", color: "#000" }}>
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title" style={{ color: "#000" }}>Edit coupon</h5>
+                <h5 className="modal-title">Edit coupon</h5>
                 <button type="button" className="mono-btn mono-btn-sm" onClick={() => setEditing(null)} aria-label="Close">
                   <X size={16} />
                 </button>
@@ -260,7 +313,7 @@ export default function CouponsPage() {
               <form onSubmit={saveEdit}>
                 <div className="modal-body vstack gap-3">
                   <div>
-                    <label className="form-label" style={{ color: "#000" }}>Code</label>
+                    <label className="form-label">Code</label>
                     <input
                       className="form-control"
                       value={editData.code}
@@ -269,8 +322,8 @@ export default function CouponsPage() {
                     />
                   </div>
                   <div className="row g-3">
-                    <div className="col-md-6">
-                      <label className="form-label" style={{ color: "#000" }}>Percent</label>
+                    <div className="col-12 col-sm-6">
+                      <label className="form-label">Percent</label>
                       <input
                         type="number"
                         min={1}
@@ -281,8 +334,8 @@ export default function CouponsPage() {
                         required
                       />
                     </div>
-                    <div className="col-md-6">
-                      <label className="form-label" style={{ color: "#000" }}>Max uses</label>
+                    <div className="col-12 col-sm-6">
+                      <label className="form-label">Max uses</label>
                       <input
                         type="number"
                         min={0}
@@ -293,7 +346,7 @@ export default function CouponsPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="form-label" style={{ color: "#000" }}>Expires at</label>
+                    <label className="form-label">Expires at</label>
                     <input
                       type="datetime-local"
                       className="form-control"
@@ -308,9 +361,8 @@ export default function CouponsPage() {
                       type="checkbox"
                       checked={editData.active}
                       onChange={(e) => setEditData({ ...editData, active: e.target.checked })}
-                      style={{ accentColor: "#000" }}
                     />
-                    <label htmlFor="editActive" className="form-check-label" style={{ color: "#000" }}>Active</label>
+                    <label htmlFor="editActive" className="form-check-label">Active</label>
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -323,15 +375,17 @@ export default function CouponsPage() {
         </div>
       )}
 
-      {/* Local monochrome + focus-visible */}
+      {/* Local monochrome + responsive helpers */}
       <style>{`
-        /* Inputs/selects focus in black */
-        .form-control:focus, .form-select:focus {
-          border-color: #000 !important;
-          box-shadow: none !important;
-        }
+        .theme-monochrome { background-color: #f1efef; color: #000; }
+        .theme-monochrome .card, .theme-monochrome .modal-content { background: #fff; color: #000; }
+        .theme-monochrome .form-control, .theme-monochrome .form-select { background-color: #fff; color: #000; border-color: #ccc; }
+        .theme-monochrome .form-check-input { accent-color: #000; }
 
-        /* Mono buttons */
+        /* Inputs/selects focus in black */
+        .form-control:focus, .form-select:focus { border-color: #000 !important; box-shadow: none !important; }
+
+        /* Buttons */
         .mono-btn {
           border: 1px solid #000; background: #fff; color: #000;
           border-radius: 10px; padding: 8px 12px; font-weight: 700;
@@ -342,29 +396,40 @@ export default function CouponsPage() {
         .mono-btn:hover { background: #000; color: #fff; }
         .mono-btn:active { transform: scale(0.98); }
 
-        /* Mono badge */
+        /* Badges */
         .mono-badge {
           display: inline-block; padding: 4px 10px; border-radius: 999px;
           border: 1px solid #000; background: #fff; color: #000; font-weight: 700;
+          font-size: 0.8em; white-space: nowrap;
         }
         .mono-badge.active { background: #000; color: #fff; }
 
-        /* Keyboard-only focus indicator */
+        /* Keyboard focus */
         .mono-btn:focus-visible,
         a:focus-visible,
         .form-control:focus-visible,
-        .form-select:focus-visible {
+        .form-select:focus-visible,
+        .form-check-input:focus-visible + .form-check-label {
           outline: none;
-          box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
+          box-shadow: 0 0 0 2px #000, 0 0 0 4px #fff;
         }
-        .mono-btn:focus, a:focus, .form-control:focus, .form-select:focus {
-          outline: 2px solid #000; outline-offset: 2px;
-        }
+        .mono-btn:focus, a:focus, .form-control:focus, .form-select:focus { outline: 2px solid #000; outline-offset: 2px; }
         .mono-btn:focus:not(:focus-visible),
         a:focus:not(:focus-visible),
         .form-control:focus:not(:focus-visible),
-        .form-select:focus:not(:focus-visible) {
-          outline: none; box-shadow: none;
+        .form-select:focus:not(:focus-visible) { outline: none; box-shadow: none; }
+
+        /* Table responsiveness helpers */
+        .mono-scroll { -webkit-overflow-scrolling: touch; }
+        .table td, .table th { vertical-align: middle; }
+
+        /* Mobile coupon card */
+        .coupon-card { background: #fff; }
+        .coupon-card .mono-badge { font-size: 0.72rem; }
+
+        /* Modal sizing on very small screens */
+        @media (max-width: 575.98px) {
+          .modal-dialog { max-width: 95vw; margin: 1rem auto; }
         }
       `}</style>
     </div>

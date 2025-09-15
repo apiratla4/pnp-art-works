@@ -47,9 +47,8 @@ const Header = () => {
   const topCategories = [
     { label: "All Products", to: "/shop", end: true },
     { label: "Paintings", to: "/shop/category/paintings" },
-    { label: "Workshops", to: "/shop/category/workshops" },
-    { label: "Custom Orders", to: "/shop/category/custom-orders" },
     { label: "Digital Prints", to: "/shop/category/digital-prints" },
+    { label: "Pencil Sketches", to: "/shop/category/pencil-sketches" },
     { label: "Handcrafted Items", to: "/shop/category/handcrafted-items" },
     { label: "Limited Editions", to: "/shop/category/limited-editions" }
   ];

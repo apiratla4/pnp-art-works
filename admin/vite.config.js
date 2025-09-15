@@ -8,7 +8,7 @@ export default defineConfig({
     port: 5175,
     proxy: {
       '/api': {
-        target: 'https://pnp-art-works.onrender.com',
+        target: process.env.VITE_API_URL || 'http://localhost:4000',
         changeOrigin: true,
         secure: false
       }
