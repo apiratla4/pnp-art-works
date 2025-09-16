@@ -3,11 +3,11 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Mail, MapPin, Phone, Instagram, Facebook, Twitter, Youtube, ArrowRight
+  Mail, MapPin, Phone, Instagram, Facebook, Youtube, ArrowRight
 } from 'lucide-react';
 import axios from 'axios';
 import './Footer.css';
-import logo from '../assets/pnplogo2.svg';
+import logo from '../assets/pnpartlogofooter.png';
 import FancyButton from './FancyButton';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -63,12 +63,12 @@ const Footer = () => {
                 loading="eager"
                 decoding="async"
               />
-              <div className="lh-1">
-                <div className="fw-bold fs-5" style={{ color: '#fff' }}>
+              <div className="lh-2">
+                <div className=" brand-title fw-bold fs-3" style={{ color: '#fff' }}>
                   PnpArtStudio
                 </div>
-                <small className="text-muted-contrast" style={{ color: '#fff' }}>
-                  Original Paintings &amp; Art by Priyanka Vasishta
+                <small className=" brand-subline text-muted-contrast " style={{ color: '#fff' }}>
+                  Original Paintings &amp; Art by Priyanka Vasista
                 </small>
               </div>
             </div>
@@ -81,7 +81,7 @@ const Footer = () => {
               {[{ Icon: Instagram, href: 'https://www.instagram.com/pnp.artstudio?igsh=MThxbzJsZHg1d29rYw==', label: 'Instagram' },
                 { Icon: Facebook,  href: 'https://www.facebook.com/profile.php?id=100064142585253', label: 'Facebook' },
                 { Icon: Youtube,   href: 'https://youtube.com/@pnpartstudio?si=XtS7itrq6cyrgOdw', label: 'YouTube' },
-                { Icon: Twitter,   href: 'https://x.com', label: 'Twitter/X' }].map(({ Icon, href, label }) => (
+                ].map(({ Icon, href, label }) => (
                 <motion.a
                   key={label}
                   whileHover={{ scale: 1.06 }}
@@ -128,7 +128,7 @@ const Footer = () => {
             <div className="vstack gap-2 small mb-3" style={{ color: '#fff' }}>
               <div className="d-flex align-items-start gap-2">
                 <MapPin size={16} className="mt-1" />
-                <span>123 Art Street, Creative District, City, State 12345</span>
+                <span>579 Brook Meadow Dr Ballwin, MO 63021</span>
               </div>
               <div className="d-flex align-items-center gap-2">
                 <Phone size={16} />
