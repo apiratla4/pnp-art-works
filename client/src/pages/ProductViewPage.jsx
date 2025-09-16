@@ -1,5 +1,5 @@
 // src/pages/ProductViewPage.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, ShoppingCart, Share2, Star, Ruler, Calendar, Palette as PaletteIcon, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -10,6 +10,20 @@ import FancyButton from '../components/FancyButton';
 
 // USD currency formatter (renders like "$1,234.56")
 const fmtUSD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+// Local fallback image (can be a public asset or inline SVG)
+const FALLBACK_IMG = '/placeholder.png';
+
+// Normalize a single image entry (string or object) to a URL string
+const toUrl = (entry) => {
+  if (!entry) return '';
+  if (typeof entry === 'string') return entry.trim();
+  if (typeof entry === 'object') {
+    const u = entry.secure_url || entry.url || entry.src || entry.path || '';
+    return String(u).trim();
+  }
+  return '';
+};
 
 const ProductViewPage = () => {
   const [searchParams] = useSearchParams();
@@ -63,28 +77,51 @@ const ProductViewPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.category, product?.id]);
 
-  const images = product
-    ? (Array.isArray(product.images) && product.images.length > 0 ? product.images : (product.image ? [product.image] : []))
-    : [];
+  // Build a normalized images array (strings only), prefer product.images then fallback to product.image
+  const images = useMemo(() => {
+    if (!product) return [];
+    const fromArray = Array.isArray(product.images) ? product.images.map(toUrl).filter(Boolean) : [];
+    if (fromArray.length > 0) return fromArray;
+    const single = toUrl(product.image);
+    return single ? [single] : [];
+  }, [product]); // Ensures src are strings, never objects
+
+  // Clamp selected index if images change length
+  useEffect(() => {
+    if (selectedImageIndex >= images.length) {
+      setSelectedImageIndex(0);
+    }
+  }, [images, selectedImageIndex]);
 
   // Image navigation functions
   const nextImage = () => {
+    if (images.length === 0) return;
     setSelectedImageIndex((prevIndex) => (prevIndex + 1) % images.length);
   };
 
   const prevImage = () => {
+    if (images.length === 0) return;
     setSelectedImageIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
   };
 
+  // Fallback on broken URLs
+  const handleImgError = (e) => {
+    e.currentTarget.onerror = null;
+    e.currentTarget.src = FALLBACK_IMG;
+  };
+
+  // Add to cart with normalized cover and images
   const addToCart = () => {
     if (!product?.inStock) return;
+    const cover = images || FALLBACK_IMG;
     dispatch({
       type: 'ADD_ITEM',
       payload: {
         id: product.id,
         title: product.title,
         price: product.price,
-        image: product.image,
+        image: cover,         // normalized cover URL (string)
+        images,               // optional: pass full normalized images array
         category: product.category,
         quantity
       }
@@ -97,13 +134,14 @@ const ProductViewPage = () => {
 
   const toggleWishlist = () => {
     if (!product) return;
+    const cover = images || FALLBACK_IMG;
     dispatch({
       type: 'WISHLIST_TOGGLE',
       payload: {
         id: product.id,
         title: product.title,
         price: product.price,
-        image: product.image,
+        image: cover,   // normalized cover URL (string)
         category: product.category
       }
     });
@@ -134,6 +172,8 @@ const ProductViewPage = () => {
     );
   }
 
+  const cover = images || FALLBACK_IMG;
+
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#f1efef' }}>
       <div className="container py-4 py-lg-5">
@@ -155,14 +195,19 @@ const ProductViewPage = () => {
               style={{ background: '#fff', color: '#000' }}
             >
               <div className="ratio ratio-1x1">
-                <img src={images[selectedImageIndex]} alt={`${product.title} image`} className="w-100 h-100 object-fit-cover" />
+                <img
+                  src={images.length > 0 ? images[selectedImageIndex] : cover}
+                  alt={`${product.title} image`}
+                  className="w-100 h-100 object-fit-cover"
+                  onError={handleImgError}
+                />
               </div>
               {images.length > 1 && (
                 <>
-                  <button onClick={prevImage} className="gallery-nav-btn prev">
+                  <button onClick={prevImage} className="gallery-nav-btn prev" aria-label="Previous image">
                     <ChevronLeft size={24} />
                   </button>
-                  <button onClick={nextImage} className="gallery-nav-btn next">
+                  <button onClick={nextImage} className="gallery-nav-btn next" aria-label="Next image">
                     <ChevronRight size={24} />
                   </button>
                 </>
@@ -181,7 +226,12 @@ const ProductViewPage = () => {
                       aria-label={`Thumbnail ${idx + 1}`}
                     >
                       <div className="rounded-3 overflow-hidden" style={{ width: 80, height: 80, border: active ? '3px solid #000' : '2px solid #000' }}>
-                        <img src={img} alt={`${product.title} ${idx + 1}`} className="w-100 h-100 object-fit-cover" />
+                        <img
+                          src={img}
+                          alt={`${product.title} ${idx + 1}`}
+                          className="w-100 h-100 object-fit-cover"
+                          onError={handleImgError}
+                        />
                       </div>
                     </button>
                   );
@@ -380,15 +430,9 @@ const ProductViewPage = () => {
           z-index: 10;
           transition: background-color 0.2s ease;
         }
-        .gallery-nav-btn:hover {
-          background: rgba(0, 0, 0, 0.7);
-        }
-        .gallery-nav-btn.prev {
-          left: 10px;
-        }
-        .gallery-nav-btn.next {
-          right: 10px;
-        }
+        .gallery-nav-btn:hover { background: rgba(0, 0, 0, 0.7); }
+        .gallery-nav-btn.prev { left: 10px; }
+        .gallery-nav-btn.next { right: 10px; }
       `}</style>
     </div>
   );

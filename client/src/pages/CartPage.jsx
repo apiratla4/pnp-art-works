@@ -8,16 +8,31 @@ import FancyButton from '../components/FancyButton';
 
 const FALLBACK_IMG = '/placeholder.png';
 
-// Match ProductViewPage image picking: first of images[] else image string
-const firstImageUrl = (item) => {
-  const arr = Array.isArray(item?.images) ? item.images : null;
-  const arrFirst = arr?. length > 0 ? arr[0] : null;
-  const fromArray = typeof arrFirst === 'string'
-    ? arrFirst
-    : (typeof arrFirst === 'object' ? (arrFirst?.url ?? arrFirst?.secure_url ?? arrFirst?.src ?? arrFirst?.path) : null);
-  const single = typeof item?.image === 'string' ? item.image
-    : (typeof item?.image === 'object' ? (item.image?.url ?? item.image?.secure_url ?? item.image?.src ?? item.image?.path) : null);
-  return fromArray ?? single ?? FALLBACK_IMG;
+// Resolve a cover URL similar to ProductCard:
+// 1) Prefer item.image if it's a string
+// 2) Else take the first truthy entry from item.images
+//    - If string, use it
+//    - If object, try secure_url | url | src | path
+const getCover = (item) => {
+  const single = typeof item?.image === 'string' ? item.image.trim() : '';
+  if (single) return single;
+
+  const arr = Array.isArray(item?.images) ? item.images : [];
+  const first = arr.find(Boolean);
+  if (!first) return '';
+
+  if (typeof first === 'string') return first.trim();
+  if (typeof first === 'object' && first !== null) {
+    const url = first.secure_url || first.url || first.src || first.path || '';
+    return String(url).trim();
+  }
+  return '';
+};
+
+// Fallback on broken URLs: swap to a local placeholder
+const handleImgError = (e) => {
+  e.currentTarget.onerror = null;
+  e.currentTarget.src = FALLBACK_IMG;
 };
 
 const CartPage = () => {
@@ -105,11 +120,12 @@ const CartPage = () => {
                       {/* Image */}
                       <div className="flex-shrink-0">
                         <img
-                          src={firstImageUrl(item)}
+                          src={getCover(item) || FALLBACK_IMG}
                           alt={item.title}
                           className="rounded-3 object-fit-cover"
                           style={{ width: 96, height: 96, border: '1px solid #000' }}
                           loading="lazy"
+                          onError={handleImgError}
                         />
                       </div>
 
