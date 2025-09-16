@@ -11,8 +11,8 @@ export const submitContact = async (req, res) => {
 
     // SMTP configuration (Gmail or any SMTP)
     // For Gmail: enable 2FA and use an App Password for EMAIL_PASS. [Docs]
-    const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
-    const port = Number(process.env.EMAIL_PORT || 587);        // 587 (STARTTLS) recommended
+    const host = process.env.EMAIL_HOST || 'smtp.hostinger.com';
+    const port = Number(process.env.EMAIL_PORT || 465);        // 587 (STARTTLS) recommended
     const secure = String(process.env.EMAIL_SECURE || 'false').toLowerCase() === 'true'; // true typically used with port 465
     const user = process.env.EMAIL_USER;                       // e.g. your-email@gmail.com
     const pass = process.env.EMAIL_PASS;                       // App Password or SMTP password
