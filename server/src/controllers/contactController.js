@@ -16,7 +16,7 @@ export const submitContact = async (req, res) => {
     const secure = String(process.env.EMAIL_SECURE || 'false').toLowerCase() === 'true'; // true typically used with port 465
     const user = process.env.EMAIL_USER;                       // e.g. your-email@gmail.com
     const pass = process.env.EMAIL_PASS;                       // App Password or SMTP password
-    const to   = process.env.CONTACT_TO || 'contact@codewithjay.in'; // recipient inbox
+    const to   = process.env.CONTACT_TO || 'contact@pnpartstudio.com'; // recipient inbox
 
     if (!user || !pass) {
       return res.status(500).json({ message: 'Email service is not configured.' });
