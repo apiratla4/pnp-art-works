@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import './Footer.css';
-import logo from '../assets/pnpartlogofooter.png';
+import logo from '../assets/pnplogoaiiii.png';
 import FancyButton from './FancyButton';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -68,7 +68,7 @@ const Footer = () => {
                   PnpArtStudio
                 </div>
                 <small className=" brand-subline text-muted-contrast " style={{ color: '#fff' }}>
-                  Original Paintings &amp; Art by Priyanka Vasista
+                  Original Paintings &amp; Art <br /> by Priyanka Vasista
                 </small>
               </div>
             </div>

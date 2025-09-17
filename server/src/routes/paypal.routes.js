@@ -1,7 +1,15 @@
 // src/routes/paypal.routes.js
-import { Router } from 'express';
-import { createOrder, captureOrder } from '../controllers/paypal.controller.js';
-const router = Router();
-router.post('/create-order', createOrder);
-router.post('/capture-order', captureOrder);
+import express from 'express';
+import {
+  createOrderController,
+  captureOrderController,
+  webhookController,
+} from '../controllers/paypal.controller.js';
+
+const router = express.Router();
+
+router.post('/create-order', createOrderController);
+router.post('/capture-order', captureOrderController);
+router.post('/webhook', webhookController);
+
 export default router;

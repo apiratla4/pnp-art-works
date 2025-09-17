@@ -7,11 +7,45 @@ import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import FancyButton from '../components/FancyButton';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'test';
+// Build base API origin (use VITE_API_URL if set), then always call /api/... endpoints
+const API_ORIGIN = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const api = (path) => `${API_ORIGIN}/api${path}`;
+
+// PayPal client id: must be a real Live Client ID; no placeholder fallback
+const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+const hasClient = typeof PAYPAL_CLIENT_ID === 'string' && PAYPAL_CLIENT_ID.trim().length > 0;
 
 // USD formatter
 const fmtUSD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+// Fallback image path
+const FALLBACK_IMG = '/placeholder.png';
+
+// Normalize one entry (string or object) into a URL string
+const toUrl = (entry) => {
+  if (!entry) return '';
+  if (typeof entry === 'string') return entry.trim();
+  if (typeof entry === 'object') {
+    const u = entry.secure_url || entry.url || entry.src || entry.path || '';
+    return String(u).trim();
+  }
+  return '';
+};
+
+// Prefer item.image if present, else first usable in item.images[]
+const getCover = (item) => {
+  const single = toUrl(item?.image);
+  if (single) return single;
+  const arr = Array.isArray(item?.images) ? item.images : [];
+  const first = arr.find(Boolean);
+  return toUrl(first);
+};
+
+// Swap to a local placeholder on broken URLs
+const handleImgError = (e) => {
+  e.currentTarget.onerror = null;
+  e.currentTarget.src = FALLBACK_IMG;
+};
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -70,7 +104,7 @@ export default function CheckoutPage() {
   const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
   const onBlur = (e) => setTouched((t) => ({ ...t, [e.target.name]: true }));
 
-  // Validate/apply coupon using backend
+  // Apply promo using backend
   const applyPromo = async (e) => {
     e.preventDefault();
     const raw = form.promo.trim();
@@ -79,10 +113,9 @@ export default function CheckoutPage() {
       return;
     }
     try {
-      const { data } = await axios.get(
-        `${API_BASE}/api/coupons/validate/${encodeURIComponent(raw)}`,
-        { withCredentials: true }
-      );
+      const { data } = await axios.get(api(`/coupons/validate/${encodeURIComponent(raw)}`), {
+        withCredentials: true,
+      });
       if (data?.valid) {
         setCoupon({ code: data.code, percent: Number(data.percent || 0), status: 'applied' });
         setPromoMsg(`Promo applied: ${data.percent}% off`);
@@ -96,66 +129,68 @@ export default function CheckoutPage() {
     }
   };
 
-  // Payloads for server
-  const cartPayload = items.map((it) => ({
+  // Build payloads that match backend controllers
+  const itemsPayload = items.map((it) => ({
     productId: it.id,
-    title: it.title,
-    image: it.image,
-    unitPrice: it.price,
+    name: it.title,
     qty: it.quantity || 1,
-    category: it.category || '',
-    lineTotal: it.price * (it.quantity || 1),
+    price: it.price,            // unit price
+    total: it.price * (it.quantity || 1),
+    variant: it.variant || ''
   }));
 
-  const customerPayload = {
-    email: form.email,
-    name: `${form.firstName} ${form.lastName}`.trim(),
-    address: {
-      line1: form.address1,
-      line2: form.address2,
-      city: form.city,
-      state: form.state,
-      postal_code: form.zip,
-      country: form.country || 'US',
-    },
+  const shippingAddress = {
+    fullName: `${form.firstName} ${form.lastName}`.trim(),
+    line1: form.address1,
+    line2: form.address2,
+    city: form.city,
+    state: form.state,
+    postalCode: form.zip,
+    countryCode: form.country || 'US',
     phone: form.phone || '',
+    email: form.email
   };
 
-  const buildClientSummary = () => {
-    const itemsPreview = items.map((it) => ({
-      id: it.id,
-      title: it.title,
-      image: it.image,
-      unitPrice: it.price,
-      qty: it.quantity || 1,
-      lineTotal: it.price * (it.quantity || 1),
-      category: it.category || '',
-    }));
-    return {
-      promoCode: coupon.code || '',
-      percent: coupon.percent || 0,
-      subtotal,
-      shipping,
-      tax,
-      discount,
-      total,
-      itemsPreview,
-      currency: 'USD'
-    };
+  const billingAddress = form.sameAsShipping
+    ? { ...shippingAddress }
+    : {
+        fullName: `${form.firstName} ${form.lastName}`.trim(),
+        line1: form.address1,
+        line2: form.address2,
+        city: form.city,
+        state: form.state,
+        postalCode: form.zip,
+        countryCode: form.country || 'US',
+        phone: form.phone || '',
+        email: form.email
+      };
+
+  const totals = {
+    subtotal: Number(subtotal.toFixed(2)),
+    tax: Number(tax.toFixed(2)),
+    shipping: Number(shipping.toFixed(2)),
+    discount: Number(discount.toFixed(2)),
+    grandTotal: Number(total.toFixed(2)),
+    currency: 'USD'
   };
 
-  // COD
+  const customer = {
+    email: form.email,
+    firstName: form.firstName,
+    lastName: form.lastName
+  };
+
+  // COD submit
   const placeCodOrder = async () => {
     setSubmitting(true);
     try {
-      const summary = buildClientSummary();
       const { data } = await axios.post(
-        `${API_BASE}/api/checkout/cod-order`,
+        api('/checkout/cod-order'),
         {
-          cart: cartPayload,
-          customer: customerPayload,
+          cart: itemsPayload,
+          customer,
           payment: { method: 'cod' },
-          summary,
+          summary: { ...totals, promoCode: (coupon.code || '').toUpperCase() },
           note: 'COD checkout'
         },
         { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
@@ -185,39 +220,57 @@ export default function CheckoutPage() {
   };
 
   // PayPal Buttons handlers
+  // Calls backend to create an order and returns PayPal order id for JS SDK approval
   const createPaypalOrder = async () => {
     if (Object.keys(errors).length > 0) return undefined;
+    const referenceId = `order-${Date.now()}`;
     const payload = {
-      cart: cartPayload,
-      customer: customerPayload,
-      summary: buildClientSummary(),
+      totals,
+      items: itemsPayload,
+      shippingAddress,
+      billingAddress,
+      customer,
+      userId: state?.userId || '',
+      referenceId
     };
-    const { data } = await axios.post(`${API_BASE}/api/paypal/create-order`, payload, {
-      headers: { 'Content-Type': 'application/json' },
-      withCredentials: true,
-    });
-    return data?.id; // PayPal order id
+    const { data } = await axios.post(
+      api('/paypal/create-order'),
+      payload,
+      { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
+    );
+    return data?.id;
   };
 
+  // After approval, ask backend to capture; backend updates DB with capture result
   const onApprovePaypal = async (data) => {
-    const payload = {
-      orderId: data.orderID,
-      cart: cartPayload,
-      customer: customerPayload,
-      summary: buildClientSummary(),
-    };
-    const res = await axios.post(`${API_BASE}/api/paypal/capture-order`, payload, {
-      headers: { 'Content-Type': 'application/json' },
-      withCredentials: true,
-    });
-    const appOrderId = res?.data?.orderId || 'ODR-UNKNOWN';
-    navigate(`/order/success?orderId=${encodeURIComponent(appOrderId)}`, { replace: true });
+    const payload = { orderId: data.orderID };
+    const res = await axios.post(
+      api('/paypal/capture-order'),
+      payload,
+      { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
+    );
+    const orderId = res?.data?.orderId || data.orderID || 'ODR-UNKNOWN';
+    navigate(`/order/success?orderId=${encodeURIComponent(orderId)}`, { replace: true });
   };
 
   const onErrorPaypal = (err) => {
     console.error(err);
     alert('PayPal error. Please try again.');
   };
+
+  // Keep these primitives to avoid excessive rerenders
+  const forceReRender = [totals.grandTotal, totals.currency || 'USD'];
+
+  // Memoize SDK options and ensure intent is lowercase for JS SDK
+  const paypalOptions = useMemo(
+    () => ({
+      clientId: PAYPAL_CLIENT_ID,
+      currency: 'USD',
+      intent: 'capture',
+      components: 'buttons',
+    }),
+    [PAYPAL_CLIENT_ID]
+  );
 
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#f1efef' }}>
@@ -380,16 +433,22 @@ export default function CheckoutPage() {
 
                   {form.paymentMethod === 'paypal' ? (
                     <div className="mb-0">
-                      <PayPalScriptProvider
-                        options={{ clientId: PAYPAL_CLIENT_ID, currency: 'USD', intent: 'CAPTURE', components: 'buttons' }}>
-                        <PayPalButtons
-                          style={{ layout: 'vertical', color: 'black', shape: 'pill', label: 'paypal' }}
-                          createOrder={createPaypalOrder}
-                          onApprove={onApprovePaypal}
-                          onError={onErrorPaypal}
-                          disabled={items.length === 0 || Object.keys(errors).length > 0}
-                        />
-                      </PayPalScriptProvider>
+                      {hasClient ? (
+                        <PayPalScriptProvider options={paypalOptions}>
+                          <PayPalButtons
+                            style={{ layout: 'vertical', color: 'black', shape: 'pill', label: 'paypal' }}
+                            createOrder={createPaypalOrder}
+                            onApprove={onApprovePaypal}
+                            onError={onErrorPaypal}
+                            forceReRender={forceReRender}
+                            disabled={items.length === 0 || Object.keys(errors).length > 0}
+                          />
+                        </PayPalScriptProvider>
+                      ) : (
+                        <div className="mono-alert small">
+                          PayPal is unavailable: missing client ID.
+                        </div>
+                      )}
                       <div className="mono-alert d-flex align-items-center gap-2 mb-0 mt-2">
                         <ShieldCheck size={18} />
                         <div className="small mb-0" style={{ color: '#000' }}>
@@ -407,6 +466,20 @@ export default function CheckoutPage() {
                   )}
                 </div>
               </div>
+
+              {/* Place order button (COD only) */}
+              {form.paymentMethod === 'cod' && (
+                <div className="d-grid mt-3">
+                  <FancyButton
+                    as="button"
+                    type="submit"
+                    form="checkoutForm"
+                    className="fancy-sm py-3"
+                    disabled={submitting || items.length === 0}>
+                    {submitting ? 'Placing order...' : `Place order • ${fmtUSD.format(total)}`}
+                  </FancyButton>
+                </div>
+              )}
             </form>
           </div>
 
@@ -422,9 +495,12 @@ export default function CheckoutPage() {
                     {items.map((it) => (
                       <div key={it.id} className="d-flex align-items-center">
                         <img
-                          src={it.image} alt={it.title}
+                          src={getCover(it) || FALLBACK_IMG}
+                          alt={it.title}
                           className="rounded me-3 object-fit-cover"
-                          style={{ width: 56, height: 56, border: '1px solid #000' }} />
+                          style={{ width: 56, height: 56, border: '1px solid #000' }}
+                          onError={handleImgError}
+                        />
                         <div className="flex-grow-1" style={{ color: '#000' }}>
                           <div className="small fw-semibold">{it.title}</div>
                           <div className="small">
@@ -482,20 +558,6 @@ export default function CheckoutPage() {
                 {promoMsg && <div className="small mt-2" style={{ color: '#000' }}>{promoMsg}</div>}
               </div>
             </div>
-
-            {/* Place order button (COD only) */}
-            {form.paymentMethod === 'cod' && (
-              <div className="d-grid mt-3">
-                <FancyButton
-                  as="button"
-                  type="submit"
-                  form="checkoutForm"
-                  className="fancy-sm py-3"
-                  disabled={submitting || items.length === 0}>
-                  {submitting ? 'Placing order...' : `Place order • ${fmtUSD.format(total)}`}
-                </FancyButton>
-              </div>
-            )}
           </div>
         </div>
 

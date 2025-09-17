@@ -8,7 +8,7 @@ import FancyButton from './FancyButton'; // uses the previously added monochrome
 import img1 from '../assets/heroimg1.jpg';
 import img2 from '../assets/heroimg2.jpg'; // Art Classes
 import img3 from '../assets/heroimg3.jpg';
-import img4 from '../assets/heroimg4.jpg';
+import img4 from '../assets/ma_durga.png';
 
 // Slides (includes Art Classes slide)
 const PAINTING_SLIDES = [
