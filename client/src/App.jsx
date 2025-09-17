@@ -18,9 +18,7 @@ import GalleryPage from "./pages/GalleryPage";
 import ContactPage from "./pages/ContactPage";
 import WishlistPage from "./pages/WishlistPage";
 import CartPage from "./pages/CartPage";
-import LoginPage from "./pages/LoginPage";
 import CustomOrderPage from "./pages/CustomOrderPage";
-import SignupPage from "./pages/SignupPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import ProductViewPage from "./pages/ProductViewPage";
 import PageNotFound from "./pages/PageNotFound";
@@ -101,9 +99,7 @@ const App = () => {
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
                 <Route path="/cart" element={<CartPage />} />
-                <Route path="/login" element={<LoginPage />} />
                 <Route path="/custom-order" element={<CustomOrderPage />} />
-                <Route path="/signup" element={<SignupPage />} />
                 <Route path="/checkout" element={<CheckoutPage />} />
                 <Route path="/product-details" element={<ProductViewPage />} />
                 <Route path="/art-classes" element={<ArtClassesPage />} />

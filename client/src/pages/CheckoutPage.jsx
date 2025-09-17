@@ -1,17 +1,17 @@
 // src/pages/CheckoutPage.jsx
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback, useRef } from 'react';
 import { CreditCard, Truck, ShieldCheck, Percent, Tag } from 'lucide-react';
 import axios from 'axios';
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { PayPalButtons } from '@paypal/react-paypal-js'; // Provider stays at app root
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import FancyButton from '../components/FancyButton';
 
-// Build base API origin (use VITE_API_URL if set), then always call /api/... endpoints
+// API helper
 const API_ORIGIN = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const api = (path) => `${API_ORIGIN}/api${path}`;
 
-// PayPal client id: must be a real Live Client ID; no placeholder fallback
+// Optional: env presence check for UI message only
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 const hasClient = typeof PAYPAL_CLIENT_ID === 'string' && PAYPAL_CLIENT_ID.trim().length > 0;
 
@@ -21,7 +21,6 @@ const fmtUSD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'US
 // Fallback image path
 const FALLBACK_IMG = '/placeholder.png';
 
-// Normalize one entry (string or object) into a URL string
 const toUrl = (entry) => {
   if (!entry) return '';
   if (typeof entry === 'string') return entry.trim();
@@ -32,7 +31,6 @@ const toUrl = (entry) => {
   return '';
 };
 
-// Prefer item.image if present, else first usable in item.images[]
 const getCover = (item) => {
   const single = toUrl(item?.image);
   if (single) return single;
@@ -41,7 +39,6 @@ const getCover = (item) => {
   return toUrl(first);
 };
 
-// Swap to a local placeholder on broken URLs
 const handleImgError = (e) => {
   e.currentTarget.onerror = null;
   e.currentTarget.src = FALLBACK_IMG;
@@ -74,7 +71,7 @@ export default function CheckoutPage() {
   const [coupon, setCoupon] = useState({ code: '', percent: 0, status: '' });
   const [promoMsg, setPromoMsg] = useState('');
 
-  // Cart totals (USD)
+  // Cart totals
   const items = state.items || [];
   const subtotal = useMemo(
     () => items.reduce((sum, it) => sum + it.price * (it.quantity || 1), 0),
@@ -101,11 +98,11 @@ export default function CheckoutPage() {
     return e;
   }, [form]);
 
-  const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
-  const onBlur = (e) => setTouched((t) => ({ ...t, [e.target.name]: true }));
+  const setField = useCallback((name, value) => setForm((f) => ({ ...f, [name]: value })), []);
+  const onBlur = useCallback((e) => setTouched((t) => ({ ...t, [e.target.name]: true })), []);
 
-  // Apply promo using backend
-  const applyPromo = async (e) => {
+  // Promo
+  const applyPromo = useCallback(async (e) => {
     e.preventDefault();
     const raw = form.promo.trim();
     if (!raw) {
@@ -113,9 +110,7 @@ export default function CheckoutPage() {
       return;
     }
     try {
-      const { data } = await axios.get(api(`/coupons/validate/${encodeURIComponent(raw)}`), {
-        withCredentials: true,
-      });
+      const { data } = await axios.get(api(`/coupons/validate/${encodeURIComponent(raw)}`));
       if (data?.valid) {
         setCoupon({ code: data.code, percent: Number(data.percent || 0), status: 'applied' });
         setPromoMsg(`Promo applied: ${data.percent}% off`);
@@ -127,19 +122,19 @@ export default function CheckoutPage() {
       setCoupon({ code: '', percent: 0, status: 'error' });
       setPromoMsg('Unable to validate code. Try again.');
     }
-  };
+  }, [form.promo]);
 
-  // Build payloads that match backend controllers
-  const itemsPayload = items.map((it) => ({
+  // Payloads for backend
+  const itemsPayload = useMemo(() => items.map((it) => ({
     productId: it.id,
     name: it.title,
     qty: it.quantity || 1,
-    price: it.price,            // unit price
+    price: it.price,
     total: it.price * (it.quantity || 1),
     variant: it.variant || ''
-  }));
+  })), [items]);
 
-  const shippingAddress = {
+  const shippingAddress = useMemo(() => ({
     fullName: `${form.firstName} ${form.lastName}`.trim(),
     line1: form.address1,
     line2: form.address2,
@@ -149,9 +144,9 @@ export default function CheckoutPage() {
     countryCode: form.country || 'US',
     phone: form.phone || '',
     email: form.email
-  };
+  }), [form]);
 
-  const billingAddress = form.sameAsShipping
+  const billingAddress = useMemo(() => form.sameAsShipping
     ? { ...shippingAddress }
     : {
         fullName: `${form.firstName} ${form.lastName}`.trim(),
@@ -163,25 +158,25 @@ export default function CheckoutPage() {
         countryCode: form.country || 'US',
         phone: form.phone || '',
         email: form.email
-      };
+      }, [form, shippingAddress]);
 
-  const totals = {
+  const totals = useMemo(() => ({
     subtotal: Number(subtotal.toFixed(2)),
     tax: Number(tax.toFixed(2)),
     shipping: Number(shipping.toFixed(2)),
     discount: Number(discount.toFixed(2)),
     grandTotal: Number(total.toFixed(2)),
     currency: 'USD'
-  };
+  }), [subtotal, tax, shipping, discount, total]);
 
-  const customer = {
+  const customer = useMemo(() => ({
     email: form.email,
     firstName: form.firstName,
     lastName: form.lastName
-  };
+  }), [form.email, form.firstName, form.lastName]);
 
-  // COD submit
-  const placeCodOrder = async () => {
+  // COD
+  const placeCodOrder = useCallback(async () => {
     setSubmitting(true);
     try {
       const { data } = await axios.post(
@@ -193,7 +188,7 @@ export default function CheckoutPage() {
           summary: { ...totals, promoCode: (coupon.code || '').toUpperCase() },
           note: 'COD checkout'
         },
-        { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
+        { headers: { 'Content-Type': 'application/json' } }
       );
       const oid = data?.orderId || 'ODR-LOCAL';
       navigate(`/order/success?orderId=${encodeURIComponent(oid)}`, { replace: true });
@@ -202,9 +197,9 @@ export default function CheckoutPage() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [itemsPayload, customer, totals, coupon.code, navigate]);
 
-  const onSubmit = async (e) => {
+  const onSubmit = useCallback(async (e) => {
     e.preventDefault();
     setTouched((t) => {
       const all = { ...t };
@@ -212,16 +207,16 @@ export default function CheckoutPage() {
       return all;
     });
     if (Object.keys(errors).length > 0) return;
-
     if (form.paymentMethod === 'cod') {
       await placeCodOrder();
       return;
     }
-  };
+  }, [errors, form.paymentMethod, placeCodOrder]);
 
-  // PayPal Buttons handlers
-  // Calls backend to create an order and returns PayPal order id for JS SDK approval
-  const createPaypalOrder = async () => {
+  // PayPal: keep approvalLink for redirect fallback
+  const approvalLinkRef = useRef(null);
+
+  const createPaypalOrder = useCallback(async () => {
     if (Object.keys(errors).length > 0) return undefined;
     const referenceId = `order-${Date.now()}`;
     const payload = {
@@ -233,44 +228,55 @@ export default function CheckoutPage() {
       userId: state?.userId || '',
       referenceId
     };
-    const { data } = await axios.post(
-      api('/paypal/create-order'),
-      payload,
-      { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
-    );
-    return data?.id;
-  };
+    try {
+      const { data } = await axios.post(
+        api('/paypal/create-order'),
+        payload,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      // store approvalLink for fallback
+      approvalLinkRef.current = data?.approvalLink || null;
+      return data?.id;
+    } catch (err) {
+      console.error('Create order failed:', err);
+      throw err;
+    }
+  }, [errors, totals, itemsPayload, shippingAddress, billingAddress, customer, state?.userId]);
 
-  // After approval, ask backend to capture; backend updates DB with capture result
-  const onApprovePaypal = async (data) => {
-    const payload = { orderId: data.orderID };
-    const res = await axios.post(
-      api('/paypal/capture-order'),
-      payload,
-      { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
-    );
-    const orderId = res?.data?.orderId || data.orderID || 'ODR-UNKNOWN';
-    navigate(`/order/success?orderId=${encodeURIComponent(orderId)}`, { replace: true });
-  };
+  const onApprovePaypal = useCallback(async (data) => {
+    try {
+      const payload = { orderId: data.orderID };
+      const res = await axios.post(
+        api('/paypal/capture-order'),
+        payload,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      const orderId = res?.data?.orderId || data.orderID || 'ODR-UNKNOWN';
+      navigate(`/order/success?orderId=${encodeURIComponent(orderId)}`, { replace: true });
+    } catch (err) {
+      console.error('Capture failed:', err);
+      alert('Payment capture failed. Please contact support.');
+    }
+  }, [navigate]);
 
-  const onErrorPaypal = (err) => {
-    console.error(err);
+  const onErrorPaypal = useCallback((err) => {
+    console.error('PayPal error:', err);
+    const msg = String(err?.message || err || '').toLowerCase();
+    // Fallback: open approval link if iframe session failed (e.g., global_session_not_found)
+    if (msg.includes('global_session_not_found') && approvalLinkRef.current) {
+      // Navigate to PayPal approval to complete checkout via redirect flow
+      window.location.href = approvalLinkRef.current;
+      return;
+    }
     alert('PayPal error. Please try again.');
-  };
+  }, []);
 
-  // Keep these primitives to avoid excessive rerenders
-  const forceReRender = [totals.grandTotal, totals.currency || 'USD'];
+  const onCancelPaypal = useCallback(() => {
+    // No-op: user canceled in PayPal
+  }, []);
 
-  // Memoize SDK options and ensure intent is lowercase for JS SDK
-  const paypalOptions = useMemo(
-    () => ({
-      clientId: PAYPAL_CLIENT_ID,
-      currency: 'USD',
-      intent: 'capture',
-      components: 'buttons',
-    }),
-    [PAYPAL_CLIENT_ID]
-  );
+  // Re-render key for amount/currency changes only
+  const paypalKey = `pp-${totals.grandTotal}-${totals.currency || 'USD'}`;
 
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#f1efef' }}>
@@ -434,16 +440,15 @@ export default function CheckoutPage() {
                   {form.paymentMethod === 'paypal' ? (
                     <div className="mb-0">
                       {hasClient ? (
-                        <PayPalScriptProvider options={paypalOptions}>
-                          <PayPalButtons
-                            style={{ layout: 'vertical', color: 'black', shape: 'pill', label: 'paypal' }}
-                            createOrder={createPaypalOrder}
-                            onApprove={onApprovePaypal}
-                            onError={onErrorPaypal}
-                            forceReRender={forceReRender}
-                            disabled={items.length === 0 || Object.keys(errors).length > 0}
-                          />
-                        </PayPalScriptProvider>
+                        <PayPalButtons
+                          key={paypalKey}
+                          style={{ layout: 'vertical', color: 'black', shape: 'pill', label: 'paypal' }}
+                          createOrder={createPaypalOrder}
+                          onApprove={onApprovePaypal}
+                          onError={onErrorPaypal}
+                          onCancel={onCancelPaypal}
+                          disabled={items.length === 0 || Object.keys(errors).length > 0}
+                        />
                       ) : (
                         <div className="mono-alert small">
                           PayPal is unavailable: missing client ID.
@@ -561,7 +566,7 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Local overrides for monochrome forms and alerts */}
+        {/* Local overrides */}
         <style>{`
           .form-control:focus,
           .form-select:focus { border-color: #000 !important; box-shadow: none !important; }

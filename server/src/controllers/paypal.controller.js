@@ -7,7 +7,6 @@ import {
 } from '../config/paypal.js';
 
 // POST /api/paypal/create-order
-// Body: { totals, items, shippingAddress, billingAddress, customer, userId, referenceId, brandName? }
 export async function createOrderController(req, res, next) {
   try {
     const {
@@ -18,22 +17,27 @@ export async function createOrderController(req, res, next) {
       customer,
       userId,
       referenceId = `order-${Date.now()}`,
-      brandName = 'Store',
+      brandName = 'pnp art studio',
     } = req.body || {};
 
     if (!totals?.grandTotal) {
       return res.status(400).json({ error: 'Missing totals.grandTotal' });
     }
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'No items' });
+    }
 
-    // Create PayPal order using axios-based helper
+    // Optional: look up products by productId to recompute prices server-side
+    // TODO: Replace client-sent prices with DB prices to prevent tampering.
+
     const { order: ppOrder, approvalLink } = await paypalCreateOrderAxios({
       totals,
       items,
       referenceId,
       brandName,
+      shippingAddress,
     });
 
-    // Persist local order snapshot
     const doc = await Order.create({
       userId,
       customer,
@@ -45,11 +49,10 @@ export async function createOrderController(req, res, next) {
       paypalOrderId: ppOrder?.id,
       intent: ppOrder?.intent,
       status: ppOrder?.status,
-      approvalLink, // rel: 'approve' link from HATEOAS
+      approvalLink,
       paypalCreateResponse: ppOrder,
     });
 
-    // Return PayPal order id for JS SDK flows; approvalLink supports redirect flows
     return res.status(201).json({
       id: ppOrder?.id,
       status: ppOrder?.status,
@@ -62,15 +65,12 @@ export async function createOrderController(req, res, next) {
 }
 
 // POST /api/paypal/capture-order
-// Body: { orderId }
 export async function captureOrderController(req, res, next) {
   try {
     const { orderId } = req.body || {};
     if (!orderId) return res.status(400).json({ error: 'Missing orderId' });
 
-    // Capture using axios-based helper
     const captureRes = await paypalCaptureOrderAxios(orderId);
-
     const status = captureRes?.status;
     const captures =
       captureRes?.purchase_units?.flatMap((pu) => pu?.payments?.captures || []) || [];
@@ -105,7 +105,6 @@ export async function webhookController(req, res, next) {
 
     const event = req.body;
 
-    // Determine PayPal order id from event
     let paypalOrderId = null;
     if (event?.event_type === 'CHECKOUT.ORDER.APPROVED') {
       paypalOrderId = event?.resource?.id || null;
@@ -115,18 +114,14 @@ export async function webhookController(req, res, next) {
 
     if (paypalOrderId) {
       const update = { $push: { webhooks: event } };
-
-      // If capture completed, persist captures and set status
       if (event?.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
         const capture = event?.resource;
         update.$set = { status: 'COMPLETED' };
         if (capture) update.$push.captures = capture;
       }
-
       await Order.findOneAndUpdate({ paypalOrderId }, update, { upsert: false });
     }
 
-    // Always return 2xx to prevent PayPal retries
     return res.sendStatus(200);
   } catch (err) {
     next(err);
