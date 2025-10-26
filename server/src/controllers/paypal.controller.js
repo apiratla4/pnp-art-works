@@ -1,8 +1,8 @@
 import Order from '../models/Order.js';
 import {
   paypalCreateOrderAxios,
-  paypalCaptureOrderAxios,
-  verifyWebhookSignature,
+  paypalCaptureOrderAxios
+  // Remove verifyWebhookSignature unless you want webhook support
 } from '../config/paypal.js';
 
 export async function createOrderController(req, res, next) {

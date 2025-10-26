@@ -1,16 +1,9 @@
-// src/App.jsx
 import React, { useMemo } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import "./index.css";
-
-// Toasts
 import { Toaster } from "react-hot-toast";
-
-// Layout
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-
-// Pages
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
 import ShopPage from "./pages/ShopPage";
@@ -30,26 +23,14 @@ import ArtClassesPage from "./pages/ArtClassesPage";
 import OrderSuccess from "./pages/OrderSuccess";
 import TrackOrderPage from "./pages/TrackOrderPage";
 import OrderConfirmation from "./pages/OrderConfirmation";
-
 import { CartProvider } from "./context/CartContext";
-
-// Utils
 import ScrollToTop from "./components/ScrollToTop";
 import BackToTop from "./components/BackToTop";
-
-// Floating cart
 import FallingCart from "./components/FallingCart";
-
-// WhatsApp FAB
 import WhatsAppButton from "./components/WhatsAppButton";
-
-// Timed signup popup (shows after 5s)
 import DiscountPopup from "./components/DiscountPopup";
-
-// PayPal
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
-// Route-aware cart (uses useLocation)
 const RouteAwareFallingCart = () => {
   const location = useLocation();
   const showFallingCart = location.pathname === "/" || location.pathname.startsWith("/shop");
@@ -67,7 +48,6 @@ const RouteAwareFallingCart = () => {
 };
 
 const App = () => {
-  // Use live PayPal Client ID from Vite env
   const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || "";
   const paypalOptions = useMemo(
     () => ({
@@ -84,10 +64,8 @@ const App = () => {
       <CartProvider>
         <Router>
           <ScrollToTop />
-          {/* Sticky-footer wrapper */}
           <div className="d-flex flex-column min-vh-100">
             <Header />
-
             <main className="flex-grow-1 pt-nav">
               <Routes>
                 <Route path="/" element={<HomePage />} />
@@ -113,24 +91,15 @@ const App = () => {
                 <Route path="*" element={<PageNotFound />} />
               </Routes>
             </main>
-
             <Footer />
-
-            {/* Floating cart only on "/" and "/shop..." */}
             <RouteAwareFallingCart />
-
-            {/* Site-wide floating actions */}
             <BackToTop />
             <WhatsAppButton
               phone={import.meta.env.VITE_WHATSAPP_NUMBER}
               text="Hi! I’d like to know more about your artworks and classes."
             />
-
-            {/* Timed popup (opens after 5s, respects localStorage to reduce repeats) */}
             <DiscountPopup delayMs={5000} />
           </div>
-
-          {/* Global toast provider */}
           <Toaster
             position="top-right"
             gutter={8}

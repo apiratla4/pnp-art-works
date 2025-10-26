@@ -1,14 +1,15 @@
 import express from 'express';
 import {
   createOrderController,
-  captureOrderController,
-  webhookController,
+  captureOrderController
+  // Remove webhookController if not implemented
 } from '../controllers/paypal.controller.js';
 
 const router = express.Router();
 
 router.post('/create-order', createOrderController);
 router.post('/capture-order', captureOrderController);
-router.post('/webhook', webhookController);
+// Remove this line if you haven’t created webhookController
+// router.post('/webhook', webhookController);
 
 export default router;
