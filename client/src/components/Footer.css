@@ -11,8 +11,32 @@
 }
 /* Footer brand logo */
 .footer-logo {
-  height: 100px; /* aligns with header scale */
-  width: auto;
+  height: 150px; /* aligns with header scale */
+  width: 150px;  /* aligns with header scale */
   display: block;
   border-radius: 8px; /* optional, remove if logo already rounded */
 }
+/* Only text beside the logo */
+.brand-title {
+  /* Elegant cursive stack without external imports */
+  font-family: "Dancing Script", "Segoe Script", "Snell Roundhand", "Brush Script MT", cursive;
+  font-weight: 700;
+  font-size: 1.8rem;
+  line-height: 1;
+  letter-spacing: .02em;
+  color: #000;
+  margin-top: .1rem;
+}
+
+.brand-subline {
+  /* Clean sans for contrast with the script title */
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+  font-weight: 500;
+  font-size: .86rem;
+  letter-spacing: .06em;
+  text-transform: lowercase; /* “by priyanka vasista” */
+  color: #000;
+  opacity: .95;
+  margin-top: .18rem;
+}
+

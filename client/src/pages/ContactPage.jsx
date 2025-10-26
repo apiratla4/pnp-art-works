@@ -1,23 +1,28 @@
 // src/pages/ContactPage.jsx (Monochrome + Fancy buttons)
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Phone, Mail, Clock, Send, Instagram, Facebook, CheckCircle, Youtube } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Send, Instagram, Facebook, CheckCircle, Youtube, AlertTriangle } from 'lucide-react';
 import FancyButton from '../components/FancyButton';
+import axios from 'axios';
 
-const COUNTRY_CODES = [/* ...existing list unchanged... */];
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
-  const ContactPage = () => {
-    const [formData, setFormData] = useState({
-      name: '',
-      email: '',
-      subject: '',
-      message: '',
-      customOrder: false,
-      phone: '',
-      countryCode: '+1',
-    });
-  
-    const COUNTRY_CODES = [
+const ContactPage = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: '',
+    customOrder: false,
+    phone: '',
+    countryCode: '+1',
+  });
+
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const COUNTRY_CODES = [
     { code: 'AD', name: 'Andorra', dial: '+376', flag: '🇦🇩' },
     { code: 'AE', name: 'United Arab Emirates', dial: '+971', flag: '🇦🇪' },
     { code: 'AF', name: 'Afghanistan', dial: '+93', flag: '🇦🇫' },
@@ -268,16 +273,50 @@ const COUNTRY_CODES = [/* ...existing list unchanged... */];
     { code: 'ZM', name: 'Zambia', dial: '+260', flag: '🇿🇲' },
     { code: 'ZW', name: 'Zimbabwe', dial: '+263', flag: '🇿🇼' }
   ];
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
+    setSubmitting(true);
+
     const fullPhone = formData.phone ? `${formData.countryCode}${formData.phone}` : '';
-    // TODO: send { ...formData, phone: fullPhone } to backend
-    setTimeout(() => {
+
+    // Simple required validation
+    if (!formData.name || !formData.email || !formData.message) {
+      setErrorMsg('Please fill all required fields (name, email, message).');
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      await axios.post(`${API_BASE}/api/contact/submit`, {
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+        customOrder: formData.customOrder,
+        phone: fullPhone
+      }, { withCredentials: true });
+
       setIsSubmitted(true);
+      setFormData({
+        name: '',
+        email: '',
+        subject: '',
+        message: '',
+        customOrder: false,
+        phone: '',
+        countryCode: '+1',
+      });
+
+      // Auto-hide success after 5 seconds
       setTimeout(() => setIsSubmitted(false), 5000);
-    }, 1000);
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Failed to send message. Please try again.';
+      setErrorMsg(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -286,10 +325,10 @@ const COUNTRY_CODES = [/* ...existing list unchanged... */];
   };
 
   const contactInfo = [
-    { icon: MapPin, title: 'Visit Our Studio', details: 'St. Louis, MO, USA', subDetails: 'Missouri, United States' },
-    { icon: Phone,  title: 'Call Us',         details: '+1 (713) 576‑9741',  subDetails: 'Mon - Fri, 9am - 6pm' },
-    { icon: Mail,   title: 'Email Us',        details: 'pnp.artstudio7@gmail.com', subDetails: "We'll respond within 24 hours" },
-    { icon: Clock,  title: 'Studio Hours',    details: 'Mon - Fri: 9am - 6pm', subDetails: 'Sat - Sun: 10am - 4pm' }
+    { icon: MapPin, title: 'Visit Our Studio', details: '579 Brook Meadow Dr Ballwin, MO 63021', subDetails: 'Missouri, United States' },
+    { icon: Phone,  title: 'Call Us',         details: '+1 (713) 576‑9741',   subDetails: 'Mon - Fri, 9am - 6pm' },
+    { icon: Mail,   title: 'Email Us',       details: 'pnp.artstudio7@gmail.com', subDetails: "We'll respond within 24 hours" },
+    { icon: Clock,  title: 'Studio Hours',   details: 'Mon - Fri: 9am - 6pm', subDetails: 'Sat - Sun: 10am - 4pm' }
   ];
 
   const socialLinks = [
@@ -361,6 +400,13 @@ const COUNTRY_CODES = [/* ...existing list unchanged... */];
                   </motion.div>
                 )}
 
+                {errorMsg && !isSubmitted && (
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mono-alert d-flex align-items-center gap-2" style={{ borderColor: '#842029', background: '#f8d7da', color: '#842029' }}>
+                    <AlertTriangle size={18} />
+                    <div className="fw-medium">{errorMsg}</div>
+                  </motion.div>
+                )}
+
                 <form onSubmit={handleSubmit} className="row g-3">
                   <div className="col-md-6">
                     <label className="form-label small fw-semibold">Full Name *</label>
@@ -376,7 +422,6 @@ const COUNTRY_CODES = [/* ...existing list unchanged... */];
                       className="form-control" placeholder="your@email.com"
                     />
                   </div>
-
                   {/* Phone with country code dropdown */}
                   <div className="col-md-6">
                     <label className="form-label small fw-semibold">Phone Number</label>
@@ -398,7 +443,6 @@ const COUNTRY_CODES = [/* ...existing list unchanged... */];
                     </div>
                     <small className="small" style={{ color: '#000' }}>Select country code and enter local number</small>
                   </div>
-
                   <div className="col-md-6">
                     <label className="form-label small fw-semibold">Subject</label>
                     <select name="subject" value={formData.subject} onChange={handleChange} className="form-select">
@@ -411,7 +455,6 @@ const COUNTRY_CODES = [/* ...existing list unchanged... */];
                       <option value="other">Other</option>
                     </select>
                   </div>
-
                   <div className="col-12">
                     <label className="form-label small fw-semibold">Message *</label>
                     <textarea
@@ -419,7 +462,6 @@ const COUNTRY_CODES = [/* ...existing list unchanged... */];
                       className="form-control" placeholder="Tell us about your inquiry, custom order details, or any questions you have..."
                     />
                   </div>
-
                   <div className="col-12 d-flex align-items-center gap-2">
                     <input
                       type="checkbox" name="customOrder" id="customOrder"
@@ -429,12 +471,11 @@ const COUNTRY_CODES = [/* ...existing list unchanged... */];
                       I&apos;m interested in a custom order or commission
                     </label>
                   </div>
-
                   <div className="col-12">
-                    <FancyButton as="button" type="submit" className="fancy-sm w-100">
+                    <FancyButton as="button" type="submit" className="fancy-sm w-100" disabled={submitting}>
                       <span className="d-inline-flex align-items-center gap-2">
                         <Send size={18} />
-                        Send Message
+                        {submitting ? 'Sending…' : 'Send Message'}
                       </span>
                     </FancyButton>
                   </div>
@@ -443,31 +484,9 @@ const COUNTRY_CODES = [/* ...existing list unchanged... */];
             </motion.div>
           </div>
 
-          {/* Map + Extras */}
+          {/* Social Media & Workshops */}
           <div className="col-12 col-lg-6">
             <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="vstack gap-4">
-              {/* Studio Location */}
-              <div className="card shadow-sm border-0 rounded-4 overflow-hidden" style={{ background: '#fff', color: '#000' }}>
-                <div className="card-body">
-                  <h3 className="h4 fw-bold mb-2" style={{ color: '#000' }}>Visit Our Studio</h3>
-                  <p className="mb-0" style={{ color: '#000' }}>
-                    Located in downtown St. Louis, Missouri, our studio is open for visits, consultations, and workshops.
-                  </p>
-                </div>
-                <div style={{ height: 260 }}>
-                  <iframe
-                    width="100%"
-                    height="260"
-                    frameBorder="0"
-                    style={{ border: 0 }}
-                    referrerPolicy="no-referrer-when-downgrade"
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d343887.6418966492!2d-89.89158212122938!3d38.67850786650143!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x87d8b4a9faed8ef9%3A0xbe39eaca22bbe05b!2sSt.%20Louis%2C%20MO%2C%20USA!5e0!3m2!1sen!2sin!4v1757579903036!5m2!1sen!2sin"
-                    allowFullScreen
-                    title="St. Louis, Missouri Location"
-                  />
-                </div>
-              </div>
-
               {/* Social Media */}
               <div className="card shadow-sm border-0 rounded-4" style={{ background: '#fff', color: '#000' }}>
                 <div className="card-body">
@@ -491,7 +510,6 @@ const COUNTRY_CODES = [/* ...existing list unchanged... */];
                   </div>
                 </div>
               </div>
-
               {/* Workshop Info */}
               <div className="rounded-4 p-4" style={{ background: '#fff', border: '1px solid #000', color: '#000' }}>
                 <h3 className="h5 fw-bold mb-2">🎨 Art Workshops Available</h3>

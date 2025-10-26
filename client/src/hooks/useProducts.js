@@ -1,14 +1,25 @@
-// src/hooks/useProducts.js — URL-synced + client-side filter/sort fallback
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+// src/hooks/useProducts.js — fixed URL sync to avoid loops
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { listProducts } from "../api/products";
 
 const toBool = (v) => (v === "true" ? true : v === "false" ? false : undefined);
 const normalize = (s = "") => s.toString().toLowerCase();
 
 export const useProducts = () => {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [state, setState] = useState({ items: [], total: 0, page: 1, totalPages: 1, loading: false, error: null });
+  const [state, setState] = useState({
+    items: [],
+    total: 0,
+    page: 1,
+    totalPages: 1,
+    loading: false,
+    error: null
+  });
+
+  // Stable representation of current query
+  const currentSearch = useMemo(() => searchParams.toString(), [searchParams]);
 
   const params = useMemo(() => {
     const page = Number(searchParams.get("page") || 1);
@@ -32,7 +43,6 @@ export const useProducts = () => {
         const api = await listProducts({ published: params.published });
         let items = api.items || [];
 
-        // Client-side fallback filters to keep UI fully functional
         if (params.category) items = items.filter((p) => p.category === params.category);
         if (params.subcategory) items = items.filter((p) => p.subcategory === params.subcategory);
         if (params.inStock !== undefined) items = items.filter((p) => !!p.inStock === params.inStock);
@@ -40,15 +50,14 @@ export const useProducts = () => {
         if (params.maxPrice) items = items.filter((p) => Number(p.price) <= Number(params.maxPrice));
         if (params.q) {
           const q = normalize(params.q);
-          items = items.filter((p) => normalize(p.title).includes(q) || normalize(p.description).includes(q));
+          items = items.filter(
+            (p) => normalize(p.title).includes(q) || normalize(p.description).includes(q)
+          );
         }
 
-        // Client-side sort fallback
         if (params.sort === "price_asc") items.sort((a, b) => Number(a.price) - Number(b.price));
         else if (params.sort === "price_desc") items.sort((a, b) => Number(b.price) - Number(a.price));
-        // "newest" left as-is (assumes backend returns newest-first or stable order)
 
-        // Client-side pagination
         const total = items.length;
         const totalPages = Math.max(1, Math.ceil(total / params.limit));
         const page = Math.min(params.page, totalPages);
@@ -64,13 +73,31 @@ export const useProducts = () => {
     return () => { cancelled = true; };
   }, [params]);
 
-  const updateParam = (key, value) => {
-    const next = new URLSearchParams(searchParams);
-    if (value === undefined || value === null || value === "") next.delete(key);
-    else next.set(key, String(value));
-    if (key !== "page") next.set("page", "1");
-    setSearchParams(next, { replace: true });
-  };
+  // Canonical builder for the next query string (omit defaults to stabilize)
+  const buildSearch = useCallback((sp) => {
+    const usp = new URLSearchParams(sp);
+    // Normalize page=1 by removing it
+    if (usp.get("page") === "1") usp.delete("page");
+    return usp.toString();
+  }, []);
 
-  return { ...state, params, updateParam };
+  const updateParam = useCallback(
+    (key, value) => {
+      const next = new URLSearchParams(currentSearch);
+
+      if (value === undefined || value === null || value === "") next.delete(key);
+      else next.set(key, String(value));
+
+      // Reset to first page when changing any filter other than page
+      if (key !== "page") next.delete("page");
+
+      const nextSearch = buildSearch(next);
+      if (nextSearch !== currentSearch) {
+        setSearchParams(nextSearch, { replace: true });
+      }
+    },
+    [currentSearch, setSearchParams, buildSearch]
+  );
+
+  return { ...state, params, updateParam, location };
 };

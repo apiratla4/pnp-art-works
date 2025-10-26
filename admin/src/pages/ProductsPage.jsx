@@ -9,7 +9,6 @@ import {
   Tag,
   Layers,
   Plus,
-  Star,
   Info,
   Maximize2,
   X,
@@ -310,8 +309,33 @@ export default function ProductsPage() {
     }
   };
 
-  // SINGLE thumbnail ONLY for table
-  const firstUrl = (p) => (Array.isArray(p.images) && p.images.length ? String(p.images) : "");
+  // Use the first usable image URL from product; supports strings or objects
+  const firstUrl = (p) => {
+    const single = typeof p?.image === "string" ? p.image.trim() : "";
+    if (single) return single;
+    const arr = Array.isArray(p?.images) ? p.images : [];
+    const first = arr.find(Boolean); // first truthy element
+    if (!first) return "";
+    if (typeof first === "string") return first;
+    if (typeof first === "object" && first !== null) {
+      return first.secure_url || first.url || first.src || "";
+    }
+    return "";
+  };
+
+  // Replace broken image with inline SVG placeholder
+  const handleImgError = (e) => {
+    e.currentTarget.onerror = null;
+    e.currentTarget.src =
+      "data:image/svg+xml;utf8," +
+      encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+           <rect width="100%" height="100%" fill="white"/>
+           <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="black" font-size="10">No Image</text>
+         </svg>`
+      );
+  };
+
   const short = (s, n = 80) => (s && s.length > n ? s.slice(0, n) + "…" : s || "-");
 
   // Details modal
@@ -654,8 +678,9 @@ export default function ProductsPage() {
       {/* List: single image URL only in Image column */}
       <div className="card border-0 shadow-sm rounded-4" style={{ background: "#fff", color: "#000" }}>
         <div className="card-body p-0">
-          <div className="table-responsive-sm">
-            <table className="table align-middle mb-0">
+          {/* Always-on horizontal scroll + vertical scroll area with sticky header */}
+          <div className="table-responsive table-scroll-y-420 mono-scroll">
+            <table className="table align-middle mb-0 table-sticky">
               <thead>
                 <tr>
                   <th style={{ width: 64, borderBottom: "1px solid #000", color: "#000" }}>Image</th>
@@ -703,6 +728,7 @@ export default function ProductsPage() {
                               borderRadius: 8,
                               border: "1px solid #000"
                             }}
+                            onError={handleImgError}
                           />
                         ) : (
                           <div
@@ -839,6 +865,7 @@ export default function ProductsPage() {
                       borderRadius: 8,
                       border: "1px solid #000"
                     }}
+                    onError={handleImgError}
                   />
                   <button
                     className="mono-btn mono-btn-sm"
@@ -863,6 +890,7 @@ export default function ProductsPage() {
                     src={u}
                     alt={`thumb-${i}`}
                     onClick={() => setSlide(i)}
+                    onError={handleImgError}
                     style={{
                       width: 56,
                       height: 56,
@@ -921,54 +949,20 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Local monochrome + focus-visible */}
+      {/* Local helpers: scroll + sticky header */}
       <style>{`
-        /* Inputs/selects focus in black */
-        .form-control:focus, .form-select:focus {
-          border-color: #000 !important;
-          box-shadow: none !important;
-        }
+        /* Touch-friendly momentum scroll on iOS */
+        .mono-scroll { -webkit-overflow-scrolling: touch; }
 
-        /* Mono buttons */
-        .mono-btn {
-          border: 1px solid #000; background: #fff; color: #000;
-          border-radius: 10px; padding: 8px 12px; font-weight: 700;
-          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
-          white-space: nowrap;
-        }
-        .mono-btn:hover { background: #000; color: #fff; }
-        .mono-btn:active { transform: scale(0.98); }
-        .mono-btn-sm { padding: 6px 10px; border-radius: 999px; }
+        /* Fixed-height vertical scroll for table area */
+        .table-scroll-y-420 { max-height: 420px; overflow-y: auto; }
 
-        /* Outline variant */
-        .mono-btn-outline {
-          background: #fff; color: #000; border: 1px solid #000;
-        }
-        .mono-btn-outline:hover { background: #000; color: #fff; }
-
-        /* Mono badge */
-        .mono-badge {
-          display: inline-block; padding: 4px 10px; border-radius: 999px;
-          border: 1px solid #000; background: #fff; color: #000; font-weight: 700;
-        }
-        .mono-badge.active { background: #000; color: #fff; }
-
-        /* Keyboard-only focus indicator */
-        .mono-btn:focus-visible,
-        a:focus-visible,
-        .form-control:focus-visible,
-        .form-select:focus-visible {
-          outline: none;
-          box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
-        }
-        .mono-btn:focus, a:focus, .form-control:focus, .form-select:focus {
-          outline: 2px solid #000; outline-offset: 2px;
-        }
-        .mono-btn:focus:not(:focus-visible),
-        a:focus:not(:focus-visible),
-        .form-control:focus:not(:focus-visible),
-        .form-select:focus:not(:focus-visible) {
-          outline: none; box-shadow: none;
+        /* Sticky table header inside the scroll container */
+        .table-sticky thead th {
+          position: sticky;
+          top: 0;
+          background: #fff;
+          z-index: 2;
         }
       `}</style>
     </div>

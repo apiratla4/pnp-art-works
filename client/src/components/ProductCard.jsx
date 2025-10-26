@@ -1,4 +1,4 @@
-// src/components/ProductCard.jsx — explicit objectFit to avoid overflow in any layout
+// src/components/ProductCard.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -8,7 +8,39 @@ import { formatUSD } from '../utils/currency';
 
 const ProductCard = ({ product }) => {
   const { state, dispatch } = useCart();
-  const isWishlisted = (state?.wishlist || []).some(w => w.id === product.id);
+  const isWishlisted = (state?.wishlist || []).some((w) => w.id === product.id);
+
+  // Pick first usable image URL:
+  // 1) product.image (string) -> use it
+  // 2) product.images (array) -> first truthy item
+  //    - handles string or object with secure_url | url | src
+  const cover = React.useMemo(() => {
+    const single = typeof product?.image === 'string' ? product.image.trim() : '';
+    if (single) return single;
+
+    const arr = Array.isArray(product?.images) ? product.images : [];
+    const first = arr.find(Boolean); // first truthy entry [2]
+    if (!first) return '';
+
+    if (typeof first === 'string') return first;
+    if (typeof first === 'object' && first !== null) {
+      return first.secure_url || first.url || first.src || '';
+    }
+    return '';
+  }, [product]); // [2]
+
+  // Replace broken src with inline SVG placeholder (no extra assets required)
+  const handleImgError = (e) => {
+    e.currentTarget.onerror = null;
+    e.currentTarget.src =
+      'data:image/svg+xml;utf8,' +
+      encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+           <rect width="100%" height="100%" fill="white"/>
+           <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="black" font-size="20">No Image</text>
+         </svg>`
+      );
+  }; // [12][20]
 
   const addToCart = () => {
     if (!product?.inStock) return;
@@ -18,11 +50,11 @@ const ProductCard = ({ product }) => {
         id: product.id,
         title: product.title,
         price: product.price,
-        image: product.image,
+        image: cover, // use resolved first image url
         category: product.category
       }
     });
-  };
+  }; // [20]
 
   const toggleWishlist = () => {
     dispatch({
@@ -31,11 +63,11 @@ const ProductCard = ({ product }) => {
         id: product.id,
         title: product.title,
         price: product.price,
-        image: product.image,
+        image: cover, // use resolved first image url
         category: product.category
       }
     });
-  };
+  }; // [20]
 
   return (
     <motion.article
@@ -46,22 +78,25 @@ const ProductCard = ({ product }) => {
       transition={{ duration: 0.4 }}
     >
       <div className="position-relative">
-        {/* Grid card hero keeps 1:1; objectFit ensures cover cropping */}
+        {/* 1:1 thumbnail; objectFit keeps cropping consistent */}
         <div className="ratio ratio-1x1">
           <img
-            src={product.image}
+            src={cover}
             alt={`${product.title} thumbnail`}
             className="w-100 h-100"
             style={{ objectFit: 'cover' }}
+            loading="lazy"
+            decoding="async"
+            onError={handleImgError}
           />
         </div>
 
-        {/* Category as mono badge */}
+        {/* Category */}
         <span className="mono-badge position-absolute top-0 start-0 m-2 rounded-pill">
           {product.category}
         </span>
 
-        {/* Status badge (mono): Featured / Sold Out */}
+        {/* Status */}
         {product.inStock ? (
           product.featured && (
             <span className="mono-badge position-absolute top-0 end-0 m-2 rounded-pill">
@@ -88,11 +123,15 @@ const ProductCard = ({ product }) => {
       </div>
 
       <div className="card-body d-flex flex-column" style={{ color: '#000' }}>
-        <h3 className="h6 fw-semibold mb-1 line-clamp-2" style={{ color: '#000' }}>{product.title}</h3>
+        <h3 className="h6 fw-semibold mb-1 line-clamp-2" style={{ color: '#000' }}>
+          {product.title}
+        </h3>
         <div className="small mb-2" style={{ color: '#000' }}>
           {(product.medium || 'Artwork')} • {(product.year || '')}
         </div>
-        <p className="small mb-3 line-clamp-2" style={{ color: '#000' }}>{product.description}</p>
+        <p className="small mb-3 line-clamp-2" style={{ color: '#000' }}>
+          {product.description}
+        </p>
 
         <div className="mt-auto d-flex align-items-center justify-content-between">
           <div className="fw-bold" style={{ color: '#000' }}>
@@ -112,7 +151,10 @@ const ProductCard = ({ product }) => {
               <span>Add</span>
             </motion.button>
 
-            <Link to={`/product-details?id=${product.id}`} className="mono-btn mono-btn-sm rounded-pill text-decoration-none">
+            <Link
+              to={`/product-details?id=${product.id}`}
+              className="mono-btn mono-btn-sm rounded-pill text-decoration-none"
+            >
               View
             </Link>
           </div>
@@ -156,12 +198,6 @@ const ProductCard = ({ product }) => {
         .mono-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
         .mono-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
         .mono-btn-sm { padding: 6px 10px; border-radius: 999px; }
-
-        a:focus-visible {
-          outline: none;
-          box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
-        }
-        a:focus { outline: 2px solid #000; outline-offset: 2px; }
       `}</style>
     </motion.article>
   );

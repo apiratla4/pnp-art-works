@@ -5,6 +5,9 @@ import { Calendar, Clock, Users, MapPin, Paintbrush, CheckCircle2, GraduationCap
 import axios from "axios";
 import artvideo from "../assets/art_classes_video.mp4";
 
+
+const ENQUIRY_URL = "https://docs.google.com/forms/d/e/1FAIpQLScHGdiGiQwG06LCjQ0BYfLw0QU8_wI9LoM_b4RE2YAJ6_z1RQ/viewform";
+
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 // Card hover
@@ -254,7 +257,8 @@ const ArtClassesPage = () => {
                     <button
                       type="button"
                       className="mono-btn w-100 rounded-pill"
-                      onClick={() => alert(`Enquire / Reserve Seat for ${s.title} (${s.mode})`)}
+                      onClick={() => window.open(ENQUIRY_URL, "_blank", "noopener,noreferrer")}
+                      title={`Enquire / Reserve Seat for ${s.title} (${s.mode})`}
                     >
                       Enquire / Reserve Seat
                     </button>

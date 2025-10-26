@@ -17,6 +17,10 @@ function HomePage() {
   const [loadingProd, setLoadingProd] = useState(false);
   const [prodErr, setProdErr] = useState('');
 
+  // Newsletter State
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState('idle'); // 'idle' | 'sending' | 'success' | 'error'
+
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
@@ -58,8 +62,52 @@ function HomePage() {
       avatar: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop' }
   ];
 
+  const handleNewsletterSubscribe = async () => {
+    if (!newsletterEmail || !/^\S+@\S+\.\S+$/.test(newsletterEmail)) {
+      setNewsletterStatus('error');
+      // Reset after a few seconds
+      setTimeout(() => setNewsletterStatus('idle'), 3000);
+      return;
+    }
+    setNewsletterStatus('sending');
+    try {
+      // Using the endpoint from the Footer component
+      await axios.post(`${API_BASE}/api/newsletters/subscribe`, { email: newsletterEmail });
+      setNewsletterStatus('success');
+      setNewsletterEmail('');
+      // Reset after a few seconds
+      setTimeout(() => setNewsletterStatus('idle'), 5000);
+    } catch (error) {
+      setNewsletterStatus('error');
+      // Reset after a few seconds
+      setTimeout(() => setNewsletterStatus('idle'), 3000);
+    }
+  };
+
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#f1efef' }}>
+      {/* Local styles for icon borders and focus-visible */}
+      <style>{`
+        /* Icon containers */
+        .icon-circle { width: 64px; height: 64px; background: #fff; color: #000; border: 1px solid #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .icon-circle-sm { width: 44px; height: 44px; background: #fff; color: #000; border: 1px solid #000; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+        .icon-circle-md { width: 56px; height: 56px; background: #fff; color: #000; border: 1px solid #000; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+        .icon-chip { display: inline-flex; align-items: center; justify-content: center; border: 1px solid #000; border-radius: 8px; padding: 2px; }
+
+        /* Newsletter input focus (keyboard-friendly) */
+        .form-control:focus {
+          border-color: #000 !important;
+          box-shadow: none !important;
+        }
+        .form-control:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
+        }
+        .form-control:focus:not(:focus-visible) {
+          outline: none; box-shadow: none;
+        }
+      `}</style>
+
       {/* HERO */}
       <section className="position-relative vh-100 overflow-hidden" style={{ backgroundColor: '#f1efef' }}>
         <HeroCarousel autoPlay interval={4000} showArrows showIndicators />
@@ -84,8 +132,7 @@ function HomePage() {
                 viewport={{ once: true }}
               >
                 <div className="d-flex justify-content-center mb-3">
-                  <div className="rounded-circle d-flex align-items-center justify-content-center"
-                       style={{ width: 64, height: 64, background: '#ffffff', color: '#000000' }}>
+                  <div className="icon-circle">
                     <stat.icon size={30} color="#000000" />
                   </div>
                 </div>
@@ -111,8 +158,7 @@ function HomePage() {
                           transition={{ delay: i * 0.05 }} className="col-12 col-md-6 col-lg-3">
                 <div className="card h-100 border-0 shadow-sm rounded-4" style={{ backgroundColor: '#ffffff', color: '#000' }}>
                   <div className="card-body">
-                    <div className="rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
-                         style={{ width: 44, height: 44, background: '#ffffff', color: '#000000' }}>
+                    <div className="icon-circle-sm mb-2">
                       <item.icon size={20} color="#000000" />
                     </div>
                     <h6 className="fw-semibold mb-1" style={{ color: '#000' }}>{item.title}</h6>
@@ -130,8 +176,7 @@ function HomePage() {
         <div className="container">
           <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }}
                       className="text-center mb-4 mb-lg-5">
-            <div className="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-                 style={{ width: 56, height: 56, background: '#ffffff', color: '#000000' }}>
+            <div className="icon-circle-md mb-3">
               <GraduationCap size={26} color="#000000" />
             </div>
             <h2 className="fw-bold mb-2" style={{ color: '#000' }}>Learn with Art Classes</h2>
@@ -150,8 +195,7 @@ function HomePage() {
                           viewport={{ once: true }} transition={{ duration: 0.4, delay: i * 0.05 }}>
                 <div className="card h-100 border-0 shadow-sm rounded-4" style={{ backgroundColor: '#ffffff', color: '#000' }}>
                   <div className="card-body">
-                    <div className="rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
-                         style={{ width: 44, height: 44, background: '#ffffff', color: '#000000' }}>
+                    <div className="icon-circle-sm mb-2">
                       <f.icon size={20} color="#000000" />
                     </div>
                     <h6 className="fw-semibold mb-1" style={{ color: '#000' }}>{f.title}</h6>
@@ -235,12 +279,14 @@ function HomePage() {
                   <div className="card-body p-4">
                     <div className="d-flex mb-3">
                       {Array.from({ length: t.rating }).map((_, i) => (
-                        <Star key={i} size={18} color="#000000" fill="#000000" />
+                        <span key={i} className="icon-chip me-1">
+                          <Star size={18} color="#000000" fill="#000000" />
+                        </span>
                       ))}
                     </div>
                     <p className="fst-italic mb-4" style={{ color: '#000' }}>“{t.text}”</p>
                     <div className="d-flex align-items-center gap-3">
-                      <img src={t.avatar} alt={t.name} className="rounded-circle object-fit-cover" style={{ width: 48, height: 48 }} />
+                      <img src={t.avatar} alt={t.name} className="rounded-circle object-fit-cover" style={{ width: 48, height: 48, border: '1px solid #000' }} />
                       <div>
                         <div className="fw-semibold" style={{ color: '#000' }}>{t.name}</div>
                         <div className="small" style={{ color: '#000' }}>Verified Customer</div>
@@ -254,7 +300,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* NEWSLETTER (black background with auto-invert buttons) */}
+      {/* NEWSLETTER */}
       <section className="py-5 on-dark" style={{ backgroundColor: '#000000' }}>
         <div className="container text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}>
@@ -270,11 +316,27 @@ function HomePage() {
                 placeholder="Enter your email"
                 style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff' }}
                 aria-label="Email address"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                disabled={newsletterStatus === 'sending'}
               />
-              <FancyButton as="button" type="button" className="fancy-sm">
-                Subscribe
+              <FancyButton
+                as="button"
+                type="button"
+                className="fancy-sm"
+                onClick={handleNewsletterSubscribe}
+                disabled={newsletterStatus === 'sending'}
+              >
+                {newsletterStatus === 'sending' ? 'Subscribing...' : 'Subscribe'}
               </FancyButton>
             </div>
+            
+            {newsletterStatus === 'success' && (
+              <p className="mt-3" style={{ color: '#a0ffa0' }}>Thank you for subscribing!</p>
+            )}
+            {newsletterStatus === 'error' && (
+              <p className="mt-3" style={{ color: '#ff9090' }}>Could not subscribe. Please enter a valid email and try again.</p>
+            )}
           </motion.div>
         </div>
       </section>
