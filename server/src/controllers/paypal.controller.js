@@ -1,7 +1,7 @@
 import {
   createPayPalOrder,
   capturePayPalOrder
-} from '../services/paypal.js';
+} from '../config/paypal.js';
 
 // Create order
 export async function paypalCreateOrderController(req, res, next) {
