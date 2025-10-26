@@ -11,7 +11,7 @@ const BASE_URL =
     ? "https://api-m.paypal.com"
     : "https://api-m.sandbox.paypal.com";
 
-// Get OAuth2 Bearer Token
+// 1. Get OAuth2 Bearer Token
 export async function getPayPalAccessToken() {
   const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
   const { data } = await axios.post(
@@ -20,16 +20,19 @@ export async function getPayPalAccessToken() {
     {
       headers: {
         Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
     }
   );
   return data.access_token;
 }
 
-// Create PayPal order
+// 2. Create a PayPal Order
 export async function createPayPalOrder({
-  amount, currency = "USD", returnUrl, cancelUrl,
+  amount,
+  currency = "USD",
+  returnUrl,
+  cancelUrl,
 }) {
   const accessToken = await getPayPalAccessToken();
 
@@ -38,29 +41,30 @@ export async function createPayPalOrder({
     purchase_units: [
       {
         amount: { currency_code: currency, value: amount }
-      }
+      },
     ],
     application_context: {
       brand_name: "PnP Art Studio",
       user_action: "PAY_NOW",
       return_url: returnUrl,
-      cancel_url: cancelUrl
-    }
+      cancel_url: cancelUrl,
+    },
   };
 
   const { data } = await axios.post(
-    `${BASE_URL}/v2/checkout/orders`, orderData,
+    `${BASE_URL}/v2/checkout/orders`,
+    orderData,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
     }
   );
   return data;
 }
 
-// Capture approved PayPal order
+// 3. Capture an approved Order
 export async function capturePayPalOrder(orderId) {
   const accessToken = await getPayPalAccessToken();
   const { data } = await axios.post(
@@ -69,8 +73,8 @@ export async function capturePayPalOrder(orderId) {
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
     }
   );
   return data;

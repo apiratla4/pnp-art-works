@@ -7,13 +7,13 @@ import {
 export async function paypalCreateOrderController(req, res, next) {
   try {
     const { total, currency, returnUrl, cancelUrl } = req.body;
-    if (!total) return res.status(400).json({ error: "Missing total" });
+    if (!total) return res.status(400).json({ error: "Missing order total" });
 
     const order = await createPayPalOrder({
       amount: total,
       currency: currency || "USD",
       returnUrl: returnUrl || "https://pnpartstudio.com/order/success",
-      cancelUrl: cancelUrl || "https://pnpartstudio.com/order/cancel"
+      cancelUrl: cancelUrl || "https://pnpartstudio.com/order/cancel",
     });
 
     res.status(201).json(order);
