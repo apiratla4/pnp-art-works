@@ -26,6 +26,36 @@ export async function getAccessToken() {
   });
   return data.access_token;
 }
+export async function verifyWebhookSignature(req) {
+  if (!PAYPAL_WEBHOOK_ID) {
+    throw new Error('Missing PAYPAL_WEBHOOK_ID');
+  }
+  const transmissionId = req.headers['paypal-transmission-id'];
+  const transmissionTime = req.headers['paypal-transmission-time'];
+  const certUrl = req.headers['paypal-cert-url'];
+  const authAlgo = req.headers['paypal-auth-algo'];
+  const transmissionSig = req.headers['paypal-transmission-sig'];
+  const accessToken = await getAccessToken();
+  const payload = {
+    auth_algo: authAlgo,
+    cert_url: certUrl,
+    transmission_id: transmissionId,
+    transmission_sig: transmissionSig,
+    transmission_time: transmissionTime,
+    webhook_id: PAYPAL_WEBHOOK_ID,
+    webhook_event: req.body,
+  };
+
+  const { data } = await axios({
+    url: `${PAYPAL_BASE_URL}/v1/notifications/verify-webhook-signature`,
+    method: 'post',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    data: payload,
+    timeout: 15000,
+  });
+
+  return data?.verification_status === 'SUCCESS';
+}
 
 function validateBreakdown({ value, breakdown }) {
   const toN = (v) => Number(v || 0);
