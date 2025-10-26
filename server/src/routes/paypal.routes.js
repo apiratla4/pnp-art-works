@@ -1,4 +1,3 @@
-// src/routes/paypal.routes.js
 import express from 'express';
 import {
   createOrderController,

@@ -40,16 +40,16 @@ import BackToTop from "./components/BackToTop";
 // Floating cart
 import FallingCart from "./components/FallingCart";
 
-// NEW: WhatsApp FAB
+// WhatsApp FAB
 import WhatsAppButton from "./components/WhatsAppButton";
 
-// NEW: Timed signup popup (shows after 5s)
+// Timed signup popup (shows after 5s)
 import DiscountPopup from "./components/DiscountPopup";
 
 // PayPal
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
-// Helper rendered inside Router so useLocation works
+// Route-aware cart (uses useLocation)
 const RouteAwareFallingCart = () => {
   const location = useLocation();
   const showFallingCart = location.pathname === "/" || location.pathname.startsWith("/shop");
@@ -67,14 +67,14 @@ const RouteAwareFallingCart = () => {
 };
 
 const App = () => {
-  // Pull the live client id from Vite env and configure JS SDK once at app root
+  // Use live PayPal Client ID from Vite env
   const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || "";
   const paypalOptions = useMemo(
     () => ({
-      clientId: PAYPAL_CLIENT_ID,    // must be a valid Live Client ID
+      "client-id": PAYPAL_CLIENT_ID,
       currency: "USD",
-      intent: "capture",             // JS SDK requires lowercase intent
-      components: "buttons",
+      intent: "capture",
+      components: "buttons"
     }),
     [PAYPAL_CLIENT_ID]
   );
@@ -84,7 +84,6 @@ const App = () => {
       <CartProvider>
         <Router>
           <ScrollToTop />
-
           {/* Sticky-footer wrapper */}
           <div className="d-flex flex-column min-vh-100">
             <Header />
@@ -117,7 +116,7 @@ const App = () => {
 
             <Footer />
 
-            {/* Render only on "/" and "/shop..." */}
+            {/* Floating cart only on "/" and "/shop..." */}
             <RouteAwareFallingCart />
 
             {/* Site-wide floating actions */}

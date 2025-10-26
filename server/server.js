@@ -1,4 +1,3 @@
-// server.js
 import 'dotenv/config';
 import express from 'express';
 import helmet from 'helmet';
@@ -15,8 +14,6 @@ const app = express();
 const isProd = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 4000;
 
-// --- CORS CONFIGURATION ---
-// To allow multiple origins, provide them as an array of strings.
 const corsOptions = {
   origin: ['https://adminpnp.fineflux.com', 'https://pnparts.fineflux.com', 'http://localhost:5175', 'http://localhost:5173', 'https://olivedrab-chimpanzee-910709.hostingersite.com', 'https://darkorange-walrus-800473.hostingersite.com' ,'https://pnpartstudio.com'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
@@ -24,21 +21,15 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
-// --- MIDDLEWARE SETUP ---
 app.set('trust proxy', isProd ? 1 : 0);
 app.disable('x-powered-by');
 app.use(helmet());
 app.use(morgan(isProd ? 'combined' : 'dev'));
-
-// Use the CORS middleware with the updated options
 app.use(cors(corsOptions));
-
-// Parsers
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Rate Limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 100,
@@ -47,24 +38,17 @@ const apiLimiter = rateLimit({
 });
 app.use('/api', apiLimiter);
 
-// Health check endpoint
-app.get('/health', (req, res) =>
-  res.status(200).json({
-    ok: true,
-    env: process.env.NODE_ENV,
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-  })
-);
+app.get('/health', (req, res) => res.status(200).json({
+  ok: true,
+  env: process.env.NODE_ENV,
+  uptime: process.uptime(),
+  timestamp: new Date().toISOString(),
+}));
 
-// API routes
 app.use('/api', routes);
-
-// Error Handling
 app.use(notFound);
 app.use(errorHandler);
 
-// --- SERVER START ---
 async function start() {
   try {
     configureCloudinary();
@@ -75,5 +59,4 @@ async function start() {
     process.exit(1);
   }
 }
-
 start();
