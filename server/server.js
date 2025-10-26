@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 4000;
 // --- CORS CONFIGURATION ---
 // To allow multiple origins, provide them as an array of strings.
 const corsOptions = {
-  origin: ['https://adminpnp.fineflux.com', 'https://pnparts.fineflux.com', 'http://localhost:5175', 'http://localhost:5173'],
+  origin: ['https://adminpnp.fineflux.com', 'https://pnparts.fineflux.com', 'http://localhost:5175', 'http://localhost:5173', 'https://olivedrab-chimpanzee-910709.hostingersite.com', 'https://darkorange-walrus-800473.hostingersite.com' ,'https://pnpartstudio.com'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization'],

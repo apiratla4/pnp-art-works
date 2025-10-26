@@ -6,7 +6,7 @@ import { ShoppingCart, Heart, X } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import CartDropdown from "./CartDropdown";
 import "./Header.css";
-import logo from "../assets/pnplogo2.svg";
+import logo from "../assets/pnpartlogoheader.png";
 import FancyButton from "./FancyButton";
 
 const Header = () => {
@@ -50,7 +50,7 @@ const Header = () => {
     { label: "Digital Prints", to: "/shop/category/digital-prints" },
     { label: "Pencil Sketches", to: "/shop/category/pencil-sketches" },
     { label: "Handcrafted Items", to: "/shop/category/handcrafted-items" },
-    { label: "Limited Editions", to: "/shop/category/limited-editions" }
+    { label: "Limited Editions", to: "/shop/category/limited-editions" },
   ];
 
   const indianProducts = [
@@ -58,7 +58,7 @@ const Header = () => {
     { label: "Kolam peetham", to: "/shop/category/kolam-peetham" },
     { label: "Traditional magnets", to: "/shop/category/traditional-magnets" },
     { label: "Trays", to: "/shop/category/trays" },
-    { label: "Diya holders", to: "/shop/category/diya-holders" }
+    { label: "Diya holders", to: "/shop/category/diya-holders" },
   ];
 
   const handleCartClick = () => {
@@ -74,23 +74,34 @@ const Header = () => {
   const isShopActive = location.pathname.startsWith("/shop");
 
   return (
-    <header className="shadow-sm fixed-top header-bg">
+    <header className="shadow-sm fixed-top header-bg header-text-black">
       <nav className="navbar navbar-expand-lg navbar-light header-bg">
         <div className="container">
-          {/* Brand */}
-          <Link className="navbar-brand d-flex align-items-center" to="/" onClick={handleNavClick}>
-            <motion.img
-              src={logo}
-              alt="PnpArtStudio — by Priyanka Vasishta"
-              className="brand-logo me-2"
-              height={80}
-              width={80}
-              loading="eager"
-              decoding="async"
-              fetchPriority="high"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            />
+          {/* Brand (logo + wordmark) */}
+          <Link
+            className="navbar-brand d-flex align-items-center brand-link"
+            to="/"
+            onClick={handleNavClick}
+            aria-label="PnP art studio — Home"
+          >
+            <div className="brand-wrap d-flex align-items-center gap-2">
+              <motion.img
+                src={logo}
+                alt="PnP art studio logo"
+                className="brand-logo me-2"
+                height={80}
+                width={80}
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              />
+              <div className="brand-text">
+                <span className="header-logo-title">PnPArtStudio</span>
+                <span className="header-logo-subline">by priyanka vasista</span>
+              </div>
+            </div>
           </Link>
 
           {/* Toggler */}
@@ -211,7 +222,6 @@ const Header = () => {
                   </NavLink>
                 </li>
 
-                
                 <li className="nav-item">
                   <NavLink to="/gallery" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
                     Gallery
@@ -258,9 +268,8 @@ const Header = () => {
                 <CartDropdown />
               </li>
 
-              {/* Track Order CTA with Fancy button */}
               <li className="nav-item">
-                <FancyButton to="/track-order" className="ms-lg-2 fancy-sm m-l 2" aria-label="Track Order">
+                <FancyButton to="/track-order" className="ms-lg-2 fancy-sm" aria-label="Track Order">
                   Track Order
                 </FancyButton>
               </li>

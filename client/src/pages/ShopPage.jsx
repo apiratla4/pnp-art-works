@@ -1,6 +1,6 @@
 // src/pages/ShopPage.jsx — API-driven, URL-synced, compact list rows (fixed thumbnails)
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Filter, Grid, List, Search } from "lucide-react";
 import ProductCard from "../components/ProductCard";
@@ -38,9 +38,44 @@ const slugToCategory = (slug) => {
 // USD formatter
 const fmtUSD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
+// --- Image Utility Functions ---
+const FALLBACK_SVG =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 600 600">
+       <rect width="100%" height="100%" fill="white"/>
+       <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="black" font-size="20">No Image</text>
+     </svg>`
+  );
+
+const getCover = (item) => {
+  if (typeof item?.image === "string" && item.image.trim()) return item.image.trim();
+  if (Array.isArray(item?.images) && item.images.length > 0) {
+    const first = item.images.find(Boolean);
+    if (typeof first === "string" && first.trim()) return first.trim();
+    if (first && typeof first === "object") {
+      const v = first.secure_url ?? first.url ?? first.src ?? first.path ?? "";
+      if (typeof v === "string" && v.trim()) return v.trim();
+    }
+  }
+  const maybe = item?.thumbnail ?? item?.cover ?? item?.photo ?? item?.picture ?? "";
+  if (typeof maybe === "string" && maybe.trim()) return maybe.trim();
+  if (maybe && typeof maybe === "object") {
+    const v = maybe.secure_url ?? maybe.url ?? maybe.src ?? maybe.path ?? "";
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return "";
+};
+
+const handleImgError = (e) => {
+  e.currentTarget.onerror = null;
+  e.currentTarget.src = FALLBACK_SVG;
+};
+// -----------------------------
+
 export default function ShopPage() {
   const { category: categorySlug } = useParams();
-  const { items, total, page, totalPages, loading, error, params, updateParam } = useProducts();
+  const { items, total, loading, error, params, updateParam } = useProducts();
 
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
@@ -59,7 +94,7 @@ export default function ShopPage() {
   useEffect(() => {
     const label = slugToCategory(categorySlug);
     updateParam("category", label);
-  }, [categorySlug]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [categorySlug, updateParam]);
 
   useEffect(() => { setSearchTerm(params.q || ""); }, [params.q]);
   useEffect(() => { setMin(params.minPrice || ""); setMax(params.maxPrice || ""); }, [params.minPrice, params.maxPrice]);
@@ -311,35 +346,42 @@ export default function ShopPage() {
             ))}
           </div>
         ) : (
-          // List view: compact rows with fixed 96×96 thumbnail (prevents oversized images)
+          // List view: compact rows with fixed 96×96 thumbnail
           <div className="vstack gap-3 mb-4">
-            {viewItems.map((p, index) => (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.06 }}
-                viewport={{ once: true }}
-                className="card border-0 shadow-sm rounded-4"
-                style={{ background: "#fff", color: "#000" }}
-              >
-                <div className="card-body d-flex align-items-center gap-3">
-                  <div className="flex-shrink-0 rounded-3 overflow-hidden" style={{ width: 96, height: 96, border: "1px solid #000" }}>
-                    <img
-                      src={p.image}
-                      alt={`${p.title} thumbnail`}
-                      className="w-100 h-100"
-                      style={{ objectFit: "cover" }}
-                    />
-                  </div>
-                  <div className="flex-grow-1">
-                    <div className="fw-semibold mb-1" style={{ color: "#000" }}>{p.title}</div>
-                    <div className="small mb-1" style={{ color: "#000" }}>{p.category}</div>
-                    <div className="fw-bold" style={{ color: "#000" }}>{fmtUSD.format(Number(p.price || 0))}</div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+            {viewItems.map((p, index) => {
+              const safeSrc = getCover(p) || FALLBACK_SVG;
+              return (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.06 }}
+                  viewport={{ once: true }}
+                  className="card border-0 shadow-sm rounded-4"
+                  style={{ background: "#fff", color: "#000" }}
+                >
+                  <Link to={`/product-details?id=${p.id}`} className="text-decoration-none">
+                    <div className="card-body d-flex align-items-center gap-3">
+                      <div className="flex-shrink-0 rounded-3 overflow-hidden" style={{ width: 96, height: 96, border: "1px solid #000" }}>
+                        <img
+                          src={safeSrc}
+                          alt={`${p.title} thumbnail`}
+                          className="w-100 h-100"
+                          style={{ objectFit: "cover" }}
+                          onError={handleImgError}
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="flex-grow-1">
+                        <div className="fw-semibold mb-1" style={{ color: "#000" }}>{p.title}</div>
+                        <div className="small mb-1" style={{ color: "#000" }}>{p.category}</div>
+                        <div className="fw-bold" style={{ color: "#000" }}>{fmtUSD.format(Number(p.price || 0))}</div>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         )}
 

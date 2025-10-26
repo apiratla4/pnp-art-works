@@ -17,6 +17,10 @@ function HomePage() {
   const [loadingProd, setLoadingProd] = useState(false);
   const [prodErr, setProdErr] = useState('');
 
+  // Newsletter State
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState('idle'); // 'idle' | 'sending' | 'success' | 'error'
+
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
@@ -57,6 +61,28 @@ function HomePage() {
     { id: 3, name: 'Emily Rodriguez', text: "I've ordered multiple pieces and each one is a masterpiece. Highly recommend for art lovers!", rating: 5,
       avatar: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop' }
   ];
+
+  const handleNewsletterSubscribe = async () => {
+    if (!newsletterEmail || !/^\S+@\S+\.\S+$/.test(newsletterEmail)) {
+      setNewsletterStatus('error');
+      // Reset after a few seconds
+      setTimeout(() => setNewsletterStatus('idle'), 3000);
+      return;
+    }
+    setNewsletterStatus('sending');
+    try {
+      // Using the endpoint from the Footer component
+      await axios.post(`${API_BASE}/api/newsletters/subscribe`, { email: newsletterEmail });
+      setNewsletterStatus('success');
+      setNewsletterEmail('');
+      // Reset after a few seconds
+      setTimeout(() => setNewsletterStatus('idle'), 5000);
+    } catch (error) {
+      setNewsletterStatus('error');
+      // Reset after a few seconds
+      setTimeout(() => setNewsletterStatus('idle'), 3000);
+    }
+  };
 
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#f1efef' }}>
@@ -274,7 +300,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* NEWSLETTER (black background with auto-invert buttons) */}
+      {/* NEWSLETTER */}
       <section className="py-5 on-dark" style={{ backgroundColor: '#000000' }}>
         <div className="container text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}>
@@ -290,11 +316,27 @@ function HomePage() {
                 placeholder="Enter your email"
                 style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff' }}
                 aria-label="Email address"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                disabled={newsletterStatus === 'sending'}
               />
-              <FancyButton as="button" type="button" className="fancy-sm">
-                Subscribe
+              <FancyButton
+                as="button"
+                type="button"
+                className="fancy-sm"
+                onClick={handleNewsletterSubscribe}
+                disabled={newsletterStatus === 'sending'}
+              >
+                {newsletterStatus === 'sending' ? 'Subscribing...' : 'Subscribe'}
               </FancyButton>
             </div>
+            
+            {newsletterStatus === 'success' && (
+              <p className="mt-3" style={{ color: '#a0ffa0' }}>Thank you for subscribing!</p>
+            )}
+            {newsletterStatus === 'error' && (
+              <p className="mt-3" style={{ color: '#ff9090' }}>Could not subscribe. Please enter a valid email and try again.</p>
+            )}
           </motion.div>
         </div>
       </section>
