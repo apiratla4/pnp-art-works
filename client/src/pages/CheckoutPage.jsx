@@ -2,23 +2,16 @@
 import React, { useMemo, useState, useCallback, useRef } from 'react';
 import { CreditCard, Truck, ShieldCheck, Percent, Tag } from 'lucide-react';
 import axios from 'axios';
-import { PayPalButtons } from '@paypal/react-paypal-js'; // Provider stays at app root
+import { PayPalButtons } from '@paypal/react-paypal-js';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import FancyButton from '../components/FancyButton';
 
-// API helper
 const API_ORIGIN = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const api = (path) => `${API_ORIGIN}/api${path}`;
-
-// Optional: env presence check for UI message only
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 const hasClient = typeof PAYPAL_CLIENT_ID === 'string' && PAYPAL_CLIENT_ID.trim().length > 0;
-
-// USD formatter
 const fmtUSD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-
-// Fallback image path
 const FALLBACK_IMG = '/placeholder.png';
 
 const toUrl = (entry) => {
@@ -60,14 +53,13 @@ export default function CheckoutPage() {
     zip: '',
     country: 'US',
     sameAsShipping: true,
-    paymentMethod: 'cod', // cod | paypal
+    paymentMethod: 'cod',
     promo: ''
   });
 
   const [touched, setTouched] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Coupons
   const [coupon, setCoupon] = useState({ code: '', percent: 0, status: '' });
   const [promoMsg, setPromoMsg] = useState('');
 
@@ -101,7 +93,6 @@ export default function CheckoutPage() {
   const setField = useCallback((name, value) => setForm((f) => ({ ...f, [name]: value })), []);
   const onBlur = useCallback((e) => setTouched((t) => ({ ...t, [e.target.name]: true })), []);
 
-  // Promo
   const applyPromo = useCallback(async (e) => {
     e.preventDefault();
     const raw = form.promo.trim();
@@ -124,7 +115,6 @@ export default function CheckoutPage() {
     }
   }, [form.promo]);
 
-  // Payloads for backend
   const itemsPayload = useMemo(() => items.map((it) => ({
     productId: it.id,
     name: it.title,
@@ -213,7 +203,6 @@ export default function CheckoutPage() {
     }
   }, [errors, form.paymentMethod, placeCodOrder]);
 
-  // PayPal: keep approvalLink for redirect fallback
   const approvalLinkRef = useRef(null);
 
   const createPaypalOrder = useCallback(async () => {
@@ -234,7 +223,6 @@ export default function CheckoutPage() {
         payload,
         { headers: { 'Content-Type': 'application/json' } }
       );
-      // store approvalLink for fallback
       approvalLinkRef.current = data?.approvalLink || null;
       return data?.id;
     } catch (err) {
@@ -262,20 +250,14 @@ export default function CheckoutPage() {
   const onErrorPaypal = useCallback((err) => {
     console.error('PayPal error:', err);
     const msg = String(err?.message || err || '').toLowerCase();
-    // Fallback: open approval link if iframe session failed (e.g., global_session_not_found)
     if (msg.includes('global_session_not_found') && approvalLinkRef.current) {
-      // Navigate to PayPal approval to complete checkout via redirect flow
       window.location.href = approvalLinkRef.current;
       return;
     }
     alert('PayPal error. Please try again.');
   }, []);
 
-  const onCancelPaypal = useCallback(() => {
-    // No-op: user canceled in PayPal
-  }, []);
-
-  // Re-render key for amount/currency changes only
+  const onCancelPaypal = useCallback(() => {}, []);
   const paypalKey = `pp-${totals.grandTotal}-${totals.currency || 'USD'}`;
 
   return (
@@ -285,9 +267,8 @@ export default function CheckoutPage() {
           <h1 className="fw-bold h3 mb-1" style={{ color: '#000' }}>Checkout</h1>
           <p className="mb-0" style={{ color: '#000' }}>Secure payment and fast delivery</p>
         </div>
-
         <div className="row g-4 g-lg-5">
-          {/* Form */}
+          {/* FORM */}
           <div className="col-12 col-lg-7">
             <form id="checkoutForm" noValidate onSubmit={onSubmit} className="needs-validation">
               <div className="card border-0 shadow-sm rounded-4 mb-3" style={{ background: '#fff', color: '#000' }}>
@@ -295,45 +276,53 @@ export default function CheckoutPage() {
                   <h5 className="fw-semibold mb-3 d-flex align-items-center gap-2" style={{ color: '#000' }}>
                     <Truck size={18} /> Shipping address
                   </h5>
-
                   <div className="row g-3">
                     <div className="col-sm-6">
-                      <label className="form-label">First name</label>
+                      <label className="form-label" htmlFor="firstName">First name</label>
                       <input
-                        name="firstName" type="text"
+                        id="firstName"
+                        name="firstName"
+                        autoComplete="given-name"
+                        type="text"
                         className={`form-control ${touched.firstName && errors.firstName ? 'is-invalid' : ''}`}
                         value={form.firstName}
                         onChange={(e) => setField('firstName', e.target.value)}
                         onBlur={onBlur} required />
                       <div className="invalid-feedback">First name is required</div>
                     </div>
-
                     <div className="col-sm-6">
-                      <label className="form-label">Last name</label>
+                      <label className="form-label" htmlFor="lastName">Last name</label>
                       <input
-                        name="lastName" type="text"
+                        id="lastName"
+                        name="lastName"
+                        autoComplete="family-name"
+                        type="text"
                         className={`form-control ${touched.lastName && errors.lastName ? 'is-invalid' : ''}`}
                         value={form.lastName}
                         onChange={(e) => setField('lastName', e.target.value)}
                         onBlur={onBlur} required />
                       <div className="invalid-feedback">Last name is required</div>
                     </div>
-
                     <div className="col-12">
-                      <label className="form-label">Email</label>
+                      <label className="form-label" htmlFor="email">Email</label>
                       <input
-                        name="email" type="email"
+                        id="email"
+                        name="email"
+                        autoComplete="email"
+                        type="email"
                         className={`form-control ${touched.email && errors.email ? 'is-invalid' : ''}`}
                         value={form.email}
                         onChange={(e) => setField('email', e.target.value)}
                         onBlur={onBlur} required />
                       <div className="invalid-feedback">{errors.email || 'Valid email required'}</div>
                     </div>
-
                     <div className="col-12">
-                      <label className="form-label">Phone (optional)</label>
+                      <label className="form-label" htmlFor="phone">Phone (optional)</label>
                       <input
-                        name="phone" type="tel"
+                        id="phone"
+                        name="phone"
+                        autoComplete="tel"
+                        type="tel"
                         className={`form-control ${touched.phone && errors.phone ? 'is-invalid' : ''}`}
                         value={form.phone}
                         onChange={(e) => setField('phone', e.target.value)}
@@ -341,31 +330,39 @@ export default function CheckoutPage() {
                         placeholder="+1 555 555 5555" />
                       <div className="invalid-feedback">{errors.phone}</div>
                     </div>
-
                     <div className="col-12">
-                      <label className="form-label">Address line 1</label>
+                      <label className="form-label" htmlFor="address1">Address line 1</label>
                       <input
-                        name="address1" type="text"
+                        id="address1"
+                        name="address1"
+                        autoComplete="address-line1"
+                        type="text"
                         className={`form-control ${touched.address1 && errors.address1 ? 'is-invalid' : ''}`}
                         value={form.address1}
                         onChange={(e) => setField('address1', e.target.value)}
                         onBlur={onBlur} required />
                       <div className="invalid-feedback">Address is required</div>
                     </div>
-
                     <div className="col-12">
-                      <label className="form-label">Address line 2 (optional)</label>
+                      <label className="form-label" htmlFor="address2">Address line 2 (optional)</label>
                       <input
-                        name="address2" type="text" className="form-control"
+                        id="address2"
+                        name="address2"
+                        autoComplete="address-line2"
+                        type="text"
+                        className="form-control"
                         value={form.address2}
                         onChange={(e) => setField('address2', e.target.value)}
-                        onBlur={onBlur} />
+                        onBlur={onBlur}
+                      />
                     </div>
-
                     <div className="col-md-5">
-                      <label className="form-label">Country</label>
+                      <label className="form-label" htmlFor="country">Country</label>
                       <select
-                        name="country" className="form-select"
+                        id="country"
+                        name="country"
+                        autoComplete="country"
+                        className="form-select"
                         value={form.country}
                         onChange={(e) => setField('country', e.target.value)}>
                         <option value="US">United States</option>
@@ -374,22 +371,26 @@ export default function CheckoutPage() {
                         <option value="AE">UAE</option>
                       </select>
                     </div>
-
                     <div className="col-md-4">
-                      <label className="form-label">State</label>
+                      <label className="form-label" htmlFor="state">State</label>
                       <input
-                        name="state" type="text"
+                        id="state"
+                        name="state"
+                        autoComplete="address-level1"
+                        type="text"
                         className={`form-control ${touched.state && errors.state ? 'is-invalid' : ''}`}
                         value={form.state}
                         onChange={(e) => setField('state', e.target.value)}
                         onBlur={onBlur} required />
                       <div className="invalid-feedback">State is required</div>
                     </div>
-
                     <div className="col-md-3">
-                      <label className="form-label">ZIP</label>
+                      <label className="form-label" htmlFor="zip">ZIP</label>
                       <input
-                        name="zip" type="text"
+                        id="zip"
+                        name="zip"
+                        autoComplete="postal-code"
+                        type="text"
                         className={`form-control ${touched.zip && errors.zip ? 'is-invalid' : ''}`}
                         value={form.zip}
                         onChange={(e) => setField('zip', e.target.value)}
@@ -397,10 +398,12 @@ export default function CheckoutPage() {
                       <div className="invalid-feedback">ZIP is required</div>
                     </div>
                   </div>
-
                   <div className="form-check mt-3">
                     <input
-                      id="sameAsShipping" className="form-check-input" type="checkbox"
+                      id="sameAsShipping"
+                      name="sameAsShipping"
+                      className="form-check-input"
+                      type="checkbox"
                       checked={form.sameAsShipping}
                       onChange={(e) => setField('sameAsShipping', e.target.checked)} />
                     <label className="form-check-label" htmlFor="sameAsShipping">
@@ -415,20 +418,24 @@ export default function CheckoutPage() {
                   <h5 className="fw-semibold mb-3 d-flex align-items-center gap-2" style={{ color: '#000' }}>
                     <CreditCard size={18} /> Payment
                   </h5>
-
                   <div className="form-check mb-2">
                     <input
-                      id="pm-cod" className="form-check-input" type="radio" name="paymentMethod"
+                      id="pm-cod"
+                      name="paymentMethod"
+                      className="form-check-input"
+                      type="radio"
                       checked={form.paymentMethod === 'cod'}
                       onChange={() => setField('paymentMethod', 'cod')} />
                     <label className="form-check-label" htmlFor="pm-cod">
                       Cash on Delivery (COD)
                     </label>
                   </div>
-
                   <div className="form-check mb-3">
                     <input
-                      id="pm-paypal" className="form-check-input" type="radio" name="paymentMethod"
+                      id="pm-paypal"
+                      name="paymentMethod"
+                      className="form-check-input"
+                      type="radio"
                       checked={form.paymentMethod === 'paypal'}
                       onChange={() => setField('paymentMethod', 'paypal')}
                       disabled={items.length === 0} />
@@ -436,7 +443,6 @@ export default function CheckoutPage() {
                       PayPal
                     </label>
                   </div>
-
                   {form.paymentMethod === 'paypal' ? (
                     <div className="mb-0">
                       {hasClient ? (
@@ -471,8 +477,6 @@ export default function CheckoutPage() {
                   )}
                 </div>
               </div>
-
-              {/* Place order button (COD only) */}
               {form.paymentMethod === 'cod' && (
                 <div className="d-grid mt-3">
                   <FancyButton
@@ -488,7 +492,7 @@ export default function CheckoutPage() {
             </form>
           </div>
 
-          {/* Summary */}
+          {/* SUMMARY */}
           <div className="col-12 col-lg-5">
             <div className="card border-0 shadow-sm rounded-4 mb-3" style={{ background: '#fff', color: '#000' }}>
               <div className="card-body">
@@ -544,7 +548,6 @@ export default function CheckoutPage() {
                 )}
               </div>
             </div>
-
             {/* Promo */}
             <div className="card border-0 shadow-sm rounded-4" style={{ background: '#fff', color: '#000' }}>
               <div className="card-body">
@@ -553,8 +556,14 @@ export default function CheckoutPage() {
                 </h6>
                 <form onSubmit={applyPromo} className="d-flex gap-2">
                   <input
-                    type="text" className="form-control" placeholder="Enter code"
-                    value={form.promo} onChange={(e) => setField('promo', e.target.value.toUpperCase())} />
+                    type="text"
+                    id="promo"
+                    name="promo"
+                    autoComplete="off"
+                    className="form-control"
+                    placeholder="Enter code"
+                    value={form.promo}
+                    onChange={(e) => setField('promo', e.target.value.toUpperCase())} />
                   <FancyButton as="button" type="submit" className="fancy-sm d-inline-flex align-items-center gap-2">
                     <Percent size={16} />
                     Apply
@@ -565,7 +574,6 @@ export default function CheckoutPage() {
             </div>
           </div>
         </div>
-
         {/* Local overrides */}
         <style>{`
           .form-control:focus,

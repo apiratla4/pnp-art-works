@@ -1,55 +1,35 @@
-import Order from '../models/Order.js';
 import {
-  paypalCreateOrderAxios,
-  paypalCaptureOrderAxios
-  // Remove verifyWebhookSignature unless you want webhook support
-} from '../config/paypal.js';
+  createPayPalOrder,
+  capturePayPalOrder
+} from '../services/paypal.js';
 
-export async function createOrderController(req, res, next) {
+// Create order
+export async function paypalCreateOrderController(req, res, next) {
   try {
-    const {
-      totals, items, referenceId, brandName,
-      shippingAddress, billingAddress, customer, userId,
-    } = req.body || {};
+    const { total, currency, returnUrl, cancelUrl } = req.body;
+    if (!total) return res.status(400).json({ error: "Missing total" });
 
-    if (!totals?.grandTotal) return res.status(400).json({ error: 'Missing totals.grandTotal' });
-    if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'No items' });
-
-    const { order: ppOrder, approvalLink } = await paypalCreateOrderAxios({
-      totals, items, referenceId, brandName, shippingAddress,
+    const order = await createPayPalOrder({
+      amount: total,
+      currency: currency || "USD",
+      returnUrl: returnUrl || "https://yourdomain.com/payment/success",
+      cancelUrl: cancelUrl || "https://yourdomain.com/payment/cancel"
     });
 
-    const doc = await Order.create({
-      userId,
-      customer, items, shippingAddress, billingAddress, totals,
-      referenceId, paypalOrderId: ppOrder?.id, intent: ppOrder?.intent,
-      status: ppOrder?.status, approvalLink, paypalCreateResponse: ppOrder,
-    });
-
-    return res.status(201).json({
-      id: ppOrder?.id, status: ppOrder?.status, approvalLink,
-      order: { _id: doc._id, referenceId: doc.referenceId },
-    });
-  } catch (err) { next(err); }
+    res.status(201).json(order); // Frontend should redirect user to approve link!
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function captureOrderController(req, res, next) {
+export async function paypalCaptureOrderController(req, res, next) {
   try {
-    const { orderId } = req.body || {};
-    if (!orderId) return res.status(400).json({ error: 'Missing orderId' });
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ error: "Missing orderId" });
 
-    const captureRes = await paypalCaptureOrderAxios(orderId);
-    const status = captureRes?.status;
-    const captures = captureRes?.purchase_units?.flatMap((pu) => pu?.payments?.captures || []) || [];
-
-    const updated = await Order.findOneAndUpdate(
-      { paypalOrderId: orderId },
-      { status, paypalCaptureResponse: captureRes, $set: { captures } },
-      { new: true }
-    );
-
-    return res.status(200).json({
-      ok: true, status, orderId, captures, order: updated,
-    });
-  } catch (err) { next(err); }
+    const result = await capturePayPalOrder(orderId);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
 }

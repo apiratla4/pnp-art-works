@@ -1,148 +1,84 @@
-import axios from 'axios';
-import crypto from 'crypto';
+import axios from "axios";
 
 const {
-  PAYPAL_BASE_URL = 'https://api-m.paypal.com',
   PAYPAL_CLIENT_ID,
   PAYPAL_CLIENT_SECRET,
-  PAYPAL_WEBHOOK_ID,
-  BASE_URL,
+  PAYPAL_MODE,
 } = process.env;
 
-function assertCreds() {
-  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET)
-    throw new Error('Missing PayPal credentials');
-}
+const BASE_URL =
+  PAYPAL_MODE === "live"
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com";
 
-export async function getAccessToken() {
-  assertCreds();
-  const { data } = await axios({
-    url: `${PAYPAL_BASE_URL}/v1/oauth2/token`,
-    method: 'post',
-    data: 'grant_type=client_credentials',
-    auth: { username: PAYPAL_CLIENT_ID, password: PAYPAL_CLIENT_SECRET },
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    timeout: 15000,
-  });
+// 1. Authenticate and get access token
+export async function getPayPalAccessToken() {
+  const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
+  const { data } = await axios.post(
+    `${BASE_URL}/v1/oauth2/token`,
+    "grant_type=client_credentials",
+    {
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  );
   return data.access_token;
 }
 
-function validateBreakdown({ value, breakdown }) {
-  const toN = (v) => Number(v || 0);
-  const sum =
-    toN(breakdown?.item_total?.value) +
-    toN(breakdown?.tax_total?.value) +
-    toN(breakdown?.shipping?.value) +
-    toN(breakdown?.handling?.value) +
-    toN(breakdown?.insurance?.value) -
-    toN(breakdown?.shipping_discount?.value) -
-    toN(breakdown?.discount?.value);
-  return Number(Number(sum).toFixed(2)) === Number(Number(value).toFixed(2));
-}
-
-function buildPurchaseUnit({ totals, items, shippingAddress }) {
-  const currency = (totals?.currency || 'USD').toUpperCase();
-  const toMoney = (n) => Number(n ?? 0).toFixed(2);
-
-  const itemsForPayPal = (items || []).map((it) => ({
-    name: String(it.name || it.title || 'Item').slice(0, 127),
-    quantity: String(it.qty || 1),
-    unit_amount: { currency_code: currency, value: toMoney(it.price || 0) },
-  }));
-
-  const itemTotal = toMoney(
-    (items || []).reduce((sum, it) => sum + (Number(it.price || 0) * Number(it.qty || 1)), 0)
-  );
-  const shipping = toMoney(totals?.shipping || 0);
-  const tax = toMoney(totals?.tax || 0);
-  const discount = toMoney(totals?.discount || 0);
-  const grand = toMoney(totals?.grandTotal || 0);
-
-  const breakdown = { item_total: { currency_code: currency, value: itemTotal } };
-  if (Number(tax) > 0) breakdown.tax_total = { currency_code: currency, value: tax };
-  if (Number(shipping) > 0) breakdown.shipping = { currency_code: currency, value: shipping };
-  if (Number(discount) > 0) breakdown.discount = { currency_code: currency, value: discount };
-
-  if (!validateBreakdown({ value: grand, breakdown })) {
-    throw new Error('Amount breakdown does not sum to total');
-  }
-
-  const unit = {
-    reference_id: 'default',
-    amount: { currency_code: currency, value: grand, breakdown },
-    items: itemsForPayPal,
-  };
-
-  if (shippingAddress?.fullName) {
-    unit.shipping = {
-      name: { full_name: shippingAddress.fullName },
-      address: {
-        address_line_1: shippingAddress.line1 || '',
-        address_line_2: shippingAddress.line2 || '',
-        admin_area_2: shippingAddress.city || '',
-        admin_area_1: shippingAddress.state || '',
-        postal_code: shippingAddress.postalCode || '',
-        country_code: (shippingAddress.countryCode || 'US').toUpperCase(),
-      },
-    };
-  }
-
-  return unit;
-}
-
-export async function paypalCreateOrderAxios({
-  totals, items, referenceId = `order-${Date.now()}`,
-  brandName = 'pnp art studio', shippingAddress,
+// 2. Create an order
+export async function createPayPalOrder({
+  amount,
+  currency = "USD",
+  returnUrl,
+  cancelUrl
 }) {
-  const accessToken = await getAccessToken();
-  const idempotencyKey = crypto.randomUUID();
+  const accessToken = await getPayPalAccessToken();
 
-  const purchaseUnit = buildPurchaseUnit({ totals, items, shippingAddress });
-  purchaseUnit.reference_id = referenceId;
-
-  const application_context = {
-    user_action: 'PAY_NOW',
-    brand_name: brandName,
-    shipping_preference: shippingAddress?.fullName ? 'SET_PROVIDED_ADDRESS' : 'GET_FROM_FILE',
-    ...(BASE_URL && {
-      return_url: `${BASE_URL}/complete-order`,
-      cancel_url: `${BASE_URL}/cancel-order`
-    })
+  const orderData = {
+    intent: "CAPTURE",
+    purchase_units: [
+      {
+        amount: {
+          currency_code: currency,
+          value: amount
+        }
+      }
+    ],
+    application_context: {
+      brand_name: "Your Brand Name",
+      user_action: "PAY_NOW",
+      return_url: returnUrl,
+      cancel_url: cancelUrl
+    }
   };
 
-  const { data } = await axios({
-    url: `${PAYPAL_BASE_URL}/v2/checkout/orders`,
-    method: 'post',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      'PayPal-Request-Id': idempotencyKey,
-      Prefer: 'return=representation',
-    },
-    data: {
-      intent: 'CAPTURE',
-      purchase_units: [purchaseUnit],
-      application_context,
-    },
-    timeout: 20000,
-  });
-
-  const approvalLink = (data?.links || []).find((l) => l.rel === 'approve')?.href || null;
-  return { order: data, approvalLink };
+  const { data } = await axios.post(
+    `${BASE_URL}/v2/checkout/orders`,
+    orderData,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      }
+    }
+  );
+  return data; // Contains id, status, links for approval, etc.
 }
 
-export async function paypalCaptureOrderAxios(orderId) {
-  const accessToken = await getAccessToken();
-  const idempotencyKey = crypto.randomUUID();
-  const { data } = await axios({
-    url: `${PAYPAL_BASE_URL}/v2/checkout/orders/${orderId}/capture`,
-    method: 'post',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      'PayPal-Request-Id': idempotencyKey,
-    },
-    timeout: 20000,
-  });
+// 3. Capture an approved order
+export async function capturePayPalOrder(orderId) {
+  const accessToken = await getPayPalAccessToken();
+  const { data } = await axios.post(
+    `${BASE_URL}/v2/checkout/orders/${orderId}/capture`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      }
+    }
+  );
   return data;
 }
