@@ -11,7 +11,7 @@ const BASE_URL =
     ? "https://api-m.paypal.com"
     : "https://api-m.sandbox.paypal.com";
 
-// 1. Authenticate and get access token
+// Get OAuth2 Bearer Token
 export async function getPayPalAccessToken() {
   const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
   const { data } = await axios.post(
@@ -27,12 +27,9 @@ export async function getPayPalAccessToken() {
   return data.access_token;
 }
 
-// 2. Create an order
+// Create PayPal order
 export async function createPayPalOrder({
-  amount,
-  currency = "USD",
-  returnUrl,
-  cancelUrl
+  amount, currency = "USD", returnUrl, cancelUrl,
 }) {
   const accessToken = await getPayPalAccessToken();
 
@@ -40,14 +37,11 @@ export async function createPayPalOrder({
     intent: "CAPTURE",
     purchase_units: [
       {
-        amount: {
-          currency_code: currency,
-          value: amount
-        }
+        amount: { currency_code: currency, value: amount }
       }
     ],
     application_context: {
-      brand_name: "Your Brand Name",
+      brand_name: "PnP Art Studio",
       user_action: "PAY_NOW",
       return_url: returnUrl,
       cancel_url: cancelUrl
@@ -55,8 +49,7 @@ export async function createPayPalOrder({
   };
 
   const { data } = await axios.post(
-    `${BASE_URL}/v2/checkout/orders`,
-    orderData,
+    `${BASE_URL}/v2/checkout/orders`, orderData,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -64,10 +57,10 @@ export async function createPayPalOrder({
       }
     }
   );
-  return data; // Contains id, status, links for approval, etc.
+  return data;
 }
 
-// 3. Capture an approved order
+// Capture approved PayPal order
 export async function capturePayPalOrder(orderId) {
   const accessToken = await getPayPalAccessToken();
   const { data } = await axios.post(

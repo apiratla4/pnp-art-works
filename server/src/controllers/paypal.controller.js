@@ -3,7 +3,7 @@ import {
   capturePayPalOrder
 } from '../config/paypal.js';
 
-// Create order
+// POST /api/paypal/create-order
 export async function paypalCreateOrderController(req, res, next) {
   try {
     const { total, currency, returnUrl, cancelUrl } = req.body;
@@ -12,16 +12,17 @@ export async function paypalCreateOrderController(req, res, next) {
     const order = await createPayPalOrder({
       amount: total,
       currency: currency || "USD",
-      returnUrl: returnUrl || "https://yourdomain.com/payment/success",
-      cancelUrl: cancelUrl || "https://yourdomain.com/payment/cancel"
+      returnUrl: returnUrl || "https://pnpartstudio.com/order/success",
+      cancelUrl: cancelUrl || "https://pnpartstudio.com/order/cancel"
     });
 
-    res.status(201).json(order); // Frontend should redirect user to approve link!
+    res.status(201).json(order);
   } catch (err) {
     next(err);
   }
 }
 
+// POST /api/paypal/capture-order
 export async function paypalCaptureOrderController(req, res, next) {
   try {
     const { orderId } = req.body;
