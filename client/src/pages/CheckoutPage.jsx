@@ -64,7 +64,7 @@ export default function CheckoutPage() {
 
   const items = state.items || [];
   const subtotal = useMemo(
-    () => items.reduce((sum, it) => sum + Number(it.price) * Number(it.quantity || 1), 0),
+    () => items.reduce((sum, it) => sum + Number(it.price) * Number(it.quantity || it.qty || 1), 0),
     [items]
   );
   const shipping = subtotal > 50 ? 0 : 4.99;
@@ -114,10 +114,10 @@ export default function CheckoutPage() {
 
   const itemsPayload = useMemo(() => items.map(it => ({
     productId: it.id,
-    name: it.title,
-    qty: Number(it.quantity || 1),
+    name: it.name || it.title || '',
+    quantity: Number(it.qty ?? it.quantity ?? 1),
     price: Number(it.price),
-    total: Number(it.price) * Number(it.quantity || 1),
+    total: Number(it.price) * Number(it.qty ?? it.quantity ?? 1),
     variant: it.variant || '',
     description: it.description || '',
     image: getCover(it) || '',
@@ -128,7 +128,7 @@ export default function CheckoutPage() {
   })), [items]);
 
   const shippingAddress = useMemo(() => ({
-    fullName: `${form.firstName} ${form.lastName}`,
+    fullName: `${form.firstName} ${form.lastName}`.trim(),
     line1: form.address1,
     line2: form.address2,
     city: form.city,
@@ -143,7 +143,7 @@ export default function CheckoutPage() {
     () => form.sameAsShipping
       ? { ...shippingAddress }
       : {
-          fullName: `${form.firstName} ${form.lastName}`,
+          fullName: `${form.firstName} ${form.lastName}`.trim(),
           line1: form.address1,
           line2: form.address2,
           city: form.city,
@@ -213,6 +213,7 @@ export default function CheckoutPage() {
         },
         shippingAddress,
         billingAddress,
+        totals,
         returnUrl: "https://pnpartstudio.com/order/success",
         cancelUrl: "https://pnpartstudio.com/order/cancel"
       }, {
@@ -221,10 +222,10 @@ export default function CheckoutPage() {
       approvalLinkRef.current = data?.approvalLink || null;
       return data?.id;
     } catch (err) {
-      console.error('Create order failed:', err);
+      console.error('Create order failed:', err?.message || err);
       throw err;
     }
-  }, [errors, itemsPayload, form, shippingAddress, billingAddress]);
+  }, [errors, itemsPayload, form, shippingAddress, billingAddress, totals]);
 
   const onApprovePaypal = useCallback(async (data) => {
     try {
@@ -542,19 +543,19 @@ export default function CheckoutPage() {
                       <div key={it.id} className="d-flex align-items-center">
                         <img
                           src={getCover(it) || FALLBACK_IMG}
-                          alt={it.title}
+                          alt={it.name || it.title}
                           className="rounded me-3 object-fit-cover"
                           style={{ width: 56, height: 56, border: '1px solid #000' }}
                           onError={handleImgError}
                         />
                         <div className="flex-grow-1" style={{ color: '#000' }}>
-                          <div className="small fw-semibold">{it.title}</div>
+                          <div className="small fw-semibold">{it.name || it.title}</div>
                           <div className="small">
-                            {it.category} • Qty {it.quantity || 1}
+                            {it.category} • Qty {it.qty || it.quantity || 1}
                           </div>
                         </div>
                         <div className="small fw-semibold" style={{ color: '#000' }}>
-                          {fmtUSD.format(it.price * (it.quantity || 1))}
+                          {fmtUSD.format(it.price * (it.qty || it.quantity || 1))}
                         </div>
                       </div>
                     ))}

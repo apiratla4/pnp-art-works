@@ -1,22 +1,8 @@
-// admin/src/pages/OrdersPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
-  Receipt,
-  Eye,
-  X,
-  CheckCircle2,
-  XCircle,
-  RefreshCw,
-  Search,
-  Filter,
-  Download,
-  Calendar,
-  DollarSign,
-  Package,
-  User,
-  ChevronRight,
-  TrendingUp,
+  Receipt, Eye, X, CheckCircle2, XCircle, RefreshCw, Search, Filter,
+  Download, Calendar, DollarSign, Package, User, ChevronRight, TrendingUp
 } from "lucide-react";
 import { toast } from "react-toastify";
 import "./OrdersPage.css";
@@ -72,130 +58,73 @@ const OrdersPage = () => {
   const load = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(ORDERS_URL, { withCredentials: true });
+      const res = await axios.get(ORDERS_URL);
       setItems(Array.isArray(res.data?.items) ? res.data.items : []);
-    } catch (e) {
-      console.error(e);
+    } catch {
       toast.error("Failed to load orders");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   const updateStatus = async (id, status) => {
     try {
-      const { data } = await axios.patch(
-        `${ORDERS_URL}/${id}`,
-        { status },
-        { withCredentials: true }
-      );
+      const { data } = await axios.patch(`${ORDERS_URL}/${id}`, { status });
       setItems((prev) =>
         prev.map((o) =>
           o._id === id ? { ...o, status: data?.status ?? status } : o
         )
       );
       toast.success(`Status updated to ${status}`);
-    } catch (e) {
-      console.error(e);
+    } catch {
       toast.error("Failed to update status");
     }
   };
-
   const markFulfilled = (id) => updateStatus(id, "fulfilled");
   const markUnfulfilled = (id) => updateStatus(id, "unfulfilled");
 
-  const getStatusConfig = (status) => {
-    return (
-      STATUS_OPTIONS.find((s) => s.value === status) || STATUS_OPTIONS[0]
-    );
-  };
+  const getStatusConfig = (status) =>
+    STATUS_OPTIONS.find((s) => s.value === status) || STATUS_OPTIONS[0];
 
   return (
     <div className="orders-page">
       <div className="orders-header">
-        <div className="orders-header-content">
-          <div className="orders-title-section">
+        <div className="orders-header-top">
+          <div>
             <h1 className="orders-title">Orders Management</h1>
-            <p className="orders-subtitle">
-              Track and manage all your orders in one place
-            </p>
+            <div className="orders-subtitle">
+              Manage all customer orders here
+            </div>
           </div>
           <div className="orders-actions">
-            <button
-              className="btn-icon-primary"
-              onClick={load}
-              disabled={loading}
-            >
-              <RefreshCw size={18} className={loading ? "spin" : ""} />
-              <span>Refresh</span>
+            <button className="order-btn-main" onClick={load} disabled={loading}>
+              <RefreshCw size={19} className={loading ? "spin" : ""} />Refresh
             </button>
-            <button className="btn-icon-secondary">
-              <Download size={18} />
-              <span className="hide-mobile">Export</span>
+            <button className="order-btn-outline">
+              <Download size={18} />Export
             </button>
           </div>
         </div>
-
         <div className="stats-grid">
-          <div className="stat-card stat-card-primary">
-            <div className="stat-icon">
-              <Package size={24} />
-            </div>
-            <div className="stat-content">
-              <p className="stat-label">Total Orders</p>
-              <h3 className="stat-value">{stats.total}</h3>
-            </div>
-          </div>
-
-          <div className="stat-card stat-card-success">
-            <div className="stat-icon">
-              <DollarSign size={24} />
-            </div>
-            <div className="stat-content">
-              <p className="stat-label">Total Revenue</p>
-              <h3 className="stat-value">${stats.totalRevenue.toFixed(2)}</h3>
-            </div>
-          </div>
-
-          <div className="stat-card stat-card-warning">
-            <div className="stat-icon">
-              <TrendingUp size={24} />
-            </div>
-            <div className="stat-content">
-              <p className="stat-label">Pending</p>
-              <h3 className="stat-value">{stats.pending}</h3>
-            </div>
-          </div>
-
-          <div className="stat-card stat-card-info">
-            <div className="stat-icon">
-              <CheckCircle2 size={24} />
-            </div>
-            <div className="stat-content">
-              <p className="stat-label">Fulfilled</p>
-              <h3 className="stat-value">{stats.fulfilled}</h3>
-            </div>
-          </div>
+          <div className="stat-card"><div className="stat-icon stat-primary"><Package size={22} /></div><div><div className="stat-val">{stats.total}</div><div className="stat-lab">Total Orders</div></div></div>
+          <div className="stat-card"><div className="stat-icon stat-green"><DollarSign size={22} /></div><div><div className="stat-val">${stats.totalRevenue.toFixed(2)}</div><div className="stat-lab">Total Revenue</div></div></div>
+          <div className="stat-card"><div className="stat-icon stat-pending"><TrendingUp size={22} /></div><div><div className="stat-val">{stats.pending}</div><div className="stat-lab">Pending</div></div></div>
+          <div className="stat-card"><div className="stat-icon stat-fulfilled"><CheckCircle2 size={22} /></div><div><div className="stat-val">{stats.fulfilled}</div><div className="stat-lab">Fulfilled</div></div></div>
         </div>
-
         <div className="orders-toolbar">
-          <div className="search-wrapper">
-            <Search size={20} className="search-icon" />
+          <div className="searchbar">
+            <Search size={18} className="sbicon" />
             <input
-              type="text"
-              className="search-input"
-              placeholder="Search by customer name or order ID..."
+              className="sbinput"
+              placeholder="Search by customer or order ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
-          <div className="filter-wrapper">
-            <Filter size={18} />
+          <div className="filterbar">
+            <Filter size={17} />
             <select
               className="filter-select"
               value={statusFilter}
@@ -212,11 +141,12 @@ const OrdersPage = () => {
         </div>
       </div>
 
-      <div className="orders-table-container desktop-only">
+      {/* Desktop Table */}
+      <div className="orders-table-wrap desktop-only">
         <table className="orders-table">
           <thead>
             <tr>
-              <th>Order ID</th>
+              <th>Order</th>
               <th>Customer</th>
               <th>Amount</th>
               <th>Status</th>
@@ -226,338 +156,207 @@ const OrdersPage = () => {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan="6" className="loading-row">
-                  <div className="loading-spinner"></div>
-                  <span>Loading orders...</span>
-                </td>
-              </tr>
+              <tr><td colSpan={6} className="ord-table-wait">Loading...</td></tr>
             ) : filteredItems.length === 0 ? (
               <tr>
-                <td colSpan="6" className="empty-row">
-                  <Package size={48} className="empty-icon" />
-                  <p className="empty-text">No orders found</p>
-                  <p className="empty-subtext">
-                    {searchTerm || statusFilter !== "all"
-                      ? "Try adjusting your filters"
-                      : "Orders will appear here once customers place them"}
-                  </p>
+                <td colSpan={6} className="ord-table-empty">
+                  <Package size={36} /><div>No orders found</div>
                 </td>
               </tr>
-            ) : (
-              filteredItems.map((o) => {
-                const id = o._id || "";
-                const short = (o.orderNo || id || "").toString().slice(-6);
-                const dateStr = o.createdAt
-                  ? new Date(o.createdAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  : "-";
-                const totalStr = `$${Number(o.total || 0).toFixed(2)}`;
-                const statusConfig = getStatusConfig(o.status);
-
-                return (
-                  <tr key={id} className="order-row">
-                    <td>
-                      <span className="order-id">#{short}</span>
-                    </td>
-                    <td>
-                      <div className="customer-info">
-                        <div className="customer-avatar">
-                          <User size={16} />
-                        </div>
-                        <span className="customer-name">
-                          {o.customer?.name || o.customerName || "-"}
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="order-amount">{totalStr}</span>
-                    </td>
-                    <td>
-                      <span className={`status-badge status-${statusConfig.color}`}>
-                        {statusConfig.label}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="order-date">{dateStr}</span>
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <button
-                          className="btn-action btn-view"
-                          onClick={() => setOpenId(id)}
-                          title="View details"
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button
-                          className="btn-action btn-success"
-                          onClick={() => markFulfilled(id)}
-                          title="Mark fulfilled"
-                        >
-                          <CheckCircle2 size={16} />
-                        </button>
-                        <button
-                          className="btn-action btn-secondary"
-                          onClick={() => markUnfulfilled(id)}
-                          title="Mark unfulfilled"
-                        >
-                          <XCircle size={16} />
-                        </button>
-                        <button className="btn-action btn-primary" title="Invoice">
-                          <Receipt size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
+            ) : filteredItems.map((o) => {
+              const id = o._id || "";
+              const short = (o.orderNo || id || "").toString().slice(-6);
+              const dateStr = o.createdAt
+                ? new Date(o.createdAt).toLocaleDateString("en-US", {
+                  month: "short", day: "numeric", year: "numeric",
+                })
+                : "-";
+              const totalStr = `$${Number(o.total || 0).toFixed(2)}`;
+              const statusConfig = getStatusConfig(o.status);
+              return (
+                <tr key={id}>
+                  <td><span className="ord-id">#{short}</span></td>
+                  <td>
+                    <span className="ord-cust">
+                      <User size={16} />{o.customer?.name || o.customerName || "-"}
+                    </span>
+                  </td>
+                  <td>{totalStr}</td>
+                  <td>
+                    <span className={`status-badge sb-${statusConfig.color}`}>
+                      {statusConfig.label}
+                    </span>
+                  </td>
+                  <td>{dateStr}</td>
+                  <td>
+                    <div className="ord-action-row">
+                      <button className="ord-btn ord-btn-view" title="View"
+                        onClick={() => setOpenId(id)}><Eye size={16}/></button>
+                      <button className="ord-btn ord-btn-ok" title="Fulfill"
+                        onClick={() => markFulfilled(id)}><CheckCircle2 size={16}/></button>
+                      <button className="ord-btn ord-btn-warn" title="Unfulfill"
+                        onClick={() => markUnfulfilled(id)}><XCircle size={16}/></button>
+                      <button className="ord-btn ord-btn-outline" title="Invoice"><Receipt size={16}/></button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      <div className="orders-cards-container mobile-only">
-        {loading ? (
-          <div className="loading-card">
-            <div className="loading-spinner"></div>
-            <span>Loading orders...</span>
-          </div>
-        ) : filteredItems.length === 0 ? (
+      {/* Mobile Cards */}
+      <div className="orders-cardlist mobile-only">
+        {loading ? (<div>Loading…</div>) : filteredItems.length === 0 ? (
           <div className="empty-card">
-            <Package size={64} className="empty-icon" />
-            <p className="empty-text">No orders found</p>
-            <p className="empty-subtext">
-              {searchTerm || statusFilter !== "all"
-                ? "Try adjusting your filters"
-                : "Orders will appear here"}
-            </p>
+            <Package size={44}/><div>No orders</div>
           </div>
-        ) : (
-          filteredItems.map((o) => {
-            const id = o._id || "";
-            const short = (o.orderNo || id || "").toString().slice(-6);
-            const dateStr = o.createdAt
-              ? new Date(o.createdAt).toLocaleDateString()
-              : "-";
-            const totalStr = `$${Number(o.total || 0).toFixed(2)}`;
-            const statusConfig = getStatusConfig(o.status);
-
-            return (
-              <div key={id} className="order-card" onClick={() => setOpenId(id)}>
-                <div className="order-card-header">
-                  <span className="order-card-id">#{short}</span>
-                  <span className={`status-badge status-${statusConfig.color}`}>
-                    {statusConfig.label}
-                  </span>
-                </div>
-
-                <div className="order-card-body">
-                  <div className="order-card-row">
-                    <User size={16} className="order-card-icon" />
-                    <span className="order-card-label">Customer</span>
-                    <span className="order-card-value">
-                      {o.customer?.name || o.customerName || "-"}
-                    </span>
-                  </div>
-
-                  <div className="order-card-row">
-                    <DollarSign size={16} className="order-card-icon" />
-                    <span className="order-card-label">Amount</span>
-                    <span className="order-card-value order-card-amount">
-                      {totalStr}
-                    </span>
-                  </div>
-
-                  <div className="order-card-row">
-                    <Calendar size={16} className="order-card-icon" />
-                    <span className="order-card-label">Date</span>
-                    <span className="order-card-value">{dateStr}</span>
-                  </div>
-                </div>
-
-                <div className="order-card-footer">
-                  <button className="order-card-action">
-                    View Details
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
+        ) : filteredItems.map((o) => {
+          const id = o._id || "";
+          const short = (o.orderNo || id || "").toString().slice(-6);
+          const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "-";
+          const totalStr = `$${Number(o.total || 0).toFixed(2)}`;
+          const statusConfig = getStatusConfig(o.status);
+          return (
+            <div className="order-card" key={id}>
+              <div className="order-card-header">
+                <div className="order-card-id">#{short}</div>
+                <span className={`status-badge sb-${statusConfig.color}`}>{statusConfig.label}</span>
               </div>
-            );
-          })
-        )}
+              <div className="order-card-row"><User size={15}/>&nbsp;{o.customer?.name || o.customerName || "-"}</div>
+              <div className="order-card-row"><DollarSign size={15}/>&nbsp;{totalStr}</div>
+              <div className="order-card-row"><Calendar size={15}/>&nbsp;{dateStr}</div>
+              <div className="order-card-actions">
+                <button className="ord-btn ord-btn-view" onClick={()=>setOpenId(id)}><Eye size={15}/></button>
+                <button className="ord-btn ord-btn-ok" onClick={()=>markFulfilled(id)}><CheckCircle2 size={15}/></button>
+                <button className="ord-btn ord-btn-warn" onClick={()=>markUnfulfilled(id)}><XCircle size={15}/></button>
+                <button className="ord-btn ord-btn-outline"><Receipt size={15}/></button>
+              </div>
+            </div>
+          )
+        })}
       </div>
 
+      {/* RIGHT SIDE DRAWER */}
       {openOrder && (
         <>
-          <div
-            className="details-overlay"
-            onClick={() => setOpenId("")}
-            aria-label="Close order details"
-          />
-          <div className="details-panel" role="dialog" aria-modal="true">
-            <div className="details-header">
-              <div className="details-title-section">
-                <span className="details-label">Order Details</span>
-                <h2 className="details-title">
-                  #{openOrder.orderNo || (openOrder._id || "").slice(-6)}
-                </h2>
+          <div className="orders-drawer-backdrop" onClick={()=>setOpenId("")} />
+          <aside className="orders-drawer">
+            <header className="orders-drawer-head">
+              <div>
+                <div className="orders-drawer-title">
+                  Order <span>#{openOrder.orderNo || (openOrder._id || "").slice(-6)}</span>
+                </div>
+                <div className="orders-drawer-date">
+                  <Calendar size={16} style={{verticalAlign:"-2px"}} />
+                  <span>
+                    {openOrder.createdAt ? new Date(openOrder.createdAt).toLocaleString() : "-"}
+                  </span>
+                </div>
               </div>
-              <button
-                className="btn-close"
-                onClick={() => setOpenId("")}
-                aria-label="Close"
-              >
-                <X size={20} />
+              <button className="orders-drawer-close" onClick={()=>setOpenId("")} title="Close">
+                <X size={24}/>
               </button>
-            </div>
-
-            <div className="details-content">
-              <div className="details-section">
-                <h3 className="section-title">Customer Information</h3>
-                <div className="info-grid">
-                  <div className="info-item">
-                    <User size={16} className="info-icon" />
-                    <div>
-                      <p className="info-label">Name</p>
-                      <p className="info-value">
-                        {openOrder.customer?.name || openOrder.customerName || "-"}
-                      </p>
-                    </div>
+            </header>
+            <div className="orders-drawer-content">
+              <div className="drawer-section">
+                <div className="drawer-section-header">Customer</div>
+                <div className="drawer-section-body">
+                  <span className="drawer-user">
+                    <User size={17}/> {openOrder.customer?.name || openOrder.customerName || "-"}
+                  </span>
+                  <div className="drawer-small">
+                    {openOrder.customer?.email && <>✉ {openOrder.customer.email} <br/></>}
+                    {openOrder.customer?.phone && <>📞 {openOrder.customer.phone}</>}
                   </div>
-                  {openOrder.customer?.email && (
-                    <div className="info-item">
-                      <span className="info-icon">✉</span>
-                      <div>
-                        <p className="info-label">Email</p>
-                        <p className="info-value">{openOrder.customer.email}</p>
-                      </div>
-                    </div>
-                  )}
-                  {openOrder.customer?.phone && (
-                    <div className="info-item">
-                      <span className="info-icon">📞</span>
-                      <div>
-                        <p className="info-label">Phone</p>
-                        <p className="info-value">{openOrder.customer.phone}</p>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
-
-              <div className="details-section">
-                <h3 className="section-title">Order Status</h3>
-                <div className="status-controls">
-                  <select
-                    className="status-select"
-                    value={openOrder.status || "pending"}
-                    onChange={(e) => updateStatus(openOrder._id, e.target.value)}
-                  >
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
+              <div className="drawer-section">
+                <div className="drawer-section-header">Status</div>
+                <div className="drawer-section-body" style={{display:'flex',alignItems:'center',gap: "1em"}}>
+                  <span className={`status-badge sb-${getStatusConfig(openOrder.status).color}`}>
+                    {getStatusConfig(openOrder.status).label}
+                  </span>
+                  <select className="orders-dstatus-dd" value={openOrder.status || "pending"}
+                      onChange={e => updateStatus(openOrder._id, e.target.value)}>
+                    {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
-                  <button
-                    className="btn-quick-action btn-success"
-                    onClick={() => markFulfilled(openOrder._id)}
-                  >
-                    <CheckCircle2 size={16} />
-                    Fulfill
-                  </button>
-                  <button
-                    className="btn-quick-action btn-secondary"
-                    onClick={() => markUnfulfilled(openOrder._id)}
-                  >
-                    <XCircle size={16} />
-                    Unfulfill
-                  </button>
                 </div>
               </div>
-
-              <div className="details-section">
-                <h3 className="section-title">Order Items</h3>
-                <div className="items-list">
-                  {(openOrder.items || []).map((it, idx) => {
-                    const displayName = it.name || it.title || it.productId || "-";
-                    const qty = Number(it.qty || it.quantity || 0);
-                    const price = Number(it.price || 0);
-                    return (
-                      <div key={idx} className="item-row">
-                        <div className="item-info">
-                          <span className="item-title">{displayName}</span>
-                          {it.variant && <span className="item-meta">Variant: {it.variant}</span>}
-                          <span className="item-meta">Qty: {qty} × ${price.toFixed(2)}</span>
-                          {it.category && <span className="item-meta">Category: {it.category}</span>}
-                          {it.sku && <span className="item-meta">SKU: {it.sku}</span>}
-                        </div>
-                        <span className="item-total">${(qty * price).toFixed(2)}</span>
-                      </div>
-                    );
-                  })}
+              <div className="drawer-section">
+                <div className="drawer-section-header">Items</div>
+                <div className="drawer-section-body">
+                  <table className="drawer-items-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Qty</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(openOrder.items || []).map((it, idx) => {
+                        const name = it.name || it.title || it.productId || "-";
+                        const qty = Number(it.qty || it.quantity || 0);
+                        const price = Number(it.price || 0);
+                        return (
+                          <tr key={idx}>
+                            <td>
+                              <span className="drawer-table-product">{name}</span>
+                              {it.variant && <span className="drawer-table-meta">Variant: {it.variant}</span>}
+                              {it.sku && <span className="drawer-table-meta">SKU: {it.sku}</span>}
+                            </td>
+                            <td>${price.toFixed(2)}</td>
+                            <td>{qty}</td>
+                            <td>${(qty * price).toFixed(2)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-
-              <div className="details-section">
-                <h3 className="section-title">Payment Summary</h3>
-                <div className="totals-list">
-                  <div className="total-row">
-                    <span>Subtotal</span>
-                    <span>${Number(openOrder.totals?.subtotal || openOrder.subTotal || 0).toFixed(2)}</span>
-                  </div>
+              <div className="drawer-section">
+                <div className="drawer-section-header">Payment Summary</div>
+                <div className="orders-dsummary">
+                  <div><span>Subtotal</span> <span>${Number(openOrder.totals?.subtotal || openOrder.subTotal || 0).toFixed(2)}</span></div>
                   {openOrder.discounts && openOrder.discounts.length > 0 && (
-                    <div className="total-row total-discount">
-                      <span>Discounts</span>
-                      <span>
-                        -${openOrder.discounts
-                          .reduce((s, d) => s + Number(d?.amount || 0), 0)
-                          .toFixed(2)}
-                      </span>
-                    </div>
+                  <div><span>Discounts</span>
+                      <span>- ${openOrder.discounts.reduce((s, d) => s + Number(d?.amount || 0), 0).toFixed(2)}</span></div>
                   )}
-                  <div className="total-row">
-                    <span>Shipping</span>
-                    <span>${Number(openOrder.totals?.shipping || openOrder.shipping?.amount || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="total-row">
-                    <span>Tax</span>
-                    <span>${Number(openOrder.totals?.tax || openOrder.tax || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="total-row total-final">
-                    <span>Total</span>
-                    <span>${Number(openOrder.totals?.grandTotal || openOrder.total || 0).toFixed(2)}</span>
-                  </div>
+                  <div><span>Shipping</span> <span>${Number(openOrder.totals?.shipping || openOrder.shipping?.amount || 0).toFixed(2)}</span></div>
+                  <div><span>Tax</span> <span>${Number(openOrder.totals?.tax || openOrder.tax || 0).toFixed(2)}</span></div>
+                  <div className="orders-dsummary-final"><span>Total</span> <span>${Number(openOrder.totals?.grandTotal || openOrder.total || 0).toFixed(2)}</span></div>
                 </div>
               </div>
-
-              {openOrder.shippingAddress && (
-                <div className="details-section">
-                  <h3 className="section-title">Shipping Address</h3>
-                  <div className="address-box">
-                    <p>{openOrder.shippingAddress.fullName}</p>
-                    <p>{openOrder.shippingAddress.line1}</p>
-                    {openOrder.shippingAddress.line2 && <p>{openOrder.shippingAddress.line2}</p>}
-                    <p>
+              {openOrder.shippingAddress &&
+                <div className="drawer-section">
+                  <div className="drawer-section-header">Shipping Address</div>
+                  <div className="orders-dship-box">
+                    <div>{openOrder.shippingAddress.fullName}</div>
+                    <div>{openOrder.shippingAddress.line1}</div>
+                    {openOrder.shippingAddress.line2 && <div>{openOrder.shippingAddress.line2}</div>}
+                    <div>
                       {openOrder.shippingAddress.city}, {openOrder.shippingAddress.state} {openOrder.shippingAddress.postalCode}
-                    </p>
-                    <p>{openOrder.shippingAddress.countryCode}</p>
+                    </div>
+                    <div>{openOrder.shippingAddress.countryCode}</div>
                   </div>
                 </div>
-              )}
-
-              {openOrder.notes && (
-                <div className="details-section">
-                  <h3 className="section-title">Notes</h3>
-                  <div className="notes-box">{openOrder.notes}</div>
+              }
+              {openOrder.notes &&
+                <div className="drawer-section">
+                  <div className="drawer-section-header">Notes</div>
+                  <div className="orders-dnotes">{openOrder.notes}</div>
                 </div>
-              )}
+              }
             </div>
-          </div>
+            <div className="orders-drawer-footer">
+              <button className="ord-btn ord-btn-ok" onClick={()=>markFulfilled(openOrder._id)}><CheckCircle2 size={16}/> Fulfill</button>
+              <button className="ord-btn ord-btn-warn" onClick={()=>markUnfulfilled(openOrder._id)}><XCircle size={16}/> Unfulfill</button>
+            </div>
+          </aside>
         </>
       )}
     </div>
