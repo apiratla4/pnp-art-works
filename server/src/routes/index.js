@@ -11,6 +11,7 @@ import contactRouter from './contact.routes.js';
 import paypalRoutes from './paypal.routes.js';
 import redirectRouter from './redirect.routes.js';
 import paypalWebhookRoutes from './paypal.webhook.routes.js';
+import ordersRoutes from './orders.routes.js';
 
 const routes = Router();
 
@@ -20,11 +21,12 @@ routes.use('/gallery', galleryRouter);
 routes.use('/products', productsRouter);
 routes.use('/coupons', couponsRouter);
 routes.use('/newsletters', newsletterRouter);
-routes.use('/custom-orders', customOrderRouter); 
+routes.use('/custom-orders', customOrderRouter);
 routes.use('/checkout', checkoutRouter);
 routes.use('/contact', contactRouter);
 routes.use('/paypal', paypalRoutes);
 routes.use('/redirect', redirectRouter);
-routes.use('/paypal/webhook', paypalWebhookRoutes);
+routes.use('/paypal/webhook', paypalWebhookRoutes);    // exact PayPal webhook endpoint
+routes.use('/orders', ordersRoutes);                   // ADD: Orders API for admin/order logic
 
 export default routes;
