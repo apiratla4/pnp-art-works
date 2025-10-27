@@ -1,0 +1,104 @@
+// controllers/orders.controller.js
+import Order from '../models/Order.js';
+
+export async function createOrder(req, res) {
+  try {
+    const orderData = req.body;
+    if (!orderData.referenceId) {
+      orderData.referenceId = 'ORD-' + Date.now().toString().slice(-6);
+    }
+    const order = await Order.create(orderData);
+    res.status(201).json({ success: true, orderId: order._id, referenceId: order.referenceId, order });
+  } catch (e) {
+    console.error('Order creation failed:', e);
+    res.status(500).json({ success: false, error: 'Order creation failed', message: e.message });
+  }
+}
+
+export async function getOrders(req, res) {
+  try {
+    const { status } = req.query;
+    const filter = status ? { status } : {};
+    const items = await Order.find(filter).sort({ createdAt: -1 });
+    res.json({ success: true, items });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to fetch orders' });
+  }
+}
+
+export async function getOrder(req, res) {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+    if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
+    res.json({ success: true, order });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to fetch order' });
+  }
+}
+
+export async function updateOrderStatus(req, res) {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const validStatuses = [
+      'pending', 'paid', 'fulfilled', 'unfulfilled', 'cancelled', 'refunded', 'failed',
+      'CREATED', 'SAVED', 'APPROVED', 'VOIDED', 'COMPLETED', 'PAYER_ACTION_REQUIRED'
+    ];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, error: 'Invalid status' });
+    }
+    const order = await Order.findByIdAndUpdate(
+      id,
+      { status, updatedAt: new Date() },
+      { new: true }
+    );
+    if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
+    res.json({ success: true, status: order.status, order });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to update status' });
+  }
+}
+
+export async function updateOrderWithCapture(req, res) {
+  try {
+    const { paypalOrderId } = req.params;
+    const { captureResponse } = req.body;
+    const order = await Order.findOneAndUpdate(
+      { paypalOrderId },
+      {
+        paypalCaptureResponse: captureResponse,
+        status: 'paid',
+        $push: { captures: captureResponse },
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+    if (!order)
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    res.json({ success: true, order });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to update capture' });
+  }
+}
+
+export async function addWebhookEvent(req, res) {
+  try {
+    const { paypalOrderId } = req.params;
+    const webhookEvent = req.body;
+    const order = await Order.findOneAndUpdate(
+      { paypalOrderId },
+      {
+        $push: {
+          webhooks: { ...webhookEvent, receivedAt: new Date() }
+        }
+      },
+      { new: true }
+    );
+    if (!order)
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    res.json({ success: true, order });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to log webhook event' });
+  }
+}

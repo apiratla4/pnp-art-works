@@ -27,6 +27,6 @@ routes.use('/contact', contactRouter);
 routes.use('/paypal', paypalRoutes);
 routes.use('/redirect', redirectRouter);
 routes.use('/paypal/webhook', paypalWebhookRoutes);    // exact PayPal webhook endpoint
-routes.use('/orders', ordersRoutes);                   // ADD: Orders API for admin/order logic
+routes.use('/orders', ordersRoutes);              // ADD: Orders API for admin/order logic
 
 export default routes;
