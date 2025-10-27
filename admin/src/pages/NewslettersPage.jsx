@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { Send, RefreshCw, Users, CalendarClock } from "lucide-react";
+import { Send, RefreshCw, Users, CalendarClock, Mail, Download, Edit2 } from "lucide-react";
+import { motion } from "framer-motion";
+import "./NewslettersPage.css";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const SUBS_URL = `${API_BASE}/api/newsletters/subscribers`;
@@ -13,21 +15,21 @@ export default function NewslettersPage() {
   const [subs, setSubs] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // composer
+  // Composer
   const [subject, setSubject] = useState("");
   const [headerHtml, setHeaderHtml] = useState("<h1>Our Latest Offers</h1>");
   const [bodyHtml, setBodyHtml] = useState("<p>Hi there! Check our new products.</p>");
   const [footerHtml, setFooterHtml] = useState("<p>Thanks for subscribing.</p>");
   const [imageUrl, setImageUrl] = useState("");
 
-  // schedule
-  const [mode, setMode] = useState("now"); // now | once | weekly | monthly | cron
-  const [onceAt, setOnceAt] = useState(""); // datetime-local
-  const [weeklyDow, setWeeklyDow] = useState("1"); // 0-6
+  // Schedule
+  const [mode, setMode] = useState("now");
+  const [onceAt, setOnceAt] = useState("");
+  const [weeklyDow, setWeeklyDow] = useState("1");
   const [weeklyTime, setWeeklyTime] = useState("09:00");
-  const [monthlyDom, setMonthlyDom] = useState("1"); // 1-31
+  const [monthlyDom, setMonthlyDom] = useState("1");
   const [monthlyTime, setMonthlyTime] = useState("09:00");
-  const [cronExpr, setCronExpr] = useState(""); // advanced
+  const [cronExpr, setCronExpr] = useState("");
 
   const load = async () => {
     try {
@@ -40,6 +42,7 @@ export default function NewslettersPage() {
       setLoading(false);
     }
   };
+
   useEffect(() => { load(); }, []);
 
   const buildPayload = () => {
@@ -59,252 +62,328 @@ export default function NewslettersPage() {
   };
 
   const sendNow = async () => {
+    if (!subject.trim()) return toast.warning("Please enter a subject");
     try {
       const { data } = await axios.post(`${CAMP_URL}`, { ...buildPayload(), schedule: { type: "now" } }, { withCredentials: true });
-      toast.success(`Sent to ${data?.sent || 0} subscribers`);
+      toast.success(`Newsletter sent to ${data?.sent || 0} subscribers!`);
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to send");
+      toast.error(e?.response?.data?.message || "Failed to send newsletter");
     }
   };
 
   const schedule = async () => {
+    if (!subject.trim()) return toast.warning("Please enter a subject");
     try {
       const { data } = await axios.post(`${CAMP_URL}`, buildPayload(), { withCredentials: true });
-      toast.success(`Campaign ${data?.status === "scheduled" ? "scheduled" : "saved"}`);
+      toast.success(`Campaign ${data?.status === "scheduled" ? "scheduled" : "saved"} successfully!`);
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to schedule");
+      toast.error(e?.response?.data?.message || "Failed to schedule campaign");
     }
   };
 
   return (
-    <div className="container py-4 theme-monochrome">
-      {/* Header */}
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <h2 className="h4 d-flex align-items-center gap-2 mb-0">
-          <Send size={20} /> Newsletters
-        </h2>
-        <div className="d-flex align-items-center gap-2 flex-wrap">
-          <button
-            className="mono-btn mono-btn-sm d-inline-flex align-items-center gap-2"
-            onClick={load}
-            disabled={loading}
-            type="button"
-            aria-label="Refresh subscribers"
-            title="Refresh subscribers"
-          >
-            <RefreshCw size={16} /> Refresh subs
+    <div className="newsletters-page">
+      <header>
+        <h1><Send size={24} /> Email Newsletters</h1>
+        <div className="header-actions">
+          <button className="refresh-btn" onClick={load} disabled={loading}>
+            <RefreshCw size={18} className={loading ? "spinning" : ""} />
+            Refresh
           </button>
-          <span className="small d-inline-flex align-items-center gap-1">
-            <Users size={14} /> {subs.length} subscribers
-          </span>
+          <div className="subscriber-count">
+            <Users size={16} />
+            <span>{subs.length} subscribers</span>
+          </div>
+        </div>
+      </header>
+
+      {/* Stats Cards */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <Mail size={24} className="stat-icon" />
+          <div className="stat-content">
+            <span className="stat-value">{subs.length}</span>
+            <span className="stat-label">Total Subscribers</span>
+          </div>
+        </div>
+        <div className="stat-card">
+          <Users size={24} className="stat-icon active" />
+          <div className="stat-content">
+            <span className="stat-value">{subs.filter(s => s.active !== false).length}</span>
+            <span className="stat-label">Active Subscribers</span>
+          </div>
+        </div>
+        <div className="stat-card">
+          <Send size={24} className="stat-icon ready" />
+          <div className="stat-content">
+            <span className="stat-value">{subject ? "1" : "0"}</span>
+            <span className="stat-label">Ready to Send</span>
+          </div>
+        </div>
+        <div className="stat-card">
+          <CalendarClock size={24} className="stat-icon scheduled" />
+          <div className="stat-content">
+            <span className="stat-value">{mode !== "now" ? "1" : "0"}</span>
+            <span className="stat-label">Scheduled</span>
+          </div>
         </div>
       </div>
 
-      <div className="row g-4">
-        {/* Compose */}
-        <div className="col-12 col-lg-7">
-          <div className="card border-0 shadow-sm rounded-4">
-            <div className="card-body">
-              <h6 className="fw-semibold mb-3">Compose</h6>
-              <div className="vstack gap-3">
-                <div>
-                  <label className="form-label">Subject</label>
-                  <input className="form-control" value={subject} onChange={(e) => setSubject(e.target.value)} />
-                </div>
-                <div>
-                  <label className="form-label">Header HTML</label>
-                  <textarea className="form-control" rows={2} value={headerHtml} onChange={(e) => setHeaderHtml(e.target.value)} />
-                </div>
-                <div>
-                  <label className="form-label">Body HTML</label>
-                  <textarea className="form-control" rows={6} value={bodyHtml} onChange={(e) => setBodyHtml(e.target.value)} />
-                </div>
-                <div>
-                  <label className="form-label">Footer HTML</label>
-                  <textarea className="form-control" rows={2} value={footerHtml} onChange={(e) => setFooterHtml(e.target.value)} />
-                </div>
-                <div>
-                  <label className="form-label">Hero image URL (optional)</label>
-                  <input className="form-control" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
-                </div>
-              </div>
-            </div>
+      <div className="newsletter-layout">
+        {/* Composer */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }}
+          className="composer-section"
+        >
+          <div className="section-header">
+            <Edit2 size={20} />
+            <h2>Compose Newsletter</h2>
+          </div>
+          
+          <div className="form-group">
+            <label>Email Subject</label>
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="Your amazing newsletter subject..."
+              value={subject} 
+              onChange={(e) => setSubject(e.target.value)} 
+            />
           </div>
 
-          <div className="d-flex gap-2 mt-3">
-            <button className="mono-btn d-inline-flex align-items-center gap-2" onClick={sendNow} type="button">
-              <Send size={16} /> Send now to all
+          <div className="form-group">
+            <label>Header HTML</label>
+            <textarea 
+              className="form-textarea code-editor" 
+              rows={3}
+              placeholder="<h1>Welcome!</h1>"
+              value={headerHtml} 
+              onChange={(e) => setHeaderHtml(e.target.value)} 
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Body HTML</label>
+            <textarea 
+              className="form-textarea code-editor" 
+              rows={8}
+              placeholder="<p>Your newsletter content here...</p>"
+              value={bodyHtml} 
+              onChange={(e) => setBodyHtml(e.target.value)} 
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Footer HTML</label>
+            <textarea 
+              className="form-textarea code-editor" 
+              rows={3}
+              placeholder="<p>© 2025 Your Company</p>"
+              value={footerHtml} 
+              onChange={(e) => setFooterHtml(e.target.value)} 
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Hero Image URL (Optional)</label>
+            <input 
+              type="url" 
+              className="form-input"
+              placeholder="https://example.com/image.jpg"
+              value={imageUrl} 
+              onChange={(e) => setImageUrl(e.target.value)} 
+            />
+          </div>
+
+          <div className="action-buttons">
+            <button className="btn-primary" onClick={sendNow} disabled={!subject.trim()}>
+              <Send size={18} />
+              Send Now to All
+            </button>
+            <button className="btn-secondary" onClick={schedule} disabled={!subject.trim()}>
+              <CalendarClock size={18} />
+              Save & Schedule
             </button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Schedule + Subscribers */}
-        <div className="col-12 col-lg-5">
-          <div className="card border-0 shadow-sm rounded-4">
-            <div className="card-body">
-              <h6 className="fw-semibold mb-3 d-flex align-items-center gap-2">
-                <CalendarClock size={16} /> Schedule
-              </h6>
-              <div className="vstack gap-3">
-                <div>
-                  <label className="form-label">Mode</label>
-                  <select className="form-select" value={mode} onChange={(e) => setMode(e.target.value)}>
-                    <option value="now">Send immediately</option>
-                    <option value="once">Once at exact time</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="cron">Advanced (cron)</option>
-                  </select>
-                </div>
-
-                {mode === "once" && (
-                  <div>
-                    <label className="form-label">Date & time</label>
-                    <input type="datetime-local" className="form-control" value={onceAt} onChange={(e) => setOnceAt(e.target.value)} />
-                  </div>
-                )}
-
-                {mode === "weekly" && (
-                  <div className="row g-2">
-                    <div className="col-12 col-md-6">
-                      <label className="form-label">Day of week</label>
-                      <select className="form-select" value={weeklyDow} onChange={(e) => setWeeklyDow(e.target.value)}>
-                        <option value="0">Sunday</option>
-                        <option value="1">Monday</option>
-                        <option value="2">Tuesday</option>
-                        <option value="3">Wednesday</option>
-                        <option value="4">Thursday</option>
-                        <option value="5">Friday</option>
-                        <option value="6">Saturday</option>
-                      </select>
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label">Time</label>
-                      <input type="time" className="form-control" value={weeklyTime} onChange={(e) => setWeeklyTime(e.target.value)} />
-                    </div>
-                  </div>
-                )}
-
-                {mode === "monthly" && (
-                  <div className="row g-2">
-                    <div className="col-12 col-md-6">
-                      <label className="form-label">Day of month</label>
-                      <input type="number" min={1} max={31} className="form-control" value={monthlyDom} onChange={(e) => setMonthlyDom(e.target.value)} />
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label">Time</label>
-                      <input type="time" className="form-control" value={monthlyTime} onChange={(e) => setMonthlyTime(e.target.value)} />
-                    </div>
-                  </div>
-                )}
-
-                {mode === "cron" && (
-                  <div>
-                    <label className="form-label">Cron expression</label>
-                    <input
-                      className="form-control"
-                      placeholder="m h dom mon dow (e.g., 0 9 * * 1 for Mondays 09:00)"
-                      value={cronExpr}
-                      onChange={(e) => setCronExpr(e.target.value)}
-                    />
-                    <div className="form-text">Use a standard 5-field cron (minute hour day-of-month month day-of-week).</div>
-                  </div>
-                )}
-
-                <button className="mono-btn" onClick={schedule} type="button">Save & schedule</button>
-              </div>
+        {/* Sidebar */}
+        <div className="sidebar">
+          {/* Schedule Card */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }} 
+            animate={{ opacity: 1, x: 0 }}
+            className="schedule-card"
+          >
+            <div className="section-header">
+              <CalendarClock size={20} />
+              <h3>Schedule Campaign</h3>
             </div>
-          </div>
 
-          {/* Subscribers */}
-          <div className="card border-0 shadow-sm rounded-4 mt-3">
-            <div className="card-body">
-              <h6 className="fw-semibold mb-2">Subscribers</h6>
+            <div className="form-group">
+              <label>Delivery Mode</label>
+              <select className="form-select" value={mode} onChange={(e) => setMode(e.target.value)}>
+                <option value="now">Send Immediately</option>
+                <option value="once">Schedule Once</option>
+                <option value="weekly">Weekly Recurring</option>
+                <option value="monthly">Monthly Recurring</option>
+                <option value="cron">Advanced (Cron)</option>
+              </select>
+            </div>
 
-              {/* Mobile cards */}
-              <div className="d-block d-md-none vstack gap-2 scroll-y-260">
-                {subs.map((s) => (
-                  <div key={s._id} className="p-2 border rounded-3 d-flex justify-content-between align-items-start gap-2">
-                    <div className="min-w-0">
-                      <div className="fw-semibold text-break">{s.email}</div>
-                      <div className="small text-muted">
-                        {s.createdAt ? new Date(s.createdAt).toLocaleString() : "—"}
+            {mode === "once" && (
+              <div className="schedule-option">
+                <div className="option-info">
+                  <strong>One-Time Send:</strong> Schedule your newsletter for a specific date and time.
+                </div>
+                <div className="form-group">
+                  <label>Date & Time</label>
+                  <input 
+                    type="datetime-local" 
+                    className="form-input"
+                    value={onceAt} 
+                    onChange={(e) => setOnceAt(e.target.value)} 
+                  />
+                </div>
+              </div>
+            )}
+
+            {mode === "weekly" && (
+              <div className="schedule-option">
+                <div className="option-info">
+                  <strong>Weekly Send:</strong> Your newsletter will be sent automatically every week.
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Day</label>
+                    <select className="form-select" value={weeklyDow} onChange={(e) => setWeeklyDow(e.target.value)}>
+                      <option value="0">Sunday</option>
+                      <option value="1">Monday</option>
+                      <option value="2">Tuesday</option>
+                      <option value="3">Wednesday</option>
+                      <option value="4">Thursday</option>
+                      <option value="5">Friday</option>
+                      <option value="6">Saturday</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Time</label>
+                    <input 
+                      type="time" 
+                      className="form-input"
+                      value={weeklyTime} 
+                      onChange={(e) => setWeeklyTime(e.target.value)} 
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {mode === "monthly" && (
+              <div className="schedule-option">
+                <div className="option-info">
+                  <strong>Monthly Send:</strong> Your newsletter will be sent automatically every month.
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Day</label>
+                    <input 
+                      type="number" 
+                      min={1} 
+                      max={31} 
+                      className="form-input"
+                      value={monthlyDom} 
+                      onChange={(e) => setMonthlyDom(e.target.value)} 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Time</label>
+                    <input 
+                      type="time" 
+                      className="form-input"
+                      value={monthlyTime} 
+                      onChange={(e) => setMonthlyTime(e.target.value)} 
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {mode === "cron" && (
+              <div className="schedule-option">
+                <div className="option-info warning">
+                  <strong>Advanced Mode:</strong> Use cron syntax for custom schedules.
+                </div>
+                <div className="form-group">
+                  <label>Cron Expression</label>
+                  <input 
+                    type="text" 
+                    className="form-input code-input"
+                    placeholder="0 9 * * 1"
+                    value={cronExpr} 
+                    onChange={(e) => setCronExpr(e.target.value)} 
+                  />
+                  <span className="form-hint">Format: minute hour day-of-month month day-of-week</span>
+                </div>
+              </div>
+            )}
+
+            {mode === "now" && (
+              <div className="schedule-option">
+                <div className="option-info success">
+                  <strong>Instant Send:</strong> Newsletter will be sent immediately to all subscribers.
+                </div>
+              </div>
+            )}
+          </motion.div>
+
+          {/* Subscribers Card */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }} 
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="subscribers-card"
+          >
+            <div className="section-header">
+              <Users size={20} />
+              <h3>Subscribers</h3>
+              <span className="subscriber-badge">{subs.length}</span>
+            </div>
+
+            <div className="subscribers-list">
+              {subs.length === 0 ? (
+                <div className="empty-state">
+                  <Users size={48} />
+                  <p>No subscribers yet</p>
+                </div>
+              ) : (
+                subs.map((s) => (
+                  <div key={s._id} className="subscriber-item">
+                    <div className="subscriber-info">
+                      <div className="subscriber-email">{s.email}</div>
+                      <div className="subscriber-date">
+                        {s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "—"}
                       </div>
                     </div>
+                    <span className="status-badge active">Active</span>
                   </div>
-                ))}
-              </div>
-
-              {/* Desktop table */}
-              <div className="d-none d-md-block table-responsive mono-scroll scroll-y-260">
-                <table className="table table-sm align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th className="text-nowrap">Email</th>
-                      <th className="text-nowrap">Joined</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {subs.map((s) => (
-                      <tr key={s._id}>
-                        <td className="text-break">{s.email}</td>
-                        <td>{s.createdAt ? new Date(s.createdAt).toLocaleString() : "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <a className="mono-btn mono-btn-sm mt-3" href={`${SUBS_URL}/export`} target="_blank" rel="noreferrer">
-                Download CSV
-              </a>
+                ))
+              )}
             </div>
-          </div>
+
+            <a 
+              className="download-btn" 
+              href={`${SUBS_URL}/export`} 
+              target="_blank" 
+              rel="noreferrer"
+            >
+              <Download size={16} />
+              Export to CSV
+            </a>
+          </motion.div>
         </div>
       </div>
-
-      {/* Local monochrome + responsive helpers */}
-      <style>{`
-        .theme-monochrome { background-color: #f1efef; color: #000; }
-        .theme-monochrome .card, .theme-monochrome .modal-content { background: #fff; color: #000; }
-        .theme-monochrome .form-control, .theme-monochrome .form-select { background-color: #fff; color: #000; border-color: #ccc; }
-        .theme-monochrome .form-check-input { accent-color: #000; }
-
-        /* Inputs/selects focus in black */
-        .form-control:focus, .form-select:focus { border-color: #000 !important; box-shadow: none !important; }
-
-        /* Buttons */
-        .mono-btn {
-          border: 1px solid #000; background: #fff; color: #000;
-          border-radius: 10px; padding: 8px 12px; font-weight: 700;
-          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
-          white-space: nowrap;
-        }
-        .mono-btn-sm { padding: 6px 10px; border-radius: 999px; }
-        .mono-btn:hover { background: #000; color: #fff; }
-        .mono-btn:active { transform: scale(0.98); }
-
-        /* Keyboard focus */
-        .mono-btn:focus-visible,
-        a:focus-visible,
-        .form-control:focus-visible,
-        .form-select:focus-visible {
-          outline: none;
-          box-shadow: 0 0 0 2px #000, 0 0 0 4px #fff;
-        }
-        .mono-btn:focus, a:focus, .form-control:focus, .form-select:focus { outline: 2px solid #000; outline-offset: 2px; }
-        .mono-btn:focus:not(:focus-visible),
-        a:focus:not(:focus-visible),
-        .form-control:focus:not(:focus-visible),
-        .form-select:focus:not(:focus-visible) { outline: none; box-shadow: none; }
-
-        /* Scroll helpers */
-        .mono-scroll { -webkit-overflow-scrolling: touch; }
-        .scroll-y-260 { max-height: 260px; overflow-y: auto; }
-
-        /* Table */
-        .table td, .table th { vertical-align: middle; }
-      `}</style>
     </div>
   );
 }

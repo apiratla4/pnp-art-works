@@ -1,21 +1,52 @@
-import {
-  createPayPalOrder,
-  capturePayPalOrder
-} from '../config/paypal.js';
+// controllers/paypal.controller.js
+import { createPayPalOrder, capturePayPalOrder } from '../config/paypal.js';
 
 // POST /api/paypal/create-order
 export async function paypalCreateOrderController(req, res, next) {
   try {
-    const { items, customer, shippingAddress, returnUrl, cancelUrl } = req.body;
-    if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: "No cart items" });
+    // Accept all important fields
+    const { items, customer, shippingAddress, totals, returnUrl, cancelUrl } = req.body;
+
+    // Defensive: accept both {qty}/{quantity} for compatibility
+    const normalizedItems = (items || []).map(item => ({
+      ...item,
+      quantity: item.qty || item.quantity || 1,
+      name: item.name || item.title || item.productId || 'Product',
+      price: Number(item.price),
+      description: item.description || '',
+    }));
+
+    if (!Array.isArray(normalizedItems) || normalizedItems.length === 0)
+      return res.status(400).json({ error: "No cart items" });
 
     const order = await createPayPalOrder({
-      items, customer, shippingAddress, returnUrl, cancelUrl
+      items: normalizedItems,
+      customer,
+      shippingAddress,
+      totals,
+      returnUrl,
+      cancelUrl,
     });
 
-    res.status(201).json({ id: order.id, links: order.links, status: order.status });
+    // Find approval link for frontend redirect
+    const approvalLink = Array.isArray(order.links)
+      ? (order.links.find(l => l.rel === 'approve')?.href || null)
+      : null;
+
+    res.status(201).json({
+      id: order.id,
+      links: order.links,
+      approvalLink,
+      status: order.status,
+      paypalRes: order
+    });
   } catch (err) {
-    next(err);
+    // Print error details for debugging
+    console.error('[PayPal createOrder error]', err?.response?.data || err.message || err);
+    res.status(500).json({
+      error: typeof err === 'string' ? err : (err?.message || 'Unknown Paypal error'),
+      details: err?.response?.data || undefined,
+    });
   }
 }
 
@@ -28,6 +59,10 @@ export async function paypalCaptureOrderController(req, res, next) {
     const capture = await capturePayPalOrder(orderId);
     res.status(200).json(capture);
   } catch (err) {
-    next(err);
+    console.error('[PayPal captureOrder error]', err?.response?.data || err.message || err);
+    res.status(500).json({
+      error: typeof err === 'string' ? err : (err?.message || 'Unknown Paypal error'),
+      details: err?.response?.data || undefined,
+    });
   }
 }

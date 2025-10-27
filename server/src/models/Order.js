@@ -14,7 +14,7 @@ const ItemSchema = new mongoose.Schema(
     category: { type: String },
     sku: { type: String },
     brand: { type: String },
-    meta: { type: mongoose.Schema.Types.Mixed }, // for any extra fields
+    meta: { type: mongoose.Schema.Types.Mixed },
   },
   { _id: false }
 );

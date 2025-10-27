@@ -1,7 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { TicketPercent, RefreshCw, Pencil, Trash2, Power, PowerOff, X } from "lucide-react";
+import {
+  TicketPercent,
+  RefreshCw,
+  Pencil,
+  Trash2,
+  Power,
+  PowerOff,
+  X,
+  Plus,
+  Search,
+  TrendingUp,
+  Users,
+  Percent,
+  Calendar,
+  Tag,
+} from "lucide-react";
+import "./CouponsPage.css";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const LIST_URL = `${API_BASE}/api/coupons`;
@@ -15,12 +31,41 @@ export default function CouponsPage() {
   const [expiresAt, setExpiresAt] = useState("");
   const [loading, setLoading] = useState(false);
   const [list, setList] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // editor modal state
-  const [editing, setEditing] = useState(null); // coupon object or null
-  const [editData, setEditData] = useState({ code: "", percent: 10, maxUses: 0, expiresAt: "", active: true });
+  // Editor modal state
+  const [editing, setEditing] = useState(null);
+  const [editData, setEditData] = useState({
+    code: "",
+    percent: 10,
+    maxUses: 0,
+    expiresAt: "",
+    active: true,
+  });
 
   const disabled = !code.trim() || percent <= 0 || percent > 100;
+
+  // Statistics
+  const stats = useMemo(() => {
+    const total = list.length;
+    const active = list.filter((c) => c.active).length;
+    const totalUses = list.reduce((sum, c) => sum + (c.uses || 0), 0);
+    const avgDiscount =
+      total > 0
+        ? (list.reduce((sum, c) => sum + (c.percent || 0), 0) / total).toFixed(
+            1
+          )
+        : 0;
+    return { total, active, totalUses, avgDiscount };
+  }, [list]);
+
+  // Filtered coupons
+  const filteredList = useMemo(() => {
+    if (!searchTerm) return list;
+    const lower = searchTerm.toLowerCase();
+    return list.filter((c) => c.code?.toLowerCase().includes(lower));
+  }, [list, searchTerm]);
 
   const load = async () => {
     try {
@@ -34,7 +79,9 @@ export default function CouponsPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const onCreate = async (e) => {
     e.preventDefault();
@@ -45,23 +92,32 @@ export default function CouponsPage() {
         code: code.trim().toUpperCase(),
         percent,
         maxUses: Number(maxUses) || 0,
-        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null
+        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
       };
-      const { data } = await axios.post(LIST_URL, payload, { withCredentials: true });
-      toast.success(`Coupon ${data?.code} added`);
-      setCode(""); setPercent(10); setMaxUses(0); setExpiresAt("");
+      const { data } = await axios.post(LIST_URL, payload, {
+        withCredentials: true,
+      });
+      toast.success(`Coupon ${data?.code} created successfully`);
+      setCode("");
+      setPercent(10);
+      setMaxUses(0);
+      setExpiresAt("");
+      setShowCreateModal(false);
       load();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to add coupon");
+      toast.error(e?.response?.data?.message || "Failed to create coupon");
     } finally {
       setLoading(false);
     }
   };
 
-  // Actions
   const toggleActive = async (id, next) => {
     try {
-      await axios.patch(`${LIST_URL}/${id}/status`, { active: next }, { withCredentials: true });
+      await axios.patch(
+        `${LIST_URL}/${id}/status`,
+        { active: next },
+        { withCredentials: true }
+      );
       toast.success(`Coupon ${next ? "activated" : "deactivated"}`);
       load();
     } catch {
@@ -70,13 +126,13 @@ export default function CouponsPage() {
   };
 
   const del = async (id) => {
-    if (!confirm("Delete this coupon?")) return;
+    if (!confirm("Delete this coupon permanently?")) return;
     try {
       await axios.delete(`${LIST_URL}/${id}`, { withCredentials: true });
-      toast.success("Deleted");
+      toast.success("Coupon deleted successfully");
       load();
     } catch {
-      toast.error("Failed to delete");
+      toast.error("Failed to delete coupon");
     }
   };
 
@@ -86,352 +142,601 @@ export default function CouponsPage() {
       code: c.code || "",
       percent: c.percent || 10,
       maxUses: c.maxUses || 0,
-      expiresAt: c.expiresAt ? new Date(c.expiresAt).toISOString().slice(0, 16) : "",
-      active: !!c.active
+      expiresAt: c.expiresAt
+        ? new Date(c.expiresAt).toISOString().slice(0, 16)
+        : "",
+      active: !!c.active,
     });
   };
 
   const saveEdit = async (e) => {
     e.preventDefault();
     try {
-      await axios.patch(`${LIST_URL}/${editing._id}`, {
-        code: editData.code.trim().toUpperCase(),
-        percent: Number(editData.percent),
-        maxUses: Number(editData.maxUses) || 0,
-        expiresAt: editData.expiresAt ? new Date(editData.expiresAt).toISOString() : null,
-        active: !!editData.active
-      }, { withCredentials: true });
-      toast.success("Updated");
+      await axios.patch(
+        `${LIST_URL}/${editing._id}`,
+        {
+          code: editData.code.trim().toUpperCase(),
+          percent: Number(editData.percent),
+          maxUses: Number(editData.maxUses) || 0,
+          expiresAt: editData.expiresAt
+            ? new Date(editData.expiresAt).toISOString()
+            : null,
+          active: !!editData.active,
+        },
+        { withCredentials: true }
+      );
+      toast.success("Coupon updated successfully");
       setEditing(null);
       load();
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to update");
+      toast.error(err?.response?.data?.message || "Failed to update coupon");
     }
   };
 
+  const isExpired = (date) => {
+    if (!date) return false;
+    return new Date(date) < new Date();
+  };
+
   return (
-    <div className="container py-4 theme-monochrome">
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <h2 className="h4 d-flex align-items-center gap-2 mb-0">
-          <TicketPercent size={20} /> Coupons
-        </h2>
-        <button
-          className="mono-btn mono-btn-sm d-inline-flex align-items-center gap-2"
-          onClick={load}
-          disabled={loading}
-          type="button"
-          aria-label="Refresh"
-          title="Refresh"
-        >
-          <RefreshCw size={16} /> Refresh
-        </button>
+    <div className="coupons-page">
+      {/* Header */}
+      <div className="coupons-header">
+        <div className="coupons-header-content">
+          <div className="coupons-title-section">
+            <h1 className="coupons-title">Discount Coupons</h1>
+            <p className="coupons-subtitle">
+              Create and manage promotional discount codes
+            </p>
+          </div>
+          <div className="coupons-actions">
+            <button
+              className="btn-icon-primary"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <Plus size={18} />
+              <span>New Coupon</span>
+            </button>
+            <button
+              className="btn-icon-secondary"
+              onClick={load}
+              disabled={loading}
+            >
+              <RefreshCw size={18} className={loading ? "spin" : ""} />
+              <span className="hide-mobile">Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="stats-grid">
+          <div className="stat-card stat-card-purple">
+            <div className="stat-icon">
+              <Tag size={24} />
+            </div>
+            <div className="stat-content">
+              <p className="stat-label">Total Coupons</p>
+              <h3 className="stat-value">{stats.total}</h3>
+            </div>
+          </div>
+
+          <div className="stat-card stat-card-green">
+            <div className="stat-icon">
+              <Power size={24} />
+            </div>
+            <div className="stat-content">
+              <p className="stat-label">Active Coupons</p>
+              <h3 className="stat-value">{stats.active}</h3>
+            </div>
+          </div>
+
+          <div className="stat-card stat-card-blue">
+            <div className="stat-icon">
+              <Users size={24} />
+            </div>
+            <div className="stat-content">
+              <p className="stat-label">Total Uses</p>
+              <h3 className="stat-value">{stats.totalUses}</h3>
+            </div>
+          </div>
+
+          <div className="stat-card stat-card-orange">
+            <div className="stat-icon">
+              <Percent size={24} />
+            </div>
+            <div className="stat-content">
+              <p className="stat-label">Avg Discount</p>
+              <h3 className="stat-value">{stats.avgDiscount}%</h3>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="search-toolbar">
+          <div className="search-wrapper">
+            <Search size={20} className="search-icon" />
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search coupon codes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="row g-4">
-        {/* Create form */}
-        <div className="col-12 col-lg-5">
-          <div className="card border-0 shadow-sm rounded-4">
-            <div className="card-body">
-              <h6 className="fw-semibold mb-3">Create coupon</h6>
-              <form onSubmit={onCreate} className="vstack gap-3">
-                <div>
-                  <label className="form-label">Code</label>
-                  <input
-                    className="form-control"
-                    placeholder="e.g. ART10"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    required
-                  />
+      {/* Coupons Grid - Desktop */}
+      <div className="coupons-grid desktop-only">
+        {loading ? (
+          <div className="loading-card">
+            <div className="loading-spinner"></div>
+            <span>Loading coupons...</span>
+          </div>
+        ) : filteredList.length === 0 ? (
+          <div className="empty-card">
+            <TicketPercent size={64} className="empty-icon" />
+            <p className="empty-text">No coupons found</p>
+            <p className="empty-subtext">
+              {searchTerm
+                ? "Try adjusting your search"
+                : "Create your first discount coupon"}
+            </p>
+            {!searchTerm && (
+              <button
+                className="btn-create-empty"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <Plus size={18} />
+                Create Coupon
+              </button>
+            )}
+          </div>
+        ) : (
+          filteredList.map((c) => {
+            const expired = isExpired(c.expiresAt);
+            const usagePercent =
+              c.maxUses > 0 ? ((c.uses || 0) / c.maxUses) * 100 : 0;
+
+            return (
+              <div
+                key={c._id}
+                className={`coupon-card ${!c.active || expired ? "inactive" : ""}`}
+              >
+                <div className="coupon-card-header">
+                  <div className="coupon-code-section">
+                    <TicketPercent size={20} className="coupon-icon" />
+                    <div>
+                      <h3 className="coupon-code">{c.code}</h3>
+                      <p className="coupon-discount">{c.percent}% OFF</p>
+                    </div>
+                  </div>
+                  <div className="coupon-status-badges">
+                    {expired && (
+                      <span className="status-badge status-expired">
+                        Expired
+                      </span>
+                    )}
+                    <span
+                      className={`status-badge ${c.active ? "status-active" : "status-inactive"}`}
+                    >
+                      {c.active ? "Active" : "Inactive"}
+                    </span>
+                  </div>
                 </div>
-                <div className="row g-3">
-                  <div className="col-12 col-sm-6">
-                    <label className="form-label">Percent off</label>
+
+                <div className="coupon-card-body">
+                  <div className="coupon-info-row">
+                    <Users size={16} className="info-icon" />
+                    <span className="info-label">Uses</span>
+                    <span className="info-value">
+                      {c.uses || 0} / {c.maxUses === 0 ? "∞" : c.maxUses}
+                    </span>
+                  </div>
+
+                  {c.maxUses > 0 && (
+                    <div className="usage-progress">
+                      <div
+                        className="usage-progress-bar"
+                        style={{ width: `${Math.min(usagePercent, 100)}%` }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="coupon-info-row">
+                    <Calendar size={16} className="info-icon" />
+                    <span className="info-label">Expires</span>
+                    <span className="info-value">
+                      {c.expiresAt
+                        ? new Date(c.expiresAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+                        : "Never"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="coupon-card-footer">
+                  <button
+                    className="btn-coupon-action btn-edit"
+                    onClick={() => openEdit(c)}
+                    title="Edit"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  {c.active ? (
+                    <button
+                      className="btn-coupon-action btn-deactivate"
+                      onClick={() => toggleActive(c._id, false)}
+                      title="Deactivate"
+                    >
+                      <PowerOff size={16} />
+                    </button>
+                  ) : (
+                    <button
+                      className="btn-coupon-action btn-activate"
+                      onClick={() => toggleActive(c._id, true)}
+                      title="Activate"
+                    >
+                      <Power size={16} />
+                    </button>
+                  )}
+                  <button
+                    className="btn-coupon-action btn-delete"
+                    onClick={() => del(c._id)}
+                    title="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Coupons List - Mobile */}
+      <div className="coupons-mobile mobile-only">
+        {loading ? (
+          <div className="loading-card">
+            <div className="loading-spinner"></div>
+            <span>Loading coupons...</span>
+          </div>
+        ) : filteredList.length === 0 ? (
+          <div className="empty-card">
+            <TicketPercent size={64} className="empty-icon" />
+            <p className="empty-text">No coupons found</p>
+            <p className="empty-subtext">
+              {searchTerm
+                ? "Try adjusting your search"
+                : "Create your first coupon"}
+            </p>
+            {!searchTerm && (
+              <button
+                className="btn-create-empty"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <Plus size={18} />
+                Create Coupon
+              </button>
+            )}
+          </div>
+        ) : (
+          filteredList.map((c) => {
+            const expired = isExpired(c.expiresAt);
+            const usagePercent =
+              c.maxUses > 0 ? ((c.uses || 0) / c.maxUses) * 100 : 0;
+
+            return (
+              <div
+                key={c._id}
+                className={`mobile-coupon-card ${!c.active || expired ? "inactive" : ""}`}
+              >
+                <div className="mobile-coupon-header">
+                  <div className="mobile-coupon-title">
+                    <TicketPercent size={18} />
+                    <h3>{c.code}</h3>
+                  </div>
+                  <div className="mobile-coupon-badges">
+                    {expired && (
+                      <span className="status-badge status-expired">
+                        Expired
+                      </span>
+                    )}
+                    <span
+                      className={`status-badge ${c.active ? "status-active" : "status-inactive"}`}
+                    >
+                      {c.active ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mobile-coupon-discount">{c.percent}% OFF</div>
+
+                <div className="mobile-coupon-info">
+                  <div className="mobile-info-item">
+                    <Users size={14} />
+                    <span>
+                      {c.uses || 0} / {c.maxUses === 0 ? "∞" : c.maxUses} uses
+                    </span>
+                  </div>
+                  <div className="mobile-info-item">
+                    <Calendar size={14} />
+                    <span>
+                      {c.expiresAt
+                        ? new Date(c.expiresAt).toLocaleDateString()
+                        : "No expiry"}
+                    </span>
+                  </div>
+                </div>
+
+                {c.maxUses > 0 && (
+                  <div className="usage-progress">
+                    <div
+                      className="usage-progress-bar"
+                      style={{ width: `${Math.min(usagePercent, 100)}%` }}
+                    />
+                  </div>
+                )}
+
+                <div className="mobile-coupon-actions">
+                  <button
+                    className="mobile-action-btn"
+                    onClick={() => openEdit(c)}
+                  >
+                    <Pencil size={16} />
+                    Edit
+                  </button>
+                  <button
+                    className="mobile-action-btn"
+                    onClick={() => toggleActive(c._id, !c.active)}
+                  >
+                    {c.active ? <PowerOff size={16} /> : <Power size={16} />}
+                    {c.active ? "Deactivate" : "Activate"}
+                  </button>
+                  <button
+                    className="mobile-action-btn mobile-action-delete"
+                    onClick={() => del(c._id)}
+                  >
+                    <Trash2 size={16} />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <>
+          <div
+            className="modal-overlay"
+            onClick={() => setShowCreateModal(false)}
+          />
+          <div className="modal-container" role="dialog" aria-modal="true">
+            <div className="modal-header">
+              <div>
+                <h2 className="modal-title">Create New Coupon</h2>
+                <p className="modal-subtitle">
+                  Add a new discount code for customers
+                </p>
+              </div>
+              <button
+                className="btn-modal-close"
+                onClick={() => setShowCreateModal(false)}
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={onCreate} className="modal-content">
+              <div className="form-group">
+                <label className="form-label">
+                  Coupon Code<span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. SAVE20"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  required
+                />
+                <span className="form-hint">
+                  Customers will enter this code at checkout
+                </span>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">
+                    Discount Percent<span className="required">*</span>
+                  </label>
+                  <div className="input-with-icon">
                     <input
                       type="number"
                       min={1}
                       max={100}
-                      className="form-control"
+                      className="form-input"
                       value={percent}
                       onChange={(e) => setPercent(Number(e.target.value))}
                       required
                     />
-                  </div>
-                  <div className="col-12 col-sm-6">
-                    <label className="form-label">Max uses (0 = unlimited)</label>
-                    <input
-                      type="number"
-                      min={0}
-                      className="form-control"
-                      value={maxUses}
-                      onChange={(e) => setMaxUses(e.target.value)}
-                    />
+                    <Percent size={18} className="input-icon-right" />
                   </div>
                 </div>
-                <div>
-                  <label className="form-label">Expires at (optional)</label>
+
+                <div className="form-group">
+                  <label className="form-label">Max Uses</label>
                   <input
-                    type="datetime-local"
-                    className="form-control"
-                    value={expiresAt}
-                    onChange={(e) => setExpiresAt(e.target.value)}
+                    type="number"
+                    min={0}
+                    className="form-input"
+                    placeholder="0 = unlimited"
+                    value={maxUses}
+                    onChange={(e) => setMaxUses(e.target.value)}
                   />
                 </div>
-                <button className="mono-btn" disabled={disabled || loading} type="submit">
-                  {loading ? "Saving…" : "Save coupon"}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Expiration Date (Optional)</label>
+                <input
+                  type="datetime-local"
+                  className="form-input"
+                  value={expiresAt}
+                  onChange={(e) => setExpiresAt(e.target.value)}
+                />
+                <span className="form-hint">
+                  Leave empty for no expiration
+                </span>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn-modal-cancel"
+                  onClick={() => setShowCreateModal(false)}
+                >
+                  Cancel
                 </button>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        {/* List */}
-        <div className="col-12 col-lg-7">
-          <div className="card border-0 shadow-sm rounded-4">
-            <div className="card-body">
-              <h6 className="fw-semibold mb-3">All coupons</h6>
-
-              {list.length === 0 ? (
-                <div className="small">No coupons yet</div>
-              ) : (
-                <>
-                  {/* Mobile cards */}
-                  <div className="d-block d-md-none vstack gap-3">
-                    {list.map((c) => (
-                      <div key={c._id} className="coupon-card p-3 rounded-3 border">
-                        <div className="d-flex align-items-start justify-content-between gap-2">
-                          <div className="min-w-0">
-                            <div className="d-flex align-items-center gap-2 flex-wrap">
-                              <span className="fw-bold text-break">{c.code}</span>
-                              <span className={`mono-badge ${c.active ? "active" : ""}`}>
-                                {c.active ? "Active" : "Inactive"}
-                              </span>
-                            </div>
-                            <div className="small mt-1 text-muted">
-                              {c.percent}% off • Uses {c.uses || 0}
-                              {c.maxUses === 0 ? " / ∞" : ` / ${c.maxUses}`}
-                            </div>
-                            <div className="small mt-1">
-                              Expires: {c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "—"}
-                            </div>
-                          </div>
-                          <div className="d-flex flex-wrap gap-2 justify-content-end">
-                            <button className="mono-btn mono-btn-sm" title="Edit" type="button" onClick={() => openEdit(c)}>
-                              <span className="visually-hidden">Edit</span>
-                              <Pencil size={16} />
-                            </button>
-                            {c.active ? (
-                              <button className="mono-btn mono-btn-sm" title="Deactivate" type="button" onClick={() => toggleActive(c._id, false)}>
-                                <span className="visually-hidden">Deactivate</span>
-                                <PowerOff size={16} />
-                              </button>
-                            ) : (
-                              <button className="mono-btn mono-btn-sm" title="Activate" type="button" onClick={() => toggleActive(c._id, true)}>
-                                <span className="visually-hidden">Activate</span>
-                                <Power size={16} />
-                              </button>
-                            )}
-                            <button className="mono-btn mono-btn-sm" title="Delete" type="button" onClick={() => del(c._id)}>
-                              <span className="visually-hidden">Delete</span>
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Desktop table */}
-                  <div className="d-none d-md-block table-responsive mono-scroll">
-                    <table className="table align-middle">
-                      <thead>
-                        <tr>
-                          <th className="text-nowrap">Code</th>
-                          <th className="text-nowrap">Percent</th>
-                          <th className="text-nowrap">Uses</th>
-                          <th className="text-nowrap">Max</th>
-                          <th className="text-nowrap">Status</th>
-                          <th className="text-nowrap">Expires</th>
-                          <th className="text-nowrap">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {list.map((c) => (
-                          <tr key={c._id}>
-                            <td className="fw-semibold text-break">{c.code}</td>
-                            <td>{c.percent}%</td>
-                            <td>{c.uses || 0}</td>
-                            <td>{c.maxUses === 0 ? "∞" : c.maxUses}</td>
-                            <td>
-                              <span className={`mono-badge ${c.active ? "active" : ""}`}>
-                                {c.active ? "Active" : "Inactive"}
-                              </span>
-                            </td>
-                            <td>{c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "—"}</td>
-                            <td className="text-nowrap">
-                              <div className="d-flex flex-wrap gap-2">
-                                <button className="mono-btn mono-btn-sm" title="Edit" type="button" onClick={() => openEdit(c)}>
-                                  <Pencil size={16} />
-                                </button>
-                                {c.active ? (
-                                  <button className="mono-btn mono-btn-sm" title="Deactivate" type="button" onClick={() => toggleActive(c._id, false)}>
-                                    <PowerOff size={16} />
-                                  </button>
-                                ) : (
-                                  <button className="mono-btn mono-btn-sm" title="Activate" type="button" onClick={() => toggleActive(c._id, true)}>
-                                    <Power size={16} />
-                                  </button>
-                                )}
-                                <button className="mono-btn mono-btn-sm" title="Delete" type="button" onClick={() => del(c._id)}>
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Edit modal */}
-      {editing && (
-        <div className="modal fade show" style={{ display: "block", background: "rgba(0,0,0,.4)" }} onClick={() => setEditing(null)}>
-          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Edit coupon</h5>
-                <button type="button" className="mono-btn mono-btn-sm" onClick={() => setEditing(null)} aria-label="Close">
-                  <X size={16} />
+                <button
+                  type="submit"
+                  className="btn-modal-submit"
+                  disabled={disabled || loading}
+                >
+                  {loading ? "Creating..." : "Create Coupon"}
                 </button>
               </div>
-              <form onSubmit={saveEdit}>
-                <div className="modal-body vstack gap-3">
-                  <div>
-                    <label className="form-label">Code</label>
-                    <input
-                      className="form-control"
-                      value={editData.code}
-                      onChange={(e) => setEditData({ ...editData, code: e.target.value.toUpperCase() })}
-                      required
-                    />
-                  </div>
-                  <div className="row g-3">
-                    <div className="col-12 col-sm-6">
-                      <label className="form-label">Percent</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={100}
-                        className="form-control"
-                        value={editData.percent}
-                        onChange={(e) => setEditData({ ...editData, percent: Number(e.target.value) })}
-                        required
-                      />
-                    </div>
-                    <div className="col-12 col-sm-6">
-                      <label className="form-label">Max uses</label>
-                      <input
-                        type="number"
-                        min={0}
-                        className="form-control"
-                        value={editData.maxUses}
-                        onChange={(e) => setEditData({ ...editData, maxUses: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="form-label">Expires at</label>
-                    <input
-                      type="datetime-local"
-                      className="form-control"
-                      value={editData.expiresAt}
-                      onChange={(e) => setEditData({ ...editData, expiresAt: e.target.value })}
-                    />
-                  </div>
-                  <div className="form-check">
-                    <input
-                      id="editActive"
-                      className="form-check-input"
-                      type="checkbox"
-                      checked={editData.active}
-                      onChange={(e) => setEditData({ ...editData, active: e.target.checked })}
-                    />
-                    <label htmlFor="editActive" className="form-check-label">Active</label>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="mono-btn mono-btn-sm" onClick={() => setEditing(null)}>Cancel</button>
-                  <button type="submit" className="mono-btn mono-btn-sm">Save</button>
-                </div>
-              </form>
-            </div>
+            </form>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Local monochrome + responsive helpers */}
-      <style>{`
-        .theme-monochrome { background-color: #f1efef; color: #000; }
-        .theme-monochrome .card, .theme-monochrome .modal-content { background: #fff; color: #000; }
-        .theme-monochrome .form-control, .theme-monochrome .form-select { background-color: #fff; color: #000; border-color: #ccc; }
-        .theme-monochrome .form-check-input { accent-color: #000; }
+      {/* Edit Modal */}
+      {editing && (
+        <>
+          <div className="modal-overlay" onClick={() => setEditing(null)} />
+          <div className="modal-container" role="dialog" aria-modal="true">
+            <div className="modal-header">
+              <div>
+                <h2 className="modal-title">Edit Coupon</h2>
+                <p className="modal-subtitle">Update coupon details</p>
+              </div>
+              <button
+                className="btn-modal-close"
+                onClick={() => setEditing(null)}
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-        /* Inputs/selects focus in black */
-        .form-control:focus, .form-select:focus { border-color: #000 !important; box-shadow: none !important; }
+            <form onSubmit={saveEdit} className="modal-content">
+              <div className="form-group">
+                <label className="form-label">
+                  Coupon Code<span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editData.code}
+                  onChange={(e) =>
+                    setEditData({
+                      ...editData,
+                      code: e.target.value.toUpperCase(),
+                    })
+                  }
+                  required
+                />
+              </div>
 
-        /* Buttons */
-        .mono-btn {
-          border: 1px solid #000; background: #fff; color: #000;
-          border-radius: 10px; padding: 8px 12px; font-weight: 700;
-          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
-          white-space: nowrap;
-        }
-        .mono-btn-sm { padding: 6px 10px; border-radius: 999px; }
-        .mono-btn:hover { background: #000; color: #fff; }
-        .mono-btn:active { transform: scale(0.98); }
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">
+                    Discount Percent<span className="required">*</span>
+                  </label>
+                  <div className="input-with-icon">
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      className="form-input"
+                      value={editData.percent}
+                      onChange={(e) =>
+                        setEditData({
+                          ...editData,
+                          percent: Number(e.target.value),
+                        })
+                      }
+                      required
+                    />
+                    <Percent size={18} className="input-icon-right" />
+                  </div>
+                </div>
 
-        /* Badges */
-        .mono-badge {
-          display: inline-block; padding: 4px 10px; border-radius: 999px;
-          border: 1px solid #000; background: #fff; color: #000; font-weight: 700;
-          font-size: 0.8em; white-space: nowrap;
-        }
-        .mono-badge.active { background: #000; color: #fff; }
+                <div className="form-group">
+                  <label className="form-label">Max Uses</label>
+                  <input
+                    type="number"
+                    min={0}
+                    className="form-input"
+                    value={editData.maxUses}
+                    onChange={(e) =>
+                      setEditData({ ...editData, maxUses: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
 
-        /* Keyboard focus */
-        .mono-btn:focus-visible,
-        a:focus-visible,
-        .form-control:focus-visible,
-        .form-select:focus-visible,
-        .form-check-input:focus-visible + .form-check-label {
-          outline: none;
-          box-shadow: 0 0 0 2px #000, 0 0 0 4px #fff;
-        }
-        .mono-btn:focus, a:focus, .form-control:focus, .form-select:focus { outline: 2px solid #000; outline-offset: 2px; }
-        .mono-btn:focus:not(:focus-visible),
-        a:focus:not(:focus-visible),
-        .form-control:focus:not(:focus-visible),
-        .form-select:focus:not(:focus-visible) { outline: none; box-shadow: none; }
+              <div className="form-group">
+                <label className="form-label">Expiration Date</label>
+                <input
+                  type="datetime-local"
+                  className="form-input"
+                  value={editData.expiresAt}
+                  onChange={(e) =>
+                    setEditData({ ...editData, expiresAt: e.target.value })
+                  }
+                />
+              </div>
 
-        /* Table responsiveness helpers */
-        .mono-scroll { -webkit-overflow-scrolling: touch; }
-        .table td, .table th { vertical-align: middle; }
+              <div className="form-check-group">
+                <input
+                  type="checkbox"
+                  id="editActive"
+                  className="form-checkbox"
+                  checked={editData.active}
+                  onChange={(e) =>
+                    setEditData({ ...editData, active: e.target.checked })
+                  }
+                />
+                <label htmlFor="editActive" className="form-check-label">
+                  Active coupon
+                </label>
+              </div>
 
-        /* Mobile coupon card */
-        .coupon-card { background: #fff; }
-        .coupon-card .mono-badge { font-size: 0.72rem; }
-
-        /* Modal sizing on very small screens */
-        @media (max-width: 575.98px) {
-          .modal-dialog { max-width: 95vw; margin: 1rem auto; }
-        }
-      `}</style>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn-modal-cancel"
+                  onClick={() => setEditing(null)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-modal-submit">
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
     </div>
   );
 }

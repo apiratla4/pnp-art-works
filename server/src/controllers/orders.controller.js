@@ -19,9 +19,48 @@ export async function getOrders(req, res) {
   try {
     const { status } = req.query;
     const filter = status ? { status } : {};
-    const items = await Order.find(filter).sort({ createdAt: -1 });
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
+    
+    const items = orders.map(order => ({
+      _id: order._id,
+      orderNo: order.referenceId,
+      customer: {
+        name: `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim(),
+        email: order.customer?.email,
+        phone: order.shippingAddress?.phone
+      },
+      customerName: `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim(),
+      items: order.items.map(item => ({
+        title: item.name,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        total: item.total,
+        variant: item.variant,
+        description: item.description,
+        image: item.image,
+        category: item.category,
+        sku: item.sku,
+        brand: item.brand
+      })),
+      subTotal: order.totals?.subtotal || 0,
+      shipping: { amount: order.totals?.shipping || 0 },
+      tax: order.totals?.tax || 0,
+      total: order.totals?.grandTotal || 0,
+      discounts: order.totals?.discount ? [{ amount: order.totals.discount }] : [],
+      status: order.status?.toLowerCase() || 'pending',
+      shippingAddress: order.shippingAddress,
+      billingAddress: order.billingAddress,
+      totals: order.totals,
+      paymentMethod: order.paymentMethod,
+      notes: order.referenceId,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt
+    }));
+    
     res.json({ success: true, items });
   } catch (e) {
+    console.error('Get orders error:', e);
     res.status(500).json({ success: false, error: 'Failed to fetch orders' });
   }
 }
