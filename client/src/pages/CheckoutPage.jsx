@@ -59,7 +59,6 @@ export default function CheckoutPage() {
 
   const [touched, setTouched] = useState({});
   const [submitting, setSubmitting] = useState(false);
-
   const [coupon, setCoupon] = useState({ code: '', percent: 0, status: '' });
   const [promoMsg, setPromoMsg] = useState('');
 
@@ -93,6 +92,7 @@ export default function CheckoutPage() {
   const setField = useCallback((name, value) => setForm((f) => ({ ...f, [name]: value })), []);
   const onBlur = useCallback((e) => setTouched((t) => ({ ...t, [e.target.name]: true })), []);
 
+  // Promo
   const applyPromo = useCallback(async (e) => {
     e.preventDefault();
     const raw = form.promo.trim();
@@ -115,49 +115,28 @@ export default function CheckoutPage() {
     }
   }, [form.promo]);
 
-  const itemsPayload = useMemo(() => items.map((it) => ({
-    productId: it.id,
+  // Cart payload for PayPal
+  const itemsPayload = useMemo(() => items.map(it => ({
     name: it.title,
-    qty: it.quantity || 1,
-    price: it.price,
-    total: it.price * (it.quantity || 1),
+    price: Number(it.price),
+    quantity: Number(it.quantity || 1),
+    description: it.description || '',
+    id: it.id,
     variant: it.variant || ''
   })), [items]);
 
   const shippingAddress = useMemo(() => ({
-    fullName: `${form.firstName} ${form.lastName}`.trim(),
-    line1: form.address1,
-    line2: form.address2,
+    firstName: form.firstName,
+    lastName: form.lastName,
+    address1: form.address1,
+    address2: form.address2,
     city: form.city,
     state: form.state,
-    postalCode: form.zip,
-    countryCode: form.country || 'US',
-    phone: form.phone || '',
+    zip: form.zip,
+    country: form.country,
+    phone: form.phone,
     email: form.email
   }), [form]);
-
-  const billingAddress = useMemo(() => form.sameAsShipping
-    ? { ...shippingAddress }
-    : {
-        fullName: `${form.firstName} ${form.lastName}`.trim(),
-        line1: form.address1,
-        line2: form.address2,
-        city: form.city,
-        state: form.state,
-        postalCode: form.zip,
-        countryCode: form.country || 'US',
-        phone: form.phone || '',
-        email: form.email
-      }, [form, shippingAddress]);
-
-  const totals = useMemo(() => ({
-    subtotal: Number(subtotal.toFixed(2)),
-    tax: Number(tax.toFixed(2)),
-    shipping: Number(shipping.toFixed(2)),
-    discount: Number(discount.toFixed(2)),
-    grandTotal: Number(total.toFixed(2)),
-    currency: 'USD'
-  }), [subtotal, tax, shipping, discount, total]);
 
   const customer = useMemo(() => ({
     email: form.email,
@@ -165,7 +144,7 @@ export default function CheckoutPage() {
     lastName: form.lastName
   }), [form.email, form.firstName, form.lastName]);
 
-  // COD
+  // COD order flow
   const placeCodOrder = useCallback(async () => {
     setSubmitting(true);
     try {
@@ -175,7 +154,7 @@ export default function CheckoutPage() {
           cart: itemsPayload,
           customer,
           payment: { method: 'cod' },
-          summary: { ...totals, promoCode: (coupon.code || '').toUpperCase() },
+          summary: { subtotal, tax, shipping, discount, total },
           note: 'COD checkout'
         },
         { headers: { 'Content-Type': 'application/json' } }
@@ -187,13 +166,14 @@ export default function CheckoutPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [itemsPayload, customer, totals, coupon.code, navigate]);
+  }, [itemsPayload, customer, subtotal, tax, shipping, discount, total, navigate]);
 
+  // Form submit
   const onSubmit = useCallback(async (e) => {
     e.preventDefault();
-    setTouched((t) => {
+    setTouched(t => {
       const all = { ...t };
-      ['firstName','lastName','email','address1','city','state','zip'].forEach((k) => (all[k] = true));
+      required.forEach(k => (all[k] = true));
       return all;
     });
     if (Object.keys(errors).length > 0) return;
@@ -203,19 +183,18 @@ export default function CheckoutPage() {
     }
   }, [errors, form.paymentMethod, placeCodOrder]);
 
+  // PayPal REST Integration
   const approvalLinkRef = useRef(null);
 
+  // 1. Create PayPal Order with all cart data
   const createPaypalOrder = useCallback(async () => {
     if (Object.keys(errors).length > 0) return undefined;
-    const referenceId = `order-${Date.now()}`;
     const payload = {
-      totals,
       items: itemsPayload,
-      shippingAddress,
-      billingAddress,
       customer,
-      userId: state?.userId || '',
-      referenceId
+      shippingAddress,
+      returnUrl: "https://pnpartstudio.com/order/success",
+      cancelUrl: "https://pnpartstudio.com/order/cancel"
     };
     try {
       const { data } = await axios.post(
@@ -229,8 +208,9 @@ export default function CheckoutPage() {
       console.error('Create order failed:', err);
       throw err;
     }
-  }, [errors, totals, itemsPayload, shippingAddress, billingAddress, customer, state?.userId]);
+  }, [errors, itemsPayload, customer, shippingAddress]);
 
+  // 2. Approve/complete order
   const onApprovePaypal = useCallback(async (data) => {
     try {
       const payload = { orderId: data.orderID };
@@ -239,7 +219,7 @@ export default function CheckoutPage() {
         payload,
         { headers: { 'Content-Type': 'application/json' } }
       );
-      const orderId = res?.data?.orderId || data.orderID || 'ODR-UNKNOWN';
+      const orderId = res?.data?.id || data.orderID || 'ODR-UNKNOWN';
       navigate(`/order/success?orderId=${encodeURIComponent(orderId)}`, { replace: true });
     } catch (err) {
       console.error('Capture failed:', err);
@@ -258,7 +238,7 @@ export default function CheckoutPage() {
   }, []);
 
   const onCancelPaypal = useCallback(() => {}, []);
-  const paypalKey = `pp-${totals.grandTotal}-${totals.currency || 'USD'}`;
+  const paypalKey = `pp-${total}-USD`;
 
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#f1efef' }}>
@@ -287,7 +267,9 @@ export default function CheckoutPage() {
                         className={`form-control ${touched.firstName && errors.firstName ? 'is-invalid' : ''}`}
                         value={form.firstName}
                         onChange={(e) => setField('firstName', e.target.value)}
-                        onBlur={onBlur} required />
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">First name is required</div>
                     </div>
                     <div className="col-sm-6">
@@ -300,7 +282,9 @@ export default function CheckoutPage() {
                         className={`form-control ${touched.lastName && errors.lastName ? 'is-invalid' : ''}`}
                         value={form.lastName}
                         onChange={(e) => setField('lastName', e.target.value)}
-                        onBlur={onBlur} required />
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">Last name is required</div>
                     </div>
                     <div className="col-12">
@@ -313,7 +297,9 @@ export default function CheckoutPage() {
                         className={`form-control ${touched.email && errors.email ? 'is-invalid' : ''}`}
                         value={form.email}
                         onChange={(e) => setField('email', e.target.value)}
-                        onBlur={onBlur} required />
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">{errors.email || 'Valid email required'}</div>
                     </div>
                     <div className="col-12">
@@ -327,7 +313,8 @@ export default function CheckoutPage() {
                         value={form.phone}
                         onChange={(e) => setField('phone', e.target.value)}
                         onBlur={onBlur}
-                        placeholder="+1 555 555 5555" />
+                        placeholder="+1 555 555 5555"
+                      />
                       <div className="invalid-feedback">{errors.phone}</div>
                     </div>
                     <div className="col-12">
@@ -340,7 +327,9 @@ export default function CheckoutPage() {
                         className={`form-control ${touched.address1 && errors.address1 ? 'is-invalid' : ''}`}
                         value={form.address1}
                         onChange={(e) => setField('address1', e.target.value)}
-                        onBlur={onBlur} required />
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">Address is required</div>
                     </div>
                     <div className="col-12">
@@ -381,7 +370,9 @@ export default function CheckoutPage() {
                         className={`form-control ${touched.state && errors.state ? 'is-invalid' : ''}`}
                         value={form.state}
                         onChange={(e) => setField('state', e.target.value)}
-                        onBlur={onBlur} required />
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">State is required</div>
                     </div>
                     <div className="col-md-3">
@@ -394,7 +385,9 @@ export default function CheckoutPage() {
                         className={`form-control ${touched.zip && errors.zip ? 'is-invalid' : ''}`}
                         value={form.zip}
                         onChange={(e) => setField('zip', e.target.value)}
-                        onBlur={onBlur} required />
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">ZIP is required</div>
                     </div>
                   </div>
@@ -412,7 +405,6 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               </div>
-
               <div className="card border-0 shadow-sm rounded-4 mb-3" style={{ background: '#fff', color: '#000' }}>
                 <div className="card-body">
                   <h5 className="fw-semibold mb-3 d-flex align-items-center gap-2" style={{ color: '#000' }}>
@@ -491,7 +483,6 @@ export default function CheckoutPage() {
               )}
             </form>
           </div>
-
           {/* SUMMARY */}
           <div className="col-12 col-lg-5">
             <div className="card border-0 shadow-sm rounded-4 mb-3" style={{ background: '#fff', color: '#000' }}>
@@ -501,7 +492,7 @@ export default function CheckoutPage() {
                   <p className="mb-0" style={{ color: '#000' }}>No items in cart.</p>
                 ) : (
                   <div className="vstack gap-3">
-                    {items.map((it) => (
+                    {items.map(it => (
                       <div key={it.id} className="d-flex align-items-center">
                         <img
                           src={getCover(it) || FALLBACK_IMG}
@@ -563,7 +554,8 @@ export default function CheckoutPage() {
                     className="form-control"
                     placeholder="Enter code"
                     value={form.promo}
-                    onChange={(e) => setField('promo', e.target.value.toUpperCase())} />
+                    onChange={(e) => setField('promo', e.target.value.toUpperCase())}
+                  />
                   <FancyButton as="button" type="submit" className="fancy-sm d-inline-flex align-items-center gap-2">
                     <Percent size={16} />
                     Apply

@@ -1,4 +1,3 @@
-// src/routes/index.js
 import { Router } from 'express';
 import classesRoutes from './classes.routes.js';
 import galleryRouter from './gallery.routes.js';
@@ -9,8 +8,9 @@ import newsletterRouter from './newsletter.routes.js';
 import checkoutRouter from './checkout.routes.js';
 import customOrderRouter from './custom.order.routes.js';
 import contactRouter from './contact.routes.js';
-import paypalRouter from './paypal.routes.js';
+import paypalRoutes from './paypal.routes.js';
 import redirectRouter from './redirect.routes.js';
+import paypalWebhookRoutes from './paypal.webhook.routes.js';
 
 const routes = Router();
 
@@ -23,8 +23,8 @@ routes.use('/newsletters', newsletterRouter);
 routes.use('/custom-orders', customOrderRouter); 
 routes.use('/checkout', checkoutRouter);
 routes.use('/contact', contactRouter);
-routes.use('/paypal', paypalRouter);
+routes.use('/paypal', paypalRoutes);
 routes.use('/redirect', redirectRouter);
-
+routes.use('/paypal/webhook', paypalWebhookRoutes);
 
 export default routes;

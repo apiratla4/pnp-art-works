@@ -6,17 +6,14 @@ import {
 // POST /api/paypal/create-order
 export async function paypalCreateOrderController(req, res, next) {
   try {
-    const { total, currency, returnUrl, cancelUrl } = req.body;
-    if (!total) return res.status(400).json({ error: "Missing order total" });
+    const { items, customer, shippingAddress, returnUrl, cancelUrl } = req.body;
+    if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: "No cart items" });
 
     const order = await createPayPalOrder({
-      amount: total,
-      currency: currency || "USD",
-      returnUrl: returnUrl || "https://pnpartstudio.com/order/success",
-      cancelUrl: cancelUrl || "https://pnpartstudio.com/order/cancel",
+      items, customer, shippingAddress, returnUrl, cancelUrl
     });
 
-    res.status(201).json(order);
+    res.status(201).json({ id: order.id, links: order.links, status: order.status });
   } catch (err) {
     next(err);
   }
@@ -28,8 +25,8 @@ export async function paypalCaptureOrderController(req, res, next) {
     const { orderId } = req.body;
     if (!orderId) return res.status(400).json({ error: "Missing orderId" });
 
-    const result = await capturePayPalOrder(orderId);
-    res.status(200).json(result);
+    const capture = await capturePayPalOrder(orderId);
+    res.status(200).json(capture);
   } catch (err) {
     next(err);
   }
