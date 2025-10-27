@@ -23,6 +23,7 @@ const toUrl = (entry) => {
   }
   return '';
 };
+
 const getCover = (item) => {
   const single = toUrl(item?.image);
   if (single) return single;
@@ -30,6 +31,7 @@ const getCover = (item) => {
   const first = arr.find(Boolean);
   return toUrl(first);
 };
+
 const handleImgError = (e) => {
   e.currentTarget.onerror = null;
   e.currentTarget.src = FALLBACK_IMG;
@@ -110,7 +112,6 @@ export default function CheckoutPage() {
     }
   }, [form.promo]);
 
-  // For new order schema (matches backend ItemSchema)
   const itemsPayload = useMemo(() => items.map(it => ({
     productId: it.id,
     name: it.title,
@@ -119,6 +120,11 @@ export default function CheckoutPage() {
     total: Number(it.price) * Number(it.quantity || 1),
     variant: it.variant || '',
     description: it.description || '',
+    image: getCover(it) || '',
+    category: it.category || '',
+    sku: it.sku || '',
+    brand: it.brand || '',
+    meta: it.meta || {}
   })), [items]);
 
   const shippingAddress = useMemo(() => ({
@@ -159,9 +165,7 @@ export default function CheckoutPage() {
     currency: "USD"
   }), [subtotal, tax, shipping, discount, total]);
 
-  // ---- ORDER POST to /api/orders ----
   const saveOrder = useCallback(async (raw) => {
-    // Accepts object with any extra payment info (PayPal id etc)
     const orderData = {
       customer: {
         firstName: form.firstName,
@@ -181,7 +185,6 @@ export default function CheckoutPage() {
     return data;
   }, [form, itemsPayload, shippingAddress, billingAddress, totals]);
 
-  // -- Cash on Delivery order
   const placeCodOrder = useCallback(async () => {
     setSubmitting(true);
     try {
@@ -196,7 +199,6 @@ export default function CheckoutPage() {
     }
   }, [saveOrder, navigate]);
 
-  // -- PayPal
   const approvalLinkRef = useRef(null);
 
   const createPaypalOrder = useCallback(async () => {
@@ -226,11 +228,9 @@ export default function CheckoutPage() {
 
   const onApprovePaypal = useCallback(async (data) => {
     try {
-      // 1. Capture payment with /paypal/capture-order
       const captureRes = await axios.post(api('/paypal/capture-order'), { orderId: data.orderID }, {
         headers: { "Content-Type": "application/json" }
       });
-      // 2. Save completed order to DB
       const orderData = {
         paypalOrderId: data.orderID,
         status: 'paid',
@@ -258,7 +258,6 @@ export default function CheckoutPage() {
       await placeCodOrder();
       return;
     }
-    // no manual onSubmit for PayPal - handled by PayPal buttons
   }, [errors, form.paymentMethod, placeCodOrder, required]);
 
   const onErrorPaypal = useCallback((err) => {
@@ -270,6 +269,7 @@ export default function CheckoutPage() {
     }
     alert('PayPal error. Please try again.');
   }, []);
+
   const onCancelPaypal = useCallback(() => {}, []);
   const paypalKey = `pp-${total}-USD`;
 
@@ -289,39 +289,103 @@ export default function CheckoutPage() {
                     <Truck size={18} /> Shipping address
                   </h5>
                   <div className="row g-3">
-                    {/* All shipping fields: firstName, lastName, email, phone, address1, address2, city, state, zip, country, etc. */}
                     <div className="col-sm-6">
                       <label className="form-label" htmlFor="firstName">First name</label>
-                      <input id="firstName" name="firstName" autoComplete="given-name" type="text" className={`form-control ${touched.firstName && errors.firstName ? 'is-invalid' : ''}`} value={form.firstName} onChange={(e) => setField('firstName', e.target.value)} onBlur={onBlur} required />
+                      <input
+                        id="firstName"
+                        name="firstName"
+                        autoComplete="given-name"
+                        type="text"
+                        className={`form-control ${touched.firstName && errors.firstName ? 'is-invalid' : ''}`}
+                        value={form.firstName}
+                        onChange={(e) => setField('firstName', e.target.value)}
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">First name is required</div>
                     </div>
                     <div className="col-sm-6">
                       <label className="form-label" htmlFor="lastName">Last name</label>
-                      <input id="lastName" name="lastName" autoComplete="family-name" type="text" className={`form-control ${touched.lastName && errors.lastName ? 'is-invalid' : ''}`} value={form.lastName} onChange={(e) => setField('lastName', e.target.value)} onBlur={onBlur} required />
+                      <input
+                        id="lastName"
+                        name="lastName"
+                        autoComplete="family-name"
+                        type="text"
+                        className={`form-control ${touched.lastName && errors.lastName ? 'is-invalid' : ''}`}
+                        value={form.lastName}
+                        onChange={(e) => setField('lastName', e.target.value)}
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">Last name is required</div>
                     </div>
                     <div className="col-12">
                       <label className="form-label" htmlFor="email">Email</label>
-                      <input id="email" name="email" autoComplete="email" type="email" className={`form-control ${touched.email && errors.email ? 'is-invalid' : ''}`} value={form.email} onChange={(e) => setField('email', e.target.value)} onBlur={onBlur} required />
+                      <input
+                        id="email"
+                        name="email"
+                        autoComplete="email"
+                        type="email"
+                        className={`form-control ${touched.email && errors.email ? 'is-invalid' : ''}`}
+                        value={form.email}
+                        onChange={(e) => setField('email', e.target.value)}
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">{errors.email || 'Valid email required'}</div>
                     </div>
                     <div className="col-12">
                       <label className="form-label" htmlFor="phone">Phone (optional)</label>
-                      <input id="phone" name="phone" autoComplete="tel" type="tel" className={`form-control ${touched.phone && errors.phone ? 'is-invalid' : ''}`} value={form.phone} onChange={(e) => setField('phone', e.target.value)} onBlur={onBlur} placeholder="+1 555 555 5555" />
+                      <input
+                        id="phone"
+                        name="phone"
+                        autoComplete="tel"
+                        type="tel"
+                        className={`form-control ${touched.phone && errors.phone ? 'is-invalid' : ''}`}
+                        value={form.phone}
+                        onChange={(e) => setField('phone', e.target.value)}
+                        onBlur={onBlur}
+                        placeholder="+1 555 555 5555"
+                      />
                       <div className="invalid-feedback">{errors.phone}</div>
                     </div>
                     <div className="col-12">
                       <label className="form-label" htmlFor="address1">Address line 1</label>
-                      <input id="address1" name="address1" autoComplete="address-line1" type="text" className={`form-control ${touched.address1 && errors.address1 ? 'is-invalid' : ''}`} value={form.address1} onChange={(e) => setField('address1', e.target.value)} onBlur={onBlur} required />
+                      <input
+                        id="address1"
+                        name="address1"
+                        autoComplete="address-line1"
+                        type="text"
+                        className={`form-control ${touched.address1 && errors.address1 ? 'is-invalid' : ''}`}
+                        value={form.address1}
+                        onChange={(e) => setField('address1', e.target.value)}
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">Address is required</div>
                     </div>
                     <div className="col-12">
                       <label className="form-label" htmlFor="address2">Address line 2 (optional)</label>
-                      <input id="address2" name="address2" autoComplete="address-line2" type="text" className="form-control" value={form.address2} onChange={(e) => setField('address2', e.target.value)} onBlur={onBlur} />
+                      <input
+                        id="address2"
+                        name="address2"
+                        autoComplete="address-line2"
+                        type="text"
+                        className="form-control"
+                        value={form.address2}
+                        onChange={(e) => setField('address2', e.target.value)}
+                        onBlur={onBlur}
+                      />
                     </div>
                     <div className="col-md-5">
                       <label className="form-label" htmlFor="country">Country</label>
-                      <select id="country" name="country" autoComplete="country" className="form-select" value={form.country} onChange={(e) => setField('country', e.target.value)}>
+                      <select
+                        id="country"
+                        name="country"
+                        autoComplete="country"
+                        className="form-select"
+                        value={form.country}
+                        onChange={(e) => setField('country', e.target.value)}>
                         <option value="US">United States</option>
                         <option value="IN">India</option>
                         <option value="GB">United Kingdom</option>
@@ -330,22 +394,58 @@ export default function CheckoutPage() {
                     </div>
                     <div className="col-md-4">
                       <label className="form-label" htmlFor="state">State</label>
-                      <input id="state" name="state" autoComplete="address-level1" type="text" className={`form-control ${touched.state && errors.state ? 'is-invalid' : ''}`} value={form.state} onChange={(e) => setField('state', e.target.value)} onBlur={onBlur} required />
+                      <input
+                        id="state"
+                        name="state"
+                        autoComplete="address-level1"
+                        type="text"
+                        className={`form-control ${touched.state && errors.state ? 'is-invalid' : ''}`}
+                        value={form.state}
+                        onChange={(e) => setField('state', e.target.value)}
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">State is required</div>
                     </div>
                     <div className="col-md-3">
                       <label className="form-label" htmlFor="city">City</label>
-                      <input id="city" name="city" autoComplete="address-level2" type="text" className={`form-control ${touched.city && errors.city ? 'is-invalid' : ''}`} value={form.city} onChange={(e) => setField('city', e.target.value)} onBlur={onBlur} required />
+                      <input
+                        id="city"
+                        name="city"
+                        autoComplete="address-level2"
+                        type="text"
+                        className={`form-control ${touched.city && errors.city ? 'is-invalid' : ''}`}
+                        value={form.city}
+                        onChange={(e) => setField('city', e.target.value)}
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">City is required</div>
                     </div>
                     <div className="col-md-3">
                       <label className="form-label" htmlFor="zip">ZIP</label>
-                      <input id="zip" name="zip" autoComplete="postal-code" type="text" className={`form-control ${touched.zip && errors.zip ? 'is-invalid' : ''}`} value={form.zip} onChange={(e) => setField('zip', e.target.value)} onBlur={onBlur} required />
+                      <input
+                        id="zip"
+                        name="zip"
+                        autoComplete="postal-code"
+                        type="text"
+                        className={`form-control ${touched.zip && errors.zip ? 'is-invalid' : ''}`}
+                        value={form.zip}
+                        onChange={(e) => setField('zip', e.target.value)}
+                        onBlur={onBlur}
+                        required
+                      />
                       <div className="invalid-feedback">ZIP is required</div>
                     </div>
                   </div>
                   <div className="form-check mt-3">
-                    <input id="sameAsShipping" name="sameAsShipping" className="form-check-input" type="checkbox" checked={form.sameAsShipping} onChange={(e) => setField('sameAsShipping', e.target.checked)} />
+                    <input
+                      id="sameAsShipping"
+                      name="sameAsShipping"
+                      className="form-check-input"
+                      type="checkbox"
+                      checked={form.sameAsShipping}
+                      onChange={(e) => setField('sameAsShipping', e.target.checked)} />
                     <label className="form-check-label" htmlFor="sameAsShipping">
                       Billing address same as shipping
                     </label>
@@ -358,13 +458,26 @@ export default function CheckoutPage() {
                     <CreditCard size={18} /> Payment
                   </h5>
                   <div className="form-check mb-2">
-                    <input id="pm-cod" name="paymentMethod" className="form-check-input" type="radio" checked={form.paymentMethod === 'cod'} onChange={() => setField('paymentMethod', 'cod')} />
+                    <input
+                      id="pm-cod"
+                      name="paymentMethod"
+                      className="form-check-input"
+                      type="radio"
+                      checked={form.paymentMethod === 'cod'}
+                      onChange={() => setField('paymentMethod', 'cod')} />
                     <label className="form-check-label" htmlFor="pm-cod">
                       Cash on Delivery (COD)
                     </label>
                   </div>
                   <div className="form-check mb-3">
-                    <input id="pm-paypal" name="paymentMethod" className="form-check-input" type="radio" checked={form.paymentMethod === 'paypal'} onChange={() => setField('paymentMethod', 'paypal')} disabled={items.length === 0} />
+                    <input
+                      id="pm-paypal"
+                      name="paymentMethod"
+                      className="form-check-input"
+                      type="radio"
+                      checked={form.paymentMethod === 'paypal'}
+                      onChange={() => setField('paymentMethod', 'paypal')}
+                      disabled={items.length === 0} />
                     <label className="form-check-label" htmlFor="pm-paypal">
                       PayPal
                     </label>
