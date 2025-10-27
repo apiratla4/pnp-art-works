@@ -10,6 +10,11 @@ const ItemSchema = new mongoose.Schema(
     total: { type: Number },
     variant: { type: String },
     description: { type: String },
+    image: { type: String },
+    category: { type: String },
+    sku: { type: String },
+    brand: { type: String },
+    meta: { type: mongoose.Schema.Types.Mixed }, // for any extra fields
   },
   { _id: false }
 );
@@ -31,10 +36,10 @@ const AddressSchema = new mongoose.Schema(
 
 const TotalsSchema = new mongoose.Schema(
   {
-    subtotal: { type: Number },
-    tax: { type: Number },
-    shipping: { type: Number },
-    discount: { type: Number },
+    subtotal: Number,
+    tax: Number,
+    shipping: Number,
+    discount: Number,
     grandTotal: { type: Number, required: true },
     currency: { type: String, default: 'USD' },
   },
