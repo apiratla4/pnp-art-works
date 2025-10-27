@@ -62,7 +62,6 @@ export default function CheckoutPage() {
   const [coupon, setCoupon] = useState({ code: '', percent: 0, status: '' });
   const [promoMsg, setPromoMsg] = useState('');
 
-  // Cart totals
   const items = state.items || [];
   const subtotal = useMemo(
     () => items.reduce((sum, it) => sum + it.price * (it.quantity || 1), 0),
@@ -76,7 +75,6 @@ export default function CheckoutPage() {
   );
   const total = Math.max(0, Math.round((subtotal + shipping + tax - discount) * 100) / 100);
 
-  // Validation
   const required = ['firstName', 'lastName', 'email', 'address1', 'city', 'state', 'zip'];
   const errors = useMemo(() => {
     const e = {};
@@ -92,7 +90,6 @@ export default function CheckoutPage() {
   const setField = useCallback((name, value) => setForm((f) => ({ ...f, [name]: value })), []);
   const onBlur = useCallback((e) => setTouched((t) => ({ ...t, [e.target.name]: true })), []);
 
-  // Promo
   const applyPromo = useCallback(async (e) => {
     e.preventDefault();
     const raw = form.promo.trim();
@@ -115,7 +112,6 @@ export default function CheckoutPage() {
     }
   }, [form.promo]);
 
-  // Cart payload for PayPal
   const itemsPayload = useMemo(() => items.map(it => ({
     name: it.title,
     price: Number(it.price),
@@ -144,7 +140,6 @@ export default function CheckoutPage() {
     lastName: form.lastName
   }), [form.email, form.firstName, form.lastName]);
 
-  // COD order flow
   const placeCodOrder = useCallback(async () => {
     setSubmitting(true);
     try {
@@ -168,7 +163,6 @@ export default function CheckoutPage() {
     }
   }, [itemsPayload, customer, subtotal, tax, shipping, discount, total, navigate]);
 
-  // Form submit
   const onSubmit = useCallback(async (e) => {
     e.preventDefault();
     setTouched(t => {
@@ -183,10 +177,8 @@ export default function CheckoutPage() {
     }
   }, [errors, form.paymentMethod, placeCodOrder]);
 
-  // PayPal REST Integration
   const approvalLinkRef = useRef(null);
 
-  // 1. Create PayPal Order with all cart data
   const createPaypalOrder = useCallback(async () => {
     if (Object.keys(errors).length > 0) return undefined;
     const payload = {
@@ -210,7 +202,6 @@ export default function CheckoutPage() {
     }
   }, [errors, itemsPayload, customer, shippingAddress]);
 
-  // 2. Approve/complete order
   const onApprovePaypal = useCallback(async (data) => {
     try {
       const payload = { orderId: data.orderID };
@@ -248,7 +239,6 @@ export default function CheckoutPage() {
           <p className="mb-0" style={{ color: '#000' }}>Secure payment and fast delivery</p>
         </div>
         <div className="row g-4 g-lg-5">
-          {/* FORM */}
           <div className="col-12 col-lg-7">
             <form id="checkoutForm" noValidate onSubmit={onSubmit} className="needs-validation">
               <div className="card border-0 shadow-sm rounded-4 mb-3" style={{ background: '#fff', color: '#000' }}>
@@ -376,6 +366,21 @@ export default function CheckoutPage() {
                       <div className="invalid-feedback">State is required</div>
                     </div>
                     <div className="col-md-3">
+                      <label className="form-label" htmlFor="city">City</label>
+                      <input
+                        id="city"
+                        name="city"
+                        autoComplete="address-level2"
+                        type="text"
+                        className={`form-control ${touched.city && errors.city ? 'is-invalid' : ''}`}
+                        value={form.city}
+                        onChange={(e) => setField('city', e.target.value)}
+                        onBlur={onBlur}
+                        required
+                      />
+                      <div className="invalid-feedback">City is required</div>
+                    </div>
+                    <div className="col-md-3">
                       <label className="form-label" htmlFor="zip">ZIP</label>
                       <input
                         id="zip"
@@ -440,7 +445,7 @@ export default function CheckoutPage() {
                       {hasClient ? (
                         <PayPalButtons
                           key={paypalKey}
-                          style={{ layout: 'vertical', color: 'black', shape: 'pill', label: 'paypal' }}
+                          style={{ layout: 'vertical' }}
                           createOrder={createPaypalOrder}
                           onApprove={onApprovePaypal}
                           onError={onErrorPaypal}
@@ -483,7 +488,6 @@ export default function CheckoutPage() {
               )}
             </form>
           </div>
-          {/* SUMMARY */}
           <div className="col-12 col-lg-5">
             <div className="card border-0 shadow-sm rounded-4 mb-3" style={{ background: '#fff', color: '#000' }}>
               <div className="card-body">
@@ -539,7 +543,6 @@ export default function CheckoutPage() {
                 )}
               </div>
             </div>
-            {/* Promo */}
             <div className="card border-0 shadow-sm rounded-4" style={{ background: '#fff', color: '#000' }}>
               <div className="card-body">
                 <h6 className="fw-semibold mb-2 d-flex align-items-center gap-2" style={{ color: '#000' }}>
@@ -566,7 +569,6 @@ export default function CheckoutPage() {
             </div>
           </div>
         </div>
-        {/* Local overrides */}
         <style>{`
           .form-control:focus,
           .form-select:focus { border-color: #000 !important; box-shadow: none !important; }
