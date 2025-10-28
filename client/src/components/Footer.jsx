@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import './Footer.css';
-import logo from '../assets/pnplogoaiiii.png';
+import logo from '../assets/pnplogowhite.png';
 import FancyButton from './FancyButton';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';

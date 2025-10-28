@@ -1,9 +1,8 @@
-// src/context/CartContext.jsx
 import React, { createContext, useContext, useEffect, useReducer } from "react";
 
 const initialState = {
-  items: [],        // [{ id, title, price, image, category, quantity }]
-  wishlist: [],     // [{ id, title, price, image, category }]
+  items: [],        // [{ id, title, price, image, images, category, subcategory, subsubcategory, description, color, quantity }]
+  wishlist: [],     // [{ id, title, price, image, images, category, subcategory, color }]
   isOpen: false
 };
 
@@ -42,7 +41,6 @@ const cartReducer = (state, action) => {
       return { ...state, isOpen: !state.isOpen };
     case "CLOSE_CART":
       return { ...state, isOpen: false };
-
     // Wishlist
     case "WISHLIST_ADD": {
       const exists = state.wishlist.some((w) => w.id === action.payload.id);
@@ -57,14 +55,12 @@ const cartReducer = (state, action) => {
         ? { ...state, wishlist: state.wishlist.filter((w) => w.id !== action.payload.id) }
         : { ...state, wishlist: [...state.wishlist, action.payload] };
     }
-
     default:
       return state;
   }
 };
 
 export const CartProvider = ({ children }) => {
-  // hydrate persisted state (optional)
   const getPersisted = () => {
     try {
       const raw = localStorage.getItem("APP_CART_STATE");
@@ -73,10 +69,8 @@ export const CartProvider = ({ children }) => {
       return initialState;
     }
   };
-
   const [state, dispatch] = useReducer(cartReducer, undefined, getPersisted);
 
-  // persist on change (optional)
   useEffect(() => {
     try {
       localStorage.setItem("APP_CART_STATE", JSON.stringify(state));

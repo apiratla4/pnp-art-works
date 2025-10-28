@@ -2,18 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Edit,
-  Trash2,
-  Image as ImageIcon,
-  DollarSign,
-  Tag,
-  Layers,
-  Plus,
-  Info,
-  Maximize2,
-  X,
-  ChevronLeft,
-  ChevronRight
+  Edit, Trash2, Image as ImageIcon, DollarSign, Tag, Layers, Plus, Info, Maximize2, X, ChevronLeft, ChevronRight
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -30,49 +19,63 @@ axios.defaults.withCredentials = true;
 // USD formatter
 const fmtUSD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
-const CATEGORIES = [
-  "Paintings",
-  "Indian Products",
-  "Pencil Sketches",
-  "Digital Prints",
-  "Limited Editions"
-];
-
-const INDIAN_SUBCATEGORIES = [
-  "Kolam coasters",
-  "Kolam peetham",
-  "Traditional magnets",
-  "Trays",
-  "Diya holders"
-];
-
-const currentYear = new Date().getFullYear();
+const PRODUCT_CATEGORIES = {
+  "All Products": [
+    "Paintings",
+    "Holiday gifts",
+    "Landscapes",
+    "Modern art",
+    "Name sign",
+    "Limited editions",
+    "Pencil sketches",
+    { label: "Digital prints", disabled: true }
+  ],
+  "Indian Products": [
+    "Indian god paintings",
+    "Musical Art paintings",
+    {
+      label: "Return gifts",
+      children: [
+        "Kolam coasters",
+        "Kolam peetham",
+        "Traditional magnets",
+        "Trays",
+        "Diya holders"
+      ]
+    }
+  ]
+};
 
 const EMPTY_PRODUCT = {
   id: "",
   title: "",
-  category: "Paintings",
+  category: "",
   subcategory: "",
+  subsubcategory: "",
   price: "",
   salePrice: "",
   stock: 1,
-  images: [], // array of string URLs (DB truth)
+  images: [],
   description: "",
   published: true,
   dimensions: "",
-  medium: "",
-  year: currentYear,
+  color: "",
   inStock: true,
   featured: false
 };
+
+const toCapitalWords = (str) => String(str || "")
+  .toLowerCase()
+  .replace(/\b(\w)/g, (s) => s.toUpperCase());
 
 const mapProductFromApi = (doc) => {
   const images = Array.isArray(doc?.images) ? doc.images.filter(Boolean) : [];
   return {
     id: doc._id,
     title: doc.title || "",
-    category: doc.category || "Paintings",
+    category: doc.category || "",
     subcategory: doc.subcategory || "",
+    subsubcategory: doc.subsubcategory || "",
     price: typeof doc.price === "number" ? doc.price : 0,
     salePrice: doc.salePrice === null ? null : (typeof doc.salePrice === "number" ? doc.salePrice : null),
     stock: typeof doc.stock === "number" ? doc.stock : 0,
@@ -81,12 +84,10 @@ const mapProductFromApi = (doc) => {
     published: !!doc.published,
     slug: doc.slug || "",
     dimensions: doc.dimensions || "",
-    medium: doc.medium || "",
-    year: Number.isInteger(doc?.year) ? doc.year : currentYear,
-    inStock:
-      typeof doc?.inStock === "boolean"
-        ? doc.inStock
-        : typeof doc?.stock === "number"
+    color: toCapitalWords(doc.color || ""),
+    inStock: typeof doc?.inStock === "boolean"
+      ? doc.inStock
+      : typeof doc?.stock === "number"
         ? doc.stock > 0
         : true,
     featured: !!doc?.featured
@@ -108,7 +109,7 @@ async function uploadToCloudinary(file, folder = "pnpartproducts") {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("upload_preset", UPLOAD_PRESET);
-  fd.append("folder", folder); // folder allowed only if preset permits it
+  fd.append("folder", folder);
 
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
     method: "POST",
@@ -124,10 +125,8 @@ async function uploadToCloudinary(file, folder = "pnpartproducts") {
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [editingId, setEditingId] = useState("");
   const [form, setForm] = useState(EMPTY_PRODUCT);
-
   const [uploadingImgs, setUploadingImgs] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -150,11 +149,8 @@ export default function ProductsPage() {
     }
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  // Upload -> URLs -> array of strings
   const handleFiles = async (files) => {
     const list = Array.from(files || []);
     if (!list.length) return;
@@ -208,17 +204,28 @@ export default function ProductsPage() {
       toast.warning("Valid price is required");
       return;
     }
+    if (!form.category) {
+      toast.warning("Select a category");
+      return;
+    }
+    if (form.category === "All Products" && !form.subcategory) {
+      toast.warning("Select a subcategory");
+      return;
+    }
     if (form.category === "Indian Products" && !form.subcategory) {
       toast.warning("Select a subcategory");
       return;
     }
-    if (form.salePrice !== "" && form.salePrice !== null && Number(form.salePrice) > Number(form.price)) {
-      toast.warning("Sale price cannot exceed price");
+    if (form.subcategory === "Return gifts" && !form.subsubcategory) {
+      toast.warning("Select return gift");
       return;
     }
-    const y = Number(form.year);
-    if (!Number.isInteger(y) || y < 1900 || y > currentYear) {
-      toast.warning(`Enter a valid year between 1900 and ${currentYear}`);
+    if (
+      form.salePrice !== "" &&
+      form.salePrice !== null &&
+      Number(form.salePrice) > Number(form.price)
+    ) {
+      toast.warning("Sale price cannot exceed price");
       return;
     }
 
@@ -226,16 +233,16 @@ export default function ProductsPage() {
       const payload = {
         title: form.title,
         category: form.category,
-        subcategory: form.category === "Indian Products" ? form.subcategory : undefined,
+        subcategory: form.subcategory,
+        subsubcategory: form.subsubcategory ? form.subsubcategory : undefined,
         price: Number(form.price),
         salePrice: form.salePrice !== "" && form.salePrice !== null ? Number(form.salePrice) : null,
         stock: Number(form.stock || 0),
-        images: Array.isArray(form.images) ? form.images.map(String) : [], // DB: array of strings
+        images: Array.isArray(form.images) ? form.images.map(String) : [],
         description: form.description || "",
         published: !!form.published,
         dimensions: form.dimensions || "",
-        medium: form.medium || "",
-        year: y,
+        color: toCapitalWords(form.color),
         inStock: !!form.inStock,
         featured: !!form.featured
       };
@@ -271,26 +278,8 @@ export default function ProductsPage() {
     if (!found) return;
     setEditingId(id);
     setForm({
-      id,
-      title: found.title || "",
-      category: found.category || "Paintings",
-      subcategory: found.category === "Indian Products" ? found.subcategory || "" : "",
-      price: found.price ?? "",
-      salePrice: found.salePrice ?? "",
-      stock: typeof found.stock === "number" ? found.stock : 0,
-      images: Array.isArray(found.images) ? found.images : [],
-      description: found.description || "",
-      published: !!found.published,
-      dimensions: found.dimensions || "",
-      medium: found.medium || "",
-      year: Number.isInteger(found.year) ? found.year : currentYear,
-      inStock:
-        typeof found.inStock === "boolean"
-          ? found.inStock
-          : typeof found.stock === "number"
-          ? found.stock > 0
-          : true,
-      featured: !!found.featured
+      ...EMPTY_PRODUCT,
+      ...found
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -309,12 +298,11 @@ export default function ProductsPage() {
     }
   };
 
-  // Use the first usable image URL from product; supports strings or objects
   const firstUrl = (p) => {
     const single = typeof p?.image === "string" ? p.image.trim() : "";
     if (single) return single;
     const arr = Array.isArray(p?.images) ? p.images : [];
-    const first = arr.find(Boolean); // first truthy element
+    const first = arr.find(Boolean);
     if (!first) return "";
     if (typeof first === "string") return first;
     if (typeof first === "object" && first !== null) {
@@ -323,7 +311,6 @@ export default function ProductsPage() {
     return "";
   };
 
-  // Replace broken image with inline SVG placeholder
   const handleImgError = (e) => {
     e.currentTarget.onerror = null;
     e.currentTarget.src =
@@ -356,38 +343,32 @@ export default function ProductsPage() {
       return len ? (i + 1) % len : 0;
     });
 
+  // --------- RENDER ---------
   return (
     <div>
       <div className="d-flex align-items-center justify-content-between mb-3">
         <div>
-          <h1 className="h4 fw-bold mb-0" style={{ color: "#000" }}>
-            Products
-          </h1>
+          <h1 className="h4 fw-bold mb-0" style={{ color: "#000" }}>Products</h1>
           <small style={{ color: "#000" }}>
             Table shows only one image URL (first), expand to view all details and images
           </small>
         </div>
         {loading && (
-          <span className="small" style={{ color: "#000" }}>
-            Loading…
-          </span>
+          <span className="small" style={{ color: "#000" }}>Loading…</span>
         )}
       </div>
 
-      {/* Form */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
+      {/* ------- FORM ------- */}
+      <motion.div initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         className="card border-0 shadow-sm rounded-4 mb-4"
-        style={{ background: "#fff", color: "#000" }}
-      >
+        style={{ background: "#fff", color: "#000" }}>
         <div className="card-body p-3 p-lg-4">
           <div className="d-flex align-items-center justify-content-between">
             <h2 className="h6 fw-semibold mb-3" style={{ color: "#000" }}>
               {editingId ? "Edit Product" : "Add New Product"}
             </h2>
           </div>
-
           <form onSubmit={saveProduct}>
             <div className="row g-3">
               {/* Title */}
@@ -403,54 +384,79 @@ export default function ProductsPage() {
                   required
                 />
               </div>
-
               {/* Category */}
               <div className="col-6 col-sm-6 col-lg-3">
-                <label className="form-label small fw-semibold" style={{ color: "#000" }}>
-                  Category
-                </label>
+                <label className="form-label small fw-semibold" style={{ color: "#000" }}>Category</label>
                 <select
                   className="form-select"
                   value={form.category}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setForm((f) => ({
-                      ...f,
-                      category: value,
-                      subcategory: value === "Indian Products" ? f.subcategory : ""
-                    }));
-                  }}
+                  onChange={e => setForm(f => ({
+                    ...f,
+                    category: e.target.value,
+                    subcategory: "",
+                    subsubcategory: ""
+                  }))}
+                  required
                 >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
+                  <option value="">Select Category</option>
+                  {Object.keys(PRODUCT_CATEGORIES).map(c => (
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               </div>
-
               {/* Subcategory */}
-              {form.category === "Indian Products" && (
+              {form.category && (
                 <div className="col-6 col-sm-6 col-lg-3">
-                  <label className="form-label small fw-semibold" style={{ color: "#000" }}>
-                    Subcategory
-                  </label>
+                  <label className="form-label small fw-semibold" style={{ color: "#000" }}>Subcategory</label>
                   <select
                     className="form-select"
                     value={form.subcategory}
-                    onChange={(e) => setForm((f) => ({ ...f, subcategory: e.target.value }))}
+                    onChange={e => setForm(f => ({
+                      ...f,
+                      subcategory: e.target.value,
+                      subsubcategory: ""
+                    }))}
                     required
                   >
-                    <option value="">Select…</option>
-                    {INDIAN_SUBCATEGORIES.map((sc) => (
-                      <option key={sc} value={sc}>
-                        {sc}
-                      </option>
-                    ))}
+                    <option value="">Select Subcategory</option>
+                    {(PRODUCT_CATEGORIES[form.category] || []).map(sub =>
+                      typeof sub === "string" ? (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ) : (
+                        <option
+                          key={sub.label}
+                          value={sub.label}
+                          disabled={!!sub.disabled}
+                          style={{ fontStyle: sub.disabled ? "italic" : "normal" }}>
+                          {sub.label}{sub.disabled ? " (Coming soon)" : ""}
+                        </option>
+                      )
+                    )}
                   </select>
                 </div>
               )}
-
+              {/* Subsubcategory: only for "Return gifts" under Indian Products */}
+              {form.category === "Indian Products" && form.subcategory === "Return gifts" && (
+                <div className="col-6 col-sm-6 col-lg-3">
+                  <label className="form-label small fw-semibold" style={{ color: "#000" }}>Return Gift</label>
+                  <select
+                    className="form-select"
+                    value={form.subsubcategory}
+                    onChange={e => setForm(f => ({
+                      ...f,
+                      subsubcategory: e.target.value
+                    }))}
+                    required
+                  >
+                    <option value="">Select Return Gift</option>
+                    {PRODUCT_CATEGORIES["Indian Products"]
+                      .find(sc => typeof sc === "object" && sc.label === "Return gifts")
+                      .children.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                  </select>
+                </div>
+              )}
               {/* Slug */}
               <div className="col-6 col-sm-6 col-lg-3">
                 <label className="form-label small fw-semibold" style={{ color: "#000" }}>
@@ -458,12 +464,10 @@ export default function ProductsPage() {
                 </label>
                 <input className="form-control" value={slugify(form.title)} disabled />
               </div>
-
               {/* Price */}
               <div className="col-6 col-sm-6 col-lg-3">
                 <label className="form-label small fw-semibold" style={{ color: "#000" }}>
-                  <DollarSign size={14} className="me-1" />
-                  Price
+                  <DollarSign size={14} className="me-1" />Price
                 </label>
                 <input
                   type="number"
@@ -475,12 +479,10 @@ export default function ProductsPage() {
                   required
                 />
               </div>
-
               {/* Sale Price */}
               <div className="col-6 col-sm-6 col-lg-3">
                 <label className="form-label small fw-semibold" style={{ color: "#000" }}>
-                  <Tag size={14} className="me-1" />
-                  Sale Price (optional)
+                  <Tag size={14} className="me-1" />Sale Price (optional)
                 </label>
                 <input
                   type="number"
@@ -491,12 +493,10 @@ export default function ProductsPage() {
                   onChange={(e) => setForm((f) => ({ ...f, salePrice: e.target.value }))}
                 />
               </div>
-
               {/* Stock */}
               <div className="col-6 col-sm-6 col-lg-3">
                 <label className="form-label small fw-semibold" style={{ color: "#000" }}>
-                  <Layers size={14} className="me-1" />
-                  Stock
+                  <Layers size={14} className="me-1" />Stock
                 </label>
                 <input
                   type="number"
@@ -506,27 +506,21 @@ export default function ProductsPage() {
                   onChange={(e) => setForm((f) => ({ ...f, stock: Number(e.target.value || 0) }))}
                 />
               </div>
-
               {/* Visibility */}
               <div className="col-6 col-sm-6 col-lg-3">
-                <label className="form-label small fw-semibold" style={{ color: "#000" }}>
-                  Visibility
-                </label>
+                <label className="form-label small fw-semibold" style={{ color: "#000" }}>Visibility</label>
                 <select
                   className="form-select"
                   value={form.published ? "published" : "draft"}
-                  onChange={(e) => setForm((f) => ({ ...f, published: e.target.value === "published" }))}
+                  onChange={e => setForm((f) => ({ ...f, published: e.target.value === "published" }))}
                 >
                   <option value="published">Published</option>
                   <option value="draft">Draft</option>
                 </select>
               </div>
-
               {/* Dimensions */}
               <div className="col-6 col-sm-6 col-lg-3">
-                <label className="form-label small fw-semibold" style={{ color: "#000" }}>
-                  Dimensions
-                </label>
+                <label className="form-label small fw-semibold" style={{ color: "#000" }}>Dimensions</label>
                 <input
                   className="form-control"
                   placeholder="e.g., A5"
@@ -534,40 +528,19 @@ export default function ProductsPage() {
                   onChange={(e) => setForm((f) => ({ ...f, dimensions: e.target.value }))}
                 />
               </div>
-
-              {/* Medium */}
+              {/* Color (capitalize each word) */}
               <div className="col-6 col-sm-6 col-lg-3">
-                <label className="form-label small fw-semibold" style={{ color: "#000" }}>
-                  Medium
-                </label>
+                <label className="form-label small fw-semibold" style={{ color: "#000" }}>Color</label>
                 <input
                   className="form-control"
-                  placeholder="e.g., Mixed Materials"
-                  value={form.medium}
-                  onChange={(e) => setForm((f) => ({ ...f, medium: e.target.value }))}
+                  placeholder="e.g., Midnight Blue"
+                  value={form.color}
+                  onChange={(e) => setForm((f) => ({ ...f, color: toCapitalWords(e.target.value) }))}
                 />
               </div>
-
-              {/* Year */}
-              <div className="col-6 col-sm-6 col-lg-3">
-                <label className="form-label small fw-semibold" style={{ color: "#000" }}>
-                  Year
-                </label>
-                <input
-                  type="number"
-                  className="form-control"
-                  min={1900}
-                  max={currentYear}
-                  value={form.year}
-                  onChange={(e) => setForm((f) => ({ ...f, year: Number(e.target.value || currentYear) }))}
-                />
-              </div>
-
               {/* In Stock */}
               <div className="col-6 col-sm-6 col-lg-3">
-                <label className="form-label small fw-semibold" style={{ color: "#000" }}>
-                  In Stock
-                </label>
+                <label className="form-label small fw-semibold" style={{ color: "#000" }}>In Stock</label>
                 <select
                   className="form-select"
                   value={form.inStock ? "true" : "false"}
@@ -577,12 +550,9 @@ export default function ProductsPage() {
                   <option value="false">Out of Stock</option>
                 </select>
               </div>
-
               {/* Featured */}
               <div className="col-6 col-sm-6 col-lg-3">
-                <label className="form-label small fw-semibold" style={{ color: "#000" }}>
-                  Featured
-                </label>
+                <label className="form-label small fw-semibold" style={{ color: "#000" }}>Featured</label>
                 <select
                   className="form-select"
                   value={form.featured ? "true" : "false"}
@@ -592,12 +562,10 @@ export default function ProductsPage() {
                   <option value="true">Yes</option>
                 </select>
               </div>
-
               {/* Description */}
               <div className="col-12">
                 <label className="form-label small fw-semibold" style={{ color: "#000" }}>
-                  <Info size={14} className="me-1" />
-                  Description
+                  <Info size={14} className="me-1" />Description
                 </label>
                 <textarea
                   className="form-control"
@@ -607,29 +575,18 @@ export default function ProductsPage() {
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 />
               </div>
-
               {/* Images */}
               <div className="col-12">
-                <label className="form-label small fw-semibold d-block" style={{ color: "#000" }}>
-                  Images
-                </label>
+                <label className="form-label small fw-semibold d-block" style={{ color: "#000" }}>Images</label>
                 <div className="d-flex gap-2 flex-wrap">
-                  {Array.isArray(form.images) &&
-                    form.images.length > 0 &&
+                  {Array.isArray(form.images) && form.images.length > 0 &&
                     form.images.map((src, i) => (
                       <div key={`img-${i}`} className="img-tile">
                         <img src={src} alt={`img-${i}`} />
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-light remove"
-                          onClick={() => removeImageAt(i)}
-                          aria-label="Remove image"
-                        >
-                          ×
-                        </button>
+                        <button type="button" className="btn btn-sm btn-light remove"
+                          onClick={() => removeImageAt(i)} aria-label="Remove image">×</button>
                       </div>
                     ))}
-
                   <label className="img-uploader m-0">
                     <input
                       ref={fileInputRef}
@@ -648,7 +605,6 @@ export default function ProductsPage() {
                   The first image URL is used in the table; click Expand in the list to view all images and details.
                 </small>
               </div>
-
               {/* Submit + Reset */}
               <div className="col-12 d-flex flex-column flex-sm-row gap-2">
                 <motion.button
@@ -675,10 +631,9 @@ export default function ProductsPage() {
         </div>
       </motion.div>
 
-      {/* List: single image URL only in Image column */}
+      {/* Product Table */}
       <div className="card border-0 shadow-sm rounded-4" style={{ background: "#fff", color: "#000" }}>
         <div className="card-body p-0">
-          {/* Always-on horizontal scroll + vertical scroll area with sticky header */}
           <div className="table-responsive table-scroll-y-420 mono-scroll">
             <table className="table align-middle mb-0 table-sticky">
               <thead>
@@ -688,8 +643,11 @@ export default function ProductsPage() {
                   <th className="d-none d-sm-table-cell" style={{ borderBottom: "1px solid #000", color: "#000" }}>
                     Category
                   </th>
-                  <th className="d-none d-lg-table-cell" style={{ borderBottom: "1px solid #000", color: "#000" }}>
+                  <th className="d-none d-sm-table-cell" style={{ borderBottom: "1px solid #000", color: "#000" }}>
                     Subcategory
+                  </th>
+                  <th className="d-none d-md-table-cell" style={{ borderBottom: "1px solid #000", color: "#000" }}>
+                    Return Gift
                   </th>
                   <th className="d-none d-xl-table-cell" style={{ borderBottom: "1px solid #000", color: "#000" }}>
                     Description
@@ -740,18 +698,11 @@ export default function ProductsPage() {
                           </div>
                         )}
                       </td>
-                      <td className="fw-semibold" style={{ color: "#000" }}>
-                        {p.title}
-                      </td>
-                      <td className="d-none d-sm-table-cell" style={{ color: "#000" }}>
-                        {p.category}
-                      </td>
-                      <td className="d-none d-lg-table-cell" style={{ color: "#000" }}>
-                        {p.category === "Indian Products" ? p.subcategory || "-" : "-"}
-                      </td>
-                      <td className="d-none d-xl-table-cell" style={{ color: "#000" }}>
-                        {short(p.description, 60)}
-                      </td>
+                      <td className="fw-semibold" style={{ color: "#000" }}>{p.title}</td>
+                      <td className="d-none d-sm-table-cell" style={{ color: "#000" }}>{p.category}</td>
+                      <td className="d-none d-sm-table-cell" style={{ color: "#000" }}>{p.subcategory}</td>
+                      <td className="d-none d-md-table-cell" style={{ color: "#000" }}>{p.subcategory === "Return gifts" ? p.subsubcategory : "-"}</td>
+                      <td className="d-none d-xl-table-cell" style={{ color: "#000" }}>{short(p.description, 60)}</td>
                       <td className="text-end" style={{ color: "#000" }}>
                         {sale !== null ? (
                           <>
@@ -778,28 +729,13 @@ export default function ProductsPage() {
                       </td>
                       <td className="text-end">
                         <div className="d-inline-flex gap-1">
-                          <button
-                            className="mono-btn mono-btn-sm"
-                            onClick={() => editProduct(p.id)}
-                            title="Edit"
-                            type="button"
-                          >
+                          <button className="mono-btn mono-btn-sm" onClick={() => editProduct(p.id)} title="Edit" type="button">
                             <Edit size={16} />
                           </button>
-                          <button
-                            className="mono-btn mono-btn-sm"
-                            onClick={() => deleteProduct(p.id)}
-                            title="Delete"
-                            type="button"
-                          >
+                          <button className="mono-btn mono-btn-sm" onClick={() => deleteProduct(p.id)} title="Delete" type="button">
                             <Trash2 size={16} />
                           </button>
-                          <button
-                            className="mono-btn mono-btn-sm"
-                            onClick={() => openDetails(p)}
-                            title="Expand"
-                            type="button"
-                          >
+                          <button className="mono-btn mono-btn-sm" onClick={() => openDetails(p)} title="Expand" type="button">
                             <Maximize2 size={16} />
                           </button>
                         </div>
@@ -809,7 +745,7 @@ export default function ProductsPage() {
                 })}
                 {products.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={9} className="text-center py-4" style={{ color: "#000" }}>
+                    <td colSpan={10} className="text-center py-4" style={{ color: "#000" }}>
                       No products yet.
                     </td>
                   </tr>
@@ -820,7 +756,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Details modal: all DB info + gallery */}
+      {/* Modal for details */}
       {open && active && (
         <div
           className="position-fixed top-0 start-0 w-100 h-100"
@@ -842,17 +778,11 @@ export default function ProductsPage() {
                 <X size={16} />
               </button>
             </div>
-
             {/* Gallery */}
             <div className="d-flex align-items-center justify-content-center mb-3" style={{ minHeight: 260 }}>
               {active.images?.length ? (
                 <div className="d-flex align-items-center gap-2">
-                  <button
-                    className="mono-btn mono-btn-sm"
-                    onClick={prev}
-                    disabled={active.images.length <= 1}
-                    type="button"
-                  >
+                  <button className="mono-btn mono-btn-sm" onClick={prev} disabled={active.images.length <= 1} type="button">
                     <ChevronLeft size={16} />
                   </button>
                   <img
@@ -867,19 +797,12 @@ export default function ProductsPage() {
                     }}
                     onError={handleImgError}
                   />
-                  <button
-                    className="mono-btn mono-btn-sm"
-                    onClick={next}
-                    disabled={active.images.length <= 1}
-                    type="button"
-                  >
+                  <button className="mono-btn mono-btn-sm" onClick={next} disabled={active.images.length <= 1} type="button">
                     <ChevronRight size={16} />
                   </button>
                 </div>
               ) : (
-                <div className="small" style={{ color: "#000" }}>
-                  No images
-                </div>
+                <div className="small" style={{ color: "#000" }}>No images</div>
               )}
             </div>
             {active.images?.length > 1 && (
@@ -903,66 +826,32 @@ export default function ProductsPage() {
                 ))}
               </div>
             )}
-
-            {/* DB Details */}
+            {/* Details */}
             <div className="row g-2 small" style={{ color: "#000" }}>
-              <div className="col-6">
-                <strong>Category:</strong> {active.category || "-"}
-              </div>
-              <div className="col-6">
-                <strong>Subcategory:</strong>{" "}
-                {active.category === "Indian Products" ? active.subcategory || "-" : "-"}
-              </div>
-              <div className="col-6">
-                <strong>Price:</strong> {fmtUSD.format(Number(active.price || 0))}
-              </div>
-              <div className="col-6">
-                <strong>Sale Price:</strong>{" "}
-                {active.salePrice !== null ? fmtUSD.format(Number(active.salePrice)) : "-"}
-              </div>
-              <div className="col-6">
-                <strong>Stock:</strong> {active.stock}
-              </div>
-              <div className="col-6">
-                <strong>In Stock:</strong> {active.inStock ? "Yes" : "No"}
-              </div>
-              <div className="col-6">
-                <strong>Published:</strong> {active.published ? "Yes" : "No"}
-              </div>
-              <div className="col-6">
-                <strong>Featured:</strong> {active.featured ? "Yes" : "No"}
-              </div>
-              <div className="col-6">
-                <strong>Dimensions:</strong> {active.dimensions || "-"}
-              </div>
-              <div className="col-6">
-                <strong>Medium:</strong> {active.medium || "-"}
-              </div>
-              <div className="col-6">
-                <strong>Year:</strong> {active.year || "-"}
-              </div>
-              <div className="col-12">
-                <strong>Description:</strong> {active.description || "-"}
-              </div>
+              <div className="col-6"><strong>Category:</strong> {active.category || "-"}</div>
+              <div className="col-6"><strong>Subcategory:</strong> {active.subcategory || "-"}</div>
+              {active.subcategory === "Return gifts" && (
+                <div className="col-6"><strong>Return Gift:</strong> {active.subsubcategory || "-"}</div>
+              )}
+              <div className="col-6"><strong>Price:</strong> {fmtUSD.format(Number(active.price || 0))}</div>
+              <div className="col-6"><strong>Sale Price:</strong> {active.salePrice !== null ? fmtUSD.format(Number(active.salePrice)) : "-"}</div>
+              <div className="col-6"><strong>Stock:</strong> {active.stock}</div>
+              <div className="col-6"><strong>In Stock:</strong> {active.inStock ? "Yes" : "No"}</div>
+              <div className="col-6"><strong>Published:</strong> {active.published ? "Yes" : "No"}</div>
+              <div className="col-6"><strong>Featured:</strong> {active.featured ? "Yes" : "No"}</div>
+              <div className="col-6"><strong>Dimensions:</strong> {active.dimensions || "-"}</div>
+              <div className="col-12"><strong>Color:</strong> {active.color || "-"}</div>
+              <div className="col-12"><strong>Description:</strong> {active.description || "-"}</div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Local helpers: scroll + sticky header */}
+      {/* Styles for sticky header */}
       <style>{`
-        /* Touch-friendly momentum scroll on iOS */
         .mono-scroll { -webkit-overflow-scrolling: touch; }
-
-        /* Fixed-height vertical scroll for table area */
         .table-scroll-y-420 { max-height: 420px; overflow-y: auto; }
-
-        /* Sticky table header inside the scroll container */
         .table-sticky thead th {
-          position: sticky;
-          top: 0;
-          background: #fff;
-          z-index: 2;
+          position: sticky; top: 0; background: #fff; z-index: 2;
         }
       `}</style>
     </div>

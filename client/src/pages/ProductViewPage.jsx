@@ -1,40 +1,45 @@
 // src/pages/ProductViewPage.jsx
-import React, { useEffect, useState, useMemo } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Heart, ShoppingCart, Share2, Star, Ruler, Calendar, Palette as PaletteIcon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useCart } from '../context/CartContext';
-import { getProduct, listProducts } from '../api/products';
-import ProductCard from '../components/ProductCard';
-import FancyButton from '../components/FancyButton';
+import React, { useEffect, useState, useMemo } from "react";
+import { useSearchParams, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  Heart, ShoppingCart, Share2, Star, Ruler, Palette as PaletteIcon, ChevronLeft, ChevronRight
+} from "lucide-react";
+import { useCart } from "../context/CartContext";
+import { getProduct, listProducts } from "../api/products";
+import ProductCard from "../components/ProductCard";
+import FancyButton from "../components/FancyButton";
 
-// USD currency formatter (renders like "$1,234.56")
-const fmtUSD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-
-// Local fallback image (can be a public asset or inline SVG)
-const FALLBACK_IMG = '/placeholder.png';
-
-// Normalize a single image entry (string or object) to a URL string
+const fmtUSD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const FALLBACK_IMG = "/placeholder.png";
 const toUrl = (entry) => {
-  if (!entry) return '';
-  if (typeof entry === 'string') return entry.trim();
-  if (typeof entry === 'object') {
-    const u = entry.secure_url || entry.url || entry.src || entry.path || '';
+  if (!entry) return "";
+  if (typeof entry === "string") return entry.trim();
+  if (typeof entry === "object") {
+    const u = entry.secure_url || entry.url || entry.src || entry.path || "";
     return String(u).trim();
   }
-  return '';
+  return "";
 };
+
+function wordLimitDesc(text, limit = 30) {
+  if (!text) return "";
+  const words = text.trim().split(/\s+/);
+  if (words.length <= limit) return text;
+  return words.slice(0, limit).join(" ") + " ...";
+}
 
 const ProductViewPage = () => {
   const [searchParams] = useSearchParams();
-  const id = searchParams.get('id');
+  const id = searchParams.get("id");
   const { state, dispatch } = useCart();
 
   const [product, setProduct] = useState(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState('');
+  const [err, setErr] = useState("");
+  const [descExpanded, setDescExpanded] = useState(false);
 
   // Load product by idOrSlug via API
   useEffect(() => {
@@ -42,31 +47,36 @@ const ProductViewPage = () => {
     async function load() {
       if (!id) { setProduct(null); return; }
       try {
-        setLoading(true); setErr('');
+        setLoading(true); setErr("");
         const p = await getProduct(id);
         if (!cancelled) {
           setProduct(p?.id ? p : null);
           setSelectedImageIndex(0);
         }
       } catch (e) {
-        const msg = e?.response?.data?.message || e?.message || 'Failed to load product';
+        const msg = e?.response?.data?.message || e?.message || "Failed to load product";
         if (!cancelled) { setErr(msg); setProduct(null); }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     load();
+    setDescExpanded(false); // Reset desc toggle on new product
     return () => { cancelled = true; };
   }, [id]);
 
-  // Related via API: same category, exclude self, limit 4
+  // Related: same category + subcategory, exclude self (max 4)
   const [related, setRelated] = useState([]);
   useEffect(() => {
     let cancelled = false;
     async function loadRelated() {
-      if (!product?.category) { setRelated([]); return; }
+      if (!product?.category || !product?.subcategory) { setRelated([]); return; }
       try {
-        const { items } = await listProducts({ category: product.category, limit: 8, published: true });
+        const { items } = await listProducts({
+          category: product.category,
+          subcategory: product.subcategory,
+          published: true
+        });
         const trimmed = items.filter((p) => p.id !== product.id).slice(0, 4);
         if (!cancelled) setRelated(trimmed);
       } catch {
@@ -75,54 +85,52 @@ const ProductViewPage = () => {
     }
     loadRelated();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product?.category, product?.id]);
+  }, [product?.category, product?.subcategory, product?.id]);
 
-  // Build a normalized images array (strings only), prefer product.images then fallback to product.image
   const images = useMemo(() => {
     if (!product) return [];
     const fromArray = Array.isArray(product.images) ? product.images.map(toUrl).filter(Boolean) : [];
     if (fromArray.length > 0) return fromArray;
     const single = toUrl(product.image);
     return single ? [single] : [];
-  }, [product]); // Ensures src are strings, never objects
+  }, [product]);
 
-  // Clamp selected index if images change length
   useEffect(() => {
     if (selectedImageIndex >= images.length) {
       setSelectedImageIndex(0);
     }
   }, [images, selectedImageIndex]);
 
-  // Image navigation functions
   const nextImage = () => {
     if (images.length === 0) return;
     setSelectedImageIndex((prevIndex) => (prevIndex + 1) % images.length);
   };
-
   const prevImage = () => {
     if (images.length === 0) return;
     setSelectedImageIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
   };
-
-  // Fallback on broken URLs
   const handleImgError = (e) => {
     e.currentTarget.onerror = null;
     e.currentTarget.src = FALLBACK_IMG;
   };
 
-  // Add to cart with normalized cover and images
+  // Add to cart with all product info
   const addToCart = () => {
     if (!product?.inStock) return;
     const cover = images || FALLBACK_IMG;
     dispatch({
-      type: 'ADD_ITEM',
+      type: "ADD_ITEM",
       payload: {
         id: product.id,
         title: product.title,
         price: product.price,
-        image: cover,         // normalized cover URL (string)
-        images,               // optional: pass full normalized images array
+        image: cover,
+        images,
         category: product.category,
+        subcategory: product.subcategory,
+        subsubcategory: product.subsubcategory,
+        color: product.color,
+        description: product.description || "",
         quantity
       }
     });
@@ -136,13 +144,15 @@ const ProductViewPage = () => {
     if (!product) return;
     const cover = images || FALLBACK_IMG;
     dispatch({
-      type: 'WISHLIST_TOGGLE',
+      type: "WISHLIST_TOGGLE",
       payload: {
         id: product.id,
         title: product.title,
         price: product.price,
-        image: cover,   // normalized cover URL (string)
-        category: product.category
+        image: cover,
+        category: product.category,
+        subcategory: product.subcategory,
+        color: product.color
       }
     });
   };
@@ -174,6 +184,10 @@ const ProductViewPage = () => {
 
   const cover = images || FALLBACK_IMG;
 
+  // Description logic for show more/less
+  const desc = product.description || "";
+  const isLong = desc.trim().split(/\s+/).length > 30;
+
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#f1efef' }}>
       <div className="container py-4 py-lg-5">
@@ -184,7 +198,6 @@ const ProductViewPage = () => {
             <li className="breadcrumb-item active" aria-current="page">{product.title}</li>
           </ol>
         </nav>
-
         <div className="row g-4 g-lg-5 mb-4">
           {/* Gallery */}
           <div className="col-12 col-lg-6">
@@ -192,8 +205,7 @@ const ProductViewPage = () => {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               className="card border-0 shadow rounded-4 overflow-hidden position-relative"
-              style={{ background: '#fff', color: '#000' }}
-            >
+              style={{ background: '#fff', color: '#000' }}>
               <div className="ratio ratio-1x1">
                 <img
                   src={images.length > 0 ? images[selectedImageIndex] : cover}
@@ -239,13 +251,11 @@ const ProductViewPage = () => {
               </div>
             )}
           </div>
-
           {/* Info */}
           <div className="col-12 col-lg-6">
             <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
               <span className="mono-badge mb-3">{product.category}</span>
               <h1 className="fw-bold display-6 mb-2" style={{ color: '#000' }}>{product.title}</h1>
-
               <div className="d-flex align-items-center flex-wrap gap-3 mb-3">
                 <div className="fw-bold" style={{ fontSize: 28, color: '#000' }}>{fmtUSD.format(product.price)}</div>
                 <div className="d-flex align-items-center">
@@ -255,9 +265,21 @@ const ProductViewPage = () => {
                   <span className="small ms-2" style={{ color: '#000' }}>(4.9) • 24 reviews</span>
                 </div>
               </div>
-
-              <p className="lead mb-4" style={{ lineHeight: 1.6, color: '#000' }}>{product.description}</p>
-
+              {/* PRODUCT DESCRIPTION: 30 words + show more */}
+              {desc && (
+                <div className="lead mb-4" style={{ lineHeight: 1.6, color: '#000' }}>
+                  {descExpanded ? desc : wordLimitDesc(desc, 30)}
+                  {isLong && (
+                    <button
+                      className="cart-link-btn ms-1"
+                      onClick={() => setDescExpanded((v) => !v)}
+                      style={{ background: "none", border: "none", color: "#007bff", cursor: "pointer", padding: 0, fontSize: "0.97em" }}
+                    >
+                      {descExpanded ? "Show less" : "Show more"}
+                    </button>
+                  )}
+                </div>
+              )}
               <div className="card border-0 shadow-sm rounded-4 mb-4" style={{ background: '#fff', color: '#000' }}>
                 <div className="card-body">
                   <h3 className="h6 fw-semibold mb-3" style={{ color: '#000' }}>Artwork Details</h3>
@@ -276,23 +298,13 @@ const ProductViewPage = () => {
                         <PaletteIcon size={18} />
                       </div>
                       <div>
-                        <div className="small" style={{ color: '#000' }}>Medium</div>
-                        <div className="fw-medium" style={{ color: '#000' }}>{product.medium}</div>
-                      </div>
-                    </div>
-                    <div className="col-12 col-sm-4 d-flex align-items-center gap-2">
-                      <div className="mono-circle">
-                        <Calendar size={18} />
-                      </div>
-                      <div>
-                        <div className="small" style={{ color: '#000' }}>Year</div>
-                        <div className="fw-medium" style={{ color: '#000' }}>{product.year}</div>
+                        <div className="small" style={{ color: '#000' }}>Color</div>
+                        <div className="fw-medium" style={{ color: '#000' }}>{product.color}</div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-
               <div className="vstack gap-3">
                 <div className="d-flex align-items-center gap-3">
                   <span className="fw-medium" style={{ color: '#000' }}>Quantity:</span>
@@ -302,13 +314,11 @@ const ProductViewPage = () => {
                     <button type="button" onClick={() => setQuantity((q) => q + 1)} className="mono-icon-btn">+</button>
                   </div>
                 </div>
-
                 <div className="d-flex gap-2">
                   <FancyButton as="button" type="button" className="fancy-sm flex-grow-1" onClick={addToCart} disabled={!product.inStock}>
                     <ShoppingCart size={18} />
                     Add to Cart
                   </FancyButton>
-
                   <button
                     type="button"
                     onClick={toggleWishlist}
@@ -318,7 +328,6 @@ const ProductViewPage = () => {
                   >
                     <Heart size={20} />
                   </button>
-
                   <button
                     type="button"
                     className="mono-square-btn"
@@ -334,7 +343,6 @@ const ProductViewPage = () => {
                     <Share2 size={20} />
                   </button>
                 </div>
-
                 <div className="mono-alert mb-0">
                   <div className="fw-medium mb-1" style={{ color: '#000' }}>{product.inStock ? 'In Stock - Ready to Ship' : 'Currently Unavailable'}</div>
                   {product.inStock && <div className="small mb-0" style={{ color: '#000' }}>Ships within 2–3 business days</div>}
@@ -343,18 +351,18 @@ const ProductViewPage = () => {
             </motion.div>
           </div>
         </div>
-
         {related.length > 0 && (
           <section className="pb-2">
             <div className="d-flex align-items-center justify-content-between mb-3">
               <h2 className="fw-bold h4 mb-0" style={{ color: '#000' }}>Related Artworks</h2>
-              <Link to={`/shop?category=${encodeURIComponent(product.category)}`} className="text-decoration-none fw-medium" style={{ color: '#000' }}>
-                View all in {product.category}
+              <Link to={`/shop?category=${encodeURIComponent(product.category)}&subcategory=${encodeURIComponent(product.subcategory)}`} className="text-decoration-none fw-medium" style={{ color: '#000' }}>
+                View all in {product.category} / {product.subcategory}
               </Link>
             </div>
             <div className="row g-3 g-lg-4">
               {related.map((rp, idx) => (
-                <motion.div key={rp.id} className="col-12 col-md-6 col-lg-3" initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: idx * 0.05 }} viewport={{ once: true }}>
+                <motion.div key={rp.id} className="col-12 col-md-6 col-lg-3"
+                  initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: idx * 0.05 }} viewport={{ once: true }}>
                   <ProductCard product={rp} />
                 </motion.div>
               ))}
@@ -362,77 +370,43 @@ const ProductViewPage = () => {
           </section>
         )}
       </div>
-
-      {/* Local monochrome styles + focus-visible */}
       <style>{`
-        .thumb-btn {
-          background: transparent; border: 0; padding: 0; flex: 0 0 auto; cursor: pointer;
-        }
-        .thumb-btn:focus-visible {
-          outline: none;
-          box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
-        }
+        .thumb-btn { background: transparent; border: 0; padding: 0; flex: 0 0 auto; cursor: pointer; }
+        .thumb-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
         .thumb-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-
-        .mono-badge {
-          display: inline-block; padding: 6px 12px; border: 1px solid #000;
-          border-radius: 999px; background: #fff; color: #000; font-weight: 600;
-        }
-
-        .mono-circle {
-          width: 40px; height: 40px; border-radius: 50%;
-          background: #fff; color: #000; border: 1px solid #000;
-          display: inline-flex; align-items: center; justify-content: center;
-        }
-
-        .mono-icon-btn {
-          width: 32px; height: 32px; border-radius: 8px;
-          border: 1px solid #000; background: #fff; color: #000;
-          display: inline-flex; align-items: center; justify-content: center;
-          transition: background-color 160ms ease, color 160ms ease, transform 120ms ease, box-shadow 120ms ease;
-        }
+        .mono-badge { display: inline-block; padding: 6px 12px; border: 1px solid #000;
+            border-radius: 999px; background: #fff; color: #000; font-weight: 600; }
+        .mono-circle { width: 40px; height: 40px; border-radius: 50%; background: #fff; color: #000;
+            border: 1px solid #000; display: inline-flex; align-items: center; justify-content: center; }
+        .mono-icon-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #000;
+            background: #fff; color: #000; display: inline-flex; align-items: center; justify-content: center;
+            transition: background-color 160ms ease, color 160ms ease, transform 120ms ease, box-shadow 120ms ease; }
         .mono-icon-btn:hover { background: #000; color: #fff; }
         .mono-icon-btn:active { transform: scale(0.98); }
         .mono-icon-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
         .mono-icon-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-
-        .mono-square-btn {
-          width: 56px; height: 56px; border-radius: 12px; border: 2px solid #000;
-          background: #fff; color: #000;
-          display: inline-flex; align-items: center; justify-content: center;
-          transition: background-color 160ms ease, color 160ms ease, transform 120ms ease, box-shadow 120ms ease;
-        }
+        .mono-square-btn { width: 56px; height: 56px; border-radius: 12px; border: 2px solid #000;
+            background: #fff; color: #000; display: inline-flex; align-items: center; justify-content: center;
+            transition: background-color 160ms ease, color 160ms ease, transform 120ms ease, box-shadow 120ms ease; }
         .mono-square-btn:hover { background: #000; color: #fff; }
         .mono-square-btn.active { background: #000; color: #fff; }
         .mono-square-btn:active { transform: scale(0.98); }
         .mono-square-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
         .mono-square-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-
-        .mono-alert {
-          border: 1px solid #000; background: #fff; color: #000;
-          border-radius: 12px; padding: 12px 14px;
-        }
-
-        .gallery-nav-btn {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          background: rgba(216, 216, 216, 0.4);
-          color: white;
-          border: none;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          z-index: 10;
-          transition: background-color 0.2s ease;
-        }
+        .mono-alert { border: 1px solid #000; background: #fff; color: #000; border-radius: 12px; padding: 12px 14px; }
+        .gallery-nav-btn { position: absolute; top: 50%; transform: translateY(-50%);
+            background: rgba(216, 216, 216, 0.4); color: white; border: none; border-radius: 50%; width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;
+            transition: background-color 0.2s ease; }
         .gallery-nav-btn:hover { background: rgba(0, 0, 0, 0.7); }
         .gallery-nav-btn.prev { left: 10px; }
         .gallery-nav-btn.next { right: 10px; }
+        .cart-link-btn {
+          background: none; border: none; color: #007bff; font-weight: 500; text-decoration: underline; padding: 0; margin: 0;
+        }
+        .cart-link-btn:focus-visible {
+          outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
+        }
       `}</style>
     </div>
   );

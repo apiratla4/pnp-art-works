@@ -1,4 +1,3 @@
-// src/hooks/useProducts.js — fixed URL sync to avoid loops
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { listProducts } from "../api/products";
@@ -27,12 +26,14 @@ export const useProducts = () => {
     const sort = searchParams.get("sort") || "newest";
     const category = searchParams.get("category") || undefined;
     const subcategory = searchParams.get("subcategory") || undefined;
+    const subsubcategory = searchParams.get("subsubcategory") || undefined;
+    const color = searchParams.get("color") || undefined;
     const q = searchParams.get("q") || undefined;
     const minPrice = searchParams.get("minPrice") || undefined;
     const maxPrice = searchParams.get("maxPrice") || undefined;
     const inStock = toBool(searchParams.get("inStock"));
     const published = toBool(searchParams.get("published")) ?? true;
-    return { page, limit, sort, category, subcategory, q, minPrice, maxPrice, inStock, published };
+    return { page, limit, sort, category, subcategory, subsubcategory, color, q, minPrice, maxPrice, inStock, published };
   }, [searchParams]);
 
   useEffect(() => {
@@ -43,8 +44,11 @@ export const useProducts = () => {
         const api = await listProducts({ published: params.published });
         let items = api.items || [];
 
+        // Product filtering logic (category/sub/subsub/color, etc.)
         if (params.category) items = items.filter((p) => p.category === params.category);
         if (params.subcategory) items = items.filter((p) => p.subcategory === params.subcategory);
+        if (params.subsubcategory) items = items.filter((p) => p.subsubcategory === params.subsubcategory);
+        if (params.color) items = items.filter((p) => (p.color || "").toLowerCase() === params.color.toLowerCase());
         if (params.inStock !== undefined) items = items.filter((p) => !!p.inStock === params.inStock);
         if (params.minPrice) items = items.filter((p) => Number(p.price) >= Number(params.minPrice));
         if (params.maxPrice) items = items.filter((p) => Number(p.price) <= Number(params.maxPrice));
@@ -76,7 +80,6 @@ export const useProducts = () => {
   // Canonical builder for the next query string (omit defaults to stabilize)
   const buildSearch = useCallback((sp) => {
     const usp = new URLSearchParams(sp);
-    // Normalize page=1 by removing it
     if (usp.get("page") === "1") usp.delete("page");
     return usp.toString();
   }, []);
@@ -84,13 +87,10 @@ export const useProducts = () => {
   const updateParam = useCallback(
     (key, value) => {
       const next = new URLSearchParams(currentSearch);
-
       if (value === undefined || value === null || value === "") next.delete(key);
       else next.set(key, String(value));
-
       // Reset to first page when changing any filter other than page
       if (key !== "page") next.delete("page");
-
       const nextSearch = buildSearch(next);
       if (nextSearch !== currentSearch) {
         setSearchParams(nextSearch, { replace: true });

@@ -1,4 +1,3 @@
-// src/pages/ShopPage.jsx — API-driven, URL-synced, compact list rows (fixed thumbnails)
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -7,19 +6,37 @@ import ProductCard from "../components/ProductCard";
 import { useProducts } from "../hooks/useProducts";
 import FancyButton from "../components/FancyButton";
 
-// Backend categories
-const CATEGORIES = [
-  "All Products",
-  "Paintings",
-  "Indian Products",
-  "Workshops",
-  "Custom Orders",
-  "Digital Prints",
-  "Handcrafted Items",
-  "Limited Editions"
-];
+// Categories and subcategories based on your schema
+const PRODUCT_FILTERS = {
+  "All Products": [
+    "Paintings",
+    "Holiday gifts",
+    "Landscapes",
+    "Modern art",
+    "Name sign",
+    "Limited editions",
+    "Pencil sketches",
+    { label: "Digital prints", disabled: true },
+  ],
+  "Indian Products": [
+    "Indian god paintings",
+    "Musical Art paintings",
+    {
+      label: "Return gifts",
+      children: [
+        "Kolam coasters",
+        "Kolam peetham",
+        "Traditional magnets",
+        "Trays",
+        "Diya holders"
+      ]
+    }
+  ]
+};
 
-// Map route slug -> backend category label
+// Backend-rooted categories (for filter main categories)
+const MAIN_CATEGORIES = ["All Products", "Indian Products"];
+
 const slugToCategory = (slug) => {
   if (!slug || slug === "all-products") return "";
   const map = {
@@ -35,10 +52,7 @@ const slugToCategory = (slug) => {
   return slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
-// USD formatter
 const fmtUSD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
-
-// --- Image Utility Functions ---
 const FALLBACK_SVG =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
@@ -71,7 +85,6 @@ const handleImgError = (e) => {
   e.currentTarget.onerror = null;
   e.currentTarget.src = FALLBACK_SVG;
 };
-// -----------------------------
 
 export default function ShopPage() {
   const { category: categorySlug } = useParams();
@@ -90,7 +103,11 @@ export default function ShopPage() {
     return "newest";
   });
 
-  // sync URL category with route
+  // --- NEW: for subcategory/subsubcategory state ---
+  const currentCat = params.category || "All Products";
+  const [subcat, setSubcat] = useState(params.subcategory || "");
+  const [subsubcat, setSubsubcat] = useState(params.subsubcategory || "");
+
   useEffect(() => {
     const label = slugToCategory(categorySlug);
     updateParam("category", label);
@@ -105,6 +122,8 @@ export default function ShopPage() {
     else if (params.sort === "featured") setSortUI("featured");
     else setSortUI("newest");
   }, [params.sort]);
+  useEffect(() => { setSubcat(params.subcategory || ""); }, [params.subcategory]);
+  useEffect(() => { setSubsubcat(params.subsubcategory || ""); }, [params.subsubcategory]);
 
   const viewItems = useMemo(() => {
     let out = items.slice();
@@ -125,11 +144,27 @@ export default function ShopPage() {
     else updateParam("sort", "newest");
   };
 
-  const handleCategoryChange = (label) => updateParam("category", label === "All Products" ? "" : label);
+  // --- NEW: multi-level filter handling ---
+  const handleCategoryChange = (label) => {
+    updateParam("category", label === "All Products" ? "" : label);
+    updateParam("subcategory", "");
+    updateParam("subsubcategory", "");
+    setSubcat(""); setSubsubcat("");
+  };
+  const handleSubcatChange = (label) => {
+    updateParam("subcategory", label);
+    updateParam("subsubcategory", "");
+    setSubcat(label);
+    setSubsubcat("");
+  };
+  const handleSubsubcatChange = (label) => {
+    updateParam("subsubcategory", label);
+    setSubsubcat(label);
+  };
 
   const clearAll = () => {
-    ["q","category","subcategory","minPrice","maxPrice","inStock","sort","page","limit"].forEach((k) => updateParam(k, ""));
-    setSearchTerm(""); setMin(""); setMax(""); setSortUI("newest");
+    ["q", "category", "subcategory", "subsubcategory", "minPrice", "maxPrice", "inStock", "sort", "page", "limit"].forEach((k) => updateParam(k, ""));
+    setSearchTerm(""); setMin(""); setMax(""); setSortUI("newest"); setSubcat(""); setSubsubcat("");
   };
 
   const niceCategory = useMemo(() => (params.category || "All Artworks"), [params.category]);
@@ -138,6 +173,16 @@ export default function ShopPage() {
     const next = Number(params.limit || 12) + 12;
     updateParam("limit", next);
   };
+
+  // --- For subcategory and subsubcategory options compatibility ---
+  const subcategories = (() => {
+    if (!MAIN_CATEGORIES.includes(currentCat)) return [];
+    return (PRODUCT_FILTERS[currentCat] || []);
+  })();
+  const showingSubsubcat = subcat === "Return gifts";
+  const subsubcatOptions = showingSubsubcat
+    ? (PRODUCT_FILTERS["Indian Products"].find((f) => typeof f === "object" && f.label === "Return gifts")?.children || [])
+    : [];
 
   return (
     <div className="min-vh-100" style={{ backgroundColor: "#f1efef" }}>
@@ -223,85 +268,137 @@ export default function ShopPage() {
             {/* Advanced Filters */}
             {showFilters && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-4 pt-4" style={{ borderTop: "1px solid #000" }}>
-                <div className="row g-4">
-                  {/* Categories (single-select) */}
-                  <div className="col-12 col-md-4">
-                    <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>Categories</h6>
-                    <div className="vstack gap-2">
-                      {CATEGORIES.map((cat) => (
-                        <label key={cat} className="d-flex align-items-center gap-2" style={{ color: "#000" }}>
-                          <input
-                            type="radio"
-                            name="cat"
-                            className="form-check-input"
-                            checked={(params.category || "") === (cat === "All Products" ? "" : cat)}
-                            onChange={() => handleCategoryChange(cat)}
-                          />
-                          <span className="small">{cat}</span>
-                        </label>
-                      ))}
+                  <div className="row g-4">
+                    {/* Categories (single-select) */}
+                    <div className="col-12 col-md-4">
+                      <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>Main Category</h6>
+                      <div className="vstack gap-2">
+                        {MAIN_CATEGORIES.map((cat) => (
+                          <label key={cat} className="d-flex align-items-center gap-2" style={{ color: "#000" }}>
+                            <input
+                              type="radio"
+                              name="maincat"
+                              className="form-check-input"
+                              checked={(currentCat || "All Products") === cat}
+                              onChange={() => handleCategoryChange(cat)}
+                            />
+                            <span className="small">{cat}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Subcategory */}
+                    {subcategories.length > 0 && (
+                      <div className="col-12 col-md-4">
+                        <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>Subcategory</h6>
+                        <div className="vstack gap-2">
+                          {subcategories.map((sc) =>
+                            typeof sc === "string" ? (
+                              <label key={sc} className="d-flex align-items-center gap-2" style={{ color: "#000" }}>
+                                <input
+                                  type="radio"
+                                  name="subcat"
+                                  className="form-check-input"
+                                  checked={subcat === sc}
+                                  onChange={() => handleSubcatChange(sc)}
+                                />
+                                <span className="small">{sc}</span>
+                              </label>
+                            ) : (
+                              <label key={sc.label} className="d-flex align-items-center gap-2" style={{ color: "#888" }}>
+                                <input
+                                  type="radio"
+                                  name="subcat"
+                                  className="form-check-input"
+                                  checked={subcat === sc.label}
+                                  disabled={!!sc.disabled}
+                                  onChange={() => handleSubcatChange(sc.label)}
+                                />
+                                <span className="small">{sc.label}{sc.disabled ? " (Coming soon)" : ""}</span>
+                              </label>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {/* Subsubcategory: only for "Return gifts" */}
+                    {showingSubsubcat && (
+                      <div className="col-12 col-md-4">
+                        <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>Return Gift</h6>
+                        <div className="vstack gap-2">
+                          {subsubcatOptions.map((ssc) => (
+                            <label key={ssc} className="d-flex align-items-center gap-2" style={{ color: "#000" }}>
+                              <input
+                                type="radio"
+                                name="subsubcat"
+                                className="form-check-input"
+                                checked={subsubcat === ssc}
+                                onChange={() => handleSubsubcatChange(ssc)}
+                              />
+                              <span className="small">{ssc}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Price Range */}
+                    <div className="col-12 col-md-4">
+                      <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>Price Range</h6>
+                      <form className="d-flex gap-2" onSubmit={applyPrice}>
+                        <input
+                          type="number"
+                          min="0"
+                          className="form-control"
+                          placeholder="Min"
+                          value={min}
+                          onChange={(e) => setMin(e.target.value)}
+                          aria-label="Minimum price"
+                          style={{ color: "#000", borderColor: "#000" }}
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          className="form-control"
+                          placeholder="Max"
+                          value={max}
+                          onChange={(e) => setMax(e.target.value)}
+                          aria-label="Maximum price"
+                          style={{ color: "#000", borderColor: "#000" }}
+                        />
+                        <button type="submit" className="mono-btn">Apply</button>
+                        <button
+                          type="button"
+                          className="mono-link-btn"
+                          onClick={() => { setMin(""); setMax(""); updateParam("minPrice", ""); updateParam("maxPrice", ""); }}
+                        >
+                          Clear
+                        </button>
+                      </form>
+                    </div>
+                    {/* Availability */}
+                    <div className="col-12 col-md-4">
+                      <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>Availability</h6>
+                      <div className="d-flex gap-2">
+                        <button
+                          type="button"
+                          className={`mono-btn mono-btn-sm ${params.inStock === "true" ? "active" : ""}`}
+                          onClick={() => updateParam("inStock", params.inStock === "true" ? "" : "true")}
+                        >
+                          In stock
+                        </button>
+                        <button
+                          type="button"
+                          className={`mono-btn mono-btn-sm ${params.inStock === "false" ? "active" : ""}`}
+                          onClick={() => updateParam("inStock", params.inStock === "false" ? "" : "false")}
+                        >
+                          Out of stock
+                        </button>
+                        <button type="button" className="mono-link-btn mono-btn-sm" onClick={clearAll}>
+                          Clear all
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Price Range */}
-                  <div className="col-12 col-md-4">
-                    <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>Price Range</h6>
-                    <form className="d-flex gap-2" onSubmit={applyPrice}>
-                      <input
-                        type="number"
-                        min="0"
-                        className="form-control"
-                        placeholder="Min"
-                        value={min}
-                        onChange={(e) => setMin(e.target.value)}
-                        aria-label="Minimum price"
-                        style={{ color: "#000", borderColor: "#000" }}
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        className="form-control"
-                        placeholder="Max"
-                        value={max}
-                        onChange={(e) => setMax(e.target.value)}
-                        aria-label="Maximum price"
-                        style={{ color: "#000", borderColor: "#000" }}
-                      />
-                      <button type="submit" className="mono-btn">Apply</button>
-                      <button
-                        type="button"
-                        className="mono-link-btn"
-                        onClick={() => { setMin(""); setMax(""); updateParam("minPrice",""); updateParam("maxPrice",""); }}
-                      >
-                        Clear
-                      </button>
-                    </form>
-                  </div>
-
-                  {/* Availability */}
-                  <div className="col-12 col-md-4">
-                    <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>Availability</h6>
-                    <div className="d-flex gap-2">
-                      <button
-                        type="button"
-                        className={`mono-btn mono-btn-sm ${params.inStock === "true" ? "active" : ""}`}
-                        onClick={() => updateParam("inStock", params.inStock === "true" ? "" : "true")}
-                      >
-                        In stock
-                      </button>
-                      <button
-                        type="button"
-                        className={`mono-btn mono-btn-sm ${params.inStock === "false" ? "active" : ""}`}
-                        onClick={() => updateParam("inStock", params.inStock === "false" ? "" : "false")}
-                      >
-                        Out of stock
-                      </button>
-                      <button type="button" className="mono-link-btn mono-btn-sm" onClick={clearAll}>
-                        Clear all
-                      </button>
-                    </div>
-                  </div>
-                </div>
               </motion.div>
             )}
           </div>
@@ -402,59 +499,42 @@ export default function ShopPage() {
           </div>
         )}
       </div>
-
-      {/* Local monochrome + focus-visible + form theming */}
-      <style>{`
-        /* Inputs/selects focus in black */
-        .form-control:focus,
-        .form-select:focus {
-          border-color: #000 !important;
-          box-shadow: none !important;
+       <style>{`
+        .mono-badge {
+          display: inline-block;
+          padding: 6px 10px;
+          border: 1px solid #000;
+          border-radius: 999px;
+          background: #fff;
+          color: #000;
+          font-weight: 700;
         }
-        /* Radios in black */
-        .form-check-input { accent-color: #000; }
 
-        /* Monochrome alert */
-        .mono-alert {
+        .wish-btn {
+          width: 38px; height: 38px;
+          border-radius: 50%;
           border: 1px solid #000;
           background: #fff;
           color: #000;
-          border-radius: 8px;
-          padding: 4px 8px;
-          display: inline-block;
+          display: inline-flex; align-items: center; justify-content: center;
+          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
         }
+        .wish-btn:hover { background: #000; color: #fff; }
+        .wish-btn.active { background: #000; color: #fff; }
+        .wish-btn:active { transform: scale(0.98); }
+        .wish-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
+        .wish-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
 
-        /* Icon toggle buttons */
-        .icon-toggle {
-          border: 1px solid transparent; background: transparent; color: #000;
-          border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; justify-content: center;
-          transition: background-color .16s ease, color .16s ease, box-shadow .16s ease, transform .12s ease, border-color .16s ease;
-        }
-        .icon-toggle:hover { background: #fff; border-color: #000; }
-        .icon-toggle.active { background: #fff; border-color: #000; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-        .icon-toggle:active { transform: scale(0.98); }
-        .icon-toggle:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
-        .icon-toggle:focus { outline: 2px solid #000; outline-offset: 2px; }
-
-        /* Mono buttons */
         .mono-btn {
-          border: 1px solid #000; background: #fff; color: #000; border-radius: 8px; padding: 8px 12px; font-weight: 600;
-          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .16s ease;
+          border: 1px solid #000; background: #fff; color: #000; padding: 8px 12px; font-weight: 700; border-radius: 8px;
+          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
+          white-space: nowrap;
         }
         .mono-btn:hover { background: #000; color: #fff; }
         .mono-btn:active { transform: scale(0.98); }
         .mono-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
         .mono-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-        .mono-btn.active { background: #000; color: #fff; }
-        .mono-btn-sm { padding: 6px 10px; border-radius: 6px; }
-
-        /* Link-like button */
-        .mono-link-btn {
-          background: transparent; border: 0; color: #000; text-decoration: underline; font-weight: 600; padding: 6px 8px; border-radius: 6px;
-        }
-        .mono-link-btn:hover { background: #fff; }
-        .mono-link-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
-        .mono-link-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
+        .mono-btn-sm { padding: 6px 10px; border-radius: 999px; }
       `}</style>
     </div>
   );

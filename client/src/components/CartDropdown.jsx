@@ -1,14 +1,13 @@
 // src/components/CartDropdown.jsx
-import React from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { X, Plus, Minus } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import FancyButton from "./FancyButton";
 
-// Inline SVG fallback so UI never crashes if a URL is bad
 const FALLBACK_SVG =
-  'data:image/svg+xml;utf8,' +
+  "data:image/svg+xml;utf8," +
   encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 600 600">
        <rect width="100%" height="100%" fill="white"/>
@@ -16,15 +15,8 @@ const FALLBACK_SVG =
      </svg>`
   );
 
-// Resolve a single cover URL exactly like ProductCard:
-// 1) product.image (string) -> use it
-// 2) product.images (array) -> pick first truthy
-//    - supports string or object with secure_url | url | src | path
 const getCover = (item) => {
-  // 1) direct string in image
   if (typeof item?.image === "string" && item.image.trim()) return item.image.trim();
-
-  // 2) array images[]
   if (Array.isArray(item?.images) && item.images.length > 0) {
     const first = item.images.find(Boolean);
     if (typeof first === "string" && first.trim()) return first.trim();
@@ -33,8 +25,6 @@ const getCover = (item) => {
       if (typeof v === "string" && v.trim()) return v.trim();
     }
   }
-
-  // 3) other common fields if backend varies
   const maybe =
     item?.thumbnail ??
     item?.cover ??
@@ -46,8 +36,6 @@ const getCover = (item) => {
     const v = maybe.secure_url ?? maybe.url ?? maybe.src ?? maybe.path ?? "";
     if (typeof v === "string" && v.trim()) return v.trim();
   }
-
-  // nothing usable
   return "";
 };
 
@@ -56,8 +44,19 @@ const handleImgError = (e) => {
   e.currentTarget.src = FALLBACK_SVG;
 };
 
+function wordLimitDesc(text, limit = 30) {
+  if (!text) return "";
+  const words = text.trim().split(/\s+/);
+  if (words.length <= limit) return text;
+  return words.slice(0, limit).join(" ") + " ...";
+}
+
 const CartDropdown = () => {
   const { state, dispatch, totalPrice } = useCart();
+  const [descExpanded, setDescExpanded] = useState({});
+
+  const toggleDesc = (id) =>
+    setDescExpanded((ex) => ({ ...ex, [id]: !ex[id] }));
 
   const updateQuantity = (id, quantity) => {
     if (quantity <= 0) {
@@ -81,7 +80,6 @@ const CartDropdown = () => {
             onClick={() => dispatch({ type: "CLOSE_CART" })}
             aria-label="Close cart overlay"
           />
-
           {/* Sidebar Cart */}
           <motion.div
             initial={{ opacity: 0, x: 300 }}
@@ -106,7 +104,6 @@ const CartDropdown = () => {
                   <X size={18} />
                 </button>
               </div>
-
               {/* If cart empty */}
               {state.items.length === 0 ? (
                 <div className="text-center py-5">
@@ -126,6 +123,9 @@ const CartDropdown = () => {
                     {state.items.map((item) => {
                       const url = getCover(item);
                       const safeSrc = typeof url === "string" && url ? url : FALLBACK_SVG;
+                      const desc = item.description || "";
+                      const isLong = desc.trim().split(/\s+/).length > 30;
+                      const id = item.id;
                       return (
                         <div
                           key={item.id}
@@ -143,7 +143,24 @@ const CartDropdown = () => {
                           <div className="flex-grow-1">
                             <h6 className="mb-1" style={{ color: "#000" }}>{item.title}</h6>
                             <p className="fw-bold mb-1" style={{ color: "#000" }}>${item.price}</p>
-                            <div className="d-flex align-items-center">
+                            {/* Description with limit and show more */}
+                            {desc && (
+                              <div className="small" style={{ color: "#000" }}>
+                                {descExpanded[id]
+                                  ? desc
+                                  : wordLimitDesc(desc, 30)}
+                                {isLong && (
+                                  <button
+                                    className="cart-link-btn ms-1"
+                                    onClick={() => toggleDesc(id)}
+                                    style={{ background: "none", border: "none", color: "#007bff", cursor: "pointer", padding: 0, fontSize: "0.95em" }}
+                                  >
+                                    {descExpanded[id] ? "Show less" : "Show more"}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            <div className="d-flex align-items-center mt-2">
                               <button
                                 onClick={() => updateQuantity(item.id, item.quantity - 1)}
                                 type="button"
@@ -177,14 +194,12 @@ const CartDropdown = () => {
                       );
                     })}
                   </div>
-
                   {/* Footer total */}
                   <div className="border-top pt-3" style={{ borderColor: "#000" }}>
                     <div className="d-flex justify-content-between mb-3" style={{ color: "#000" }}>
                       <span className="fw-bold">Total:</span>
                       <span className="fw-bold">${totalPrice.toFixed(2)}</span>
                     </div>
-
                     <div className="d-grid gap-2">
                       <FancyButton
                         to="/cart"
@@ -205,8 +220,7 @@ const CartDropdown = () => {
                 </>
               )}
             </div>
-
-            {/* Local styles for monochrome icon buttons and focus visibility */}
+            {/* Cart icon buttons, style as before */}
             <style>{`
               .cart-icon-btn {
                 width: 32px;
@@ -232,8 +246,13 @@ const CartDropdown = () => {
                 box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
               }
               .cart-icon-btn:focus {
-                outline: 2px solid #000; /* fallback */
-                outline-offset: 2px;
+                outline: 2px solid #000; outline-offset: 2px;
+              }
+              .cart-link-btn {
+                background: none; border: none; color: #007bff; font-weight: 500; text-decoration: underline; padding: 0; margin: 0;
+              }
+              .cart-link-btn:focus-visible {
+                outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
               }
             `}</style>
           </motion.div>

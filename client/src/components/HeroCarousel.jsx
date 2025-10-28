@@ -2,15 +2,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
-import FancyButton from './FancyButton'; // uses the previously added monochrome button
+import FancyButton from './FancyButton';
 
 // Local hero images
-import img1 from '../assets/heroimg1.jpg';
-import img2 from '../assets/heroimg2.jpg'; // Art Classes
-import img3 from '../assets/heroimg3.jpg';
-import img4 from '../assets/ma_durga.png';
+import img1 from '../assets/hero1.jpg';
+import img2 from '../assets/hero4.png';
+import img3 from '../assets/hero3.jpg';
+import img4 from '../assets/ma_durga.png'
 
-// Slides (includes Art Classes slide)
+// Slides
 const PAINTING_SLIDES = [
   { id: 'p1', image: img1, alt: 'Abstract canvas with rich colors' },
   { id: 'p2', image: img4, alt: 'Oil painting materials and palette' },
@@ -18,7 +18,7 @@ const PAINTING_SLIDES = [
   { id: 'p4', image: img2, alt: 'Students painting in a live art class' },
 ];
 
-// Per-slide overlay content (text fades only)
+// Per-slide overlay content
 const SLIDE_CONTENT = {
   p1: {
     eyebrow: 'Original Art',
@@ -32,13 +32,14 @@ const SLIDE_CONTENT = {
     sub: 'Enjoy fast, secure delivery on eligible orders no code required.',
     cta: { label: 'Explore collections', href: '/shop' }
   },
-  p3: {
+  p4: {
     eyebrow: 'Custom Commissions',
     heading: 'Bring Ideas to Life with Custom Art',
     sub: 'Work 1:1 with an artist to craft a bespoke piece for your style and budget.',
     cta: { label: 'Start a commission', href: '/custom-order' }
   },
-  p4: {
+  p3: 
+  {
     eyebrow: 'Learn & Create',
     heading: 'Live Online and Studio Art Classes',
     sub: 'Build skills in drawing, watercolor, and acrylics with guided sessions.',
@@ -48,9 +49,16 @@ const SLIDE_CONTENT = {
 
 // Image slide variants (directional)
 const imageVariants = {
-  enter: (dir) => ({ x: dir > 0 ? 80 : -80, opacity: 1 }),
+  enter: (dir) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
   center: { x: 0, opacity: 1, transition: { duration: 0.55, ease: 'easeOut' } },
-  exit: (dir) => ({ x: dir > 0 ? -80 : 80, opacity: 1, transition: { duration: 0.45, ease: 'easeIn' } })
+  exit: (dir) => ({ x: dir > 0 ? -80 : 80, opacity: 0, transition: { duration: 0.45, ease: 'easeIn' } })
+};
+
+// Text content variants
+const contentVariants = {
+  enter: { opacity: 0, y: 20 },
+  center: { opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.2 } },
+  exit: { opacity: 0, y: -10, transition: { duration: 0.3 } }
 };
 
 export default function HeroCarousel({
@@ -62,7 +70,7 @@ export default function HeroCarousel({
   onSlideChange
 }) {
   const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState(1); // +1 next, -1 prev
+  const [direction, setDirection] = useState(1);
   const timeoutRef = useRef(null);
   const pausedRef = useRef(false);
   const touchStartX = useRef(0);
@@ -88,15 +96,15 @@ export default function HeroCarousel({
     clearTimer();
     timeoutRef.current = setTimeout(next, Math.max(1500, interval));
   };
-  useEffect(() => { startTimer(); return clearTimer; }, [index, autoPlay, interval, total]); // restart each change
+  useEffect(() => { startTimer(); return clearTimer; }, [index, autoPlay, interval, total]);
 
   // Hover pause
   const onMouseEnter = () => { pausedRef.current = true; clearTimer(); };
   const onMouseLeave = () => { pausedRef.current = false; startTimer(); };
 
-  // Touch swipe (fixed: use first touch point)
-  const onTouchStart = (e) => { if (e.changedTouches?.length) touchStartX.current = e.changedTouches.clientX; };
-  const onTouchMove = (e) => { if (e.changedTouches?.length) touchEndX.current = e.changedTouches.clientX; };
+  // Touch swipe
+  const onTouchStart = (e) => { if (e.changedTouches?.length) touchStartX.current = e.changedTouches[0].clientX; };
+  const onTouchMove = (e) => { if (e.changedTouches?.length) touchEndX.current = e.changedTouches[0].clientX; };
   const onTouchEnd = () => {
     const dx = touchEndX.current - touchStartX.current;
     if (Math.abs(dx) > 40) (dx > 0 ? prev() : next());
@@ -108,7 +116,8 @@ export default function HeroCarousel({
 
   return (
     <div
-      className="position-absolute top-0 start-0 w-100 h-100 overflow-hidden"
+      className="w-100 overflow-hidden d-flex flex-column"
+      style={{ height: '88vh' }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onTouchStart={onTouchStart}
@@ -118,8 +127,8 @@ export default function HeroCarousel({
       aria-roledescription="carousel"
       aria-label="Homepage hero"
     >
-      {/* Sliding background image only */}
-      <div className="w-100 h-100 position-relative">
+      {/* Image Section - 70% height */}
+      <div className="position-relative overflow-hidden" style={{ height: '65%' }}>
         <AnimatePresence custom={direction} initial={false} mode="popLayout">
           <motion.img
             key={currentSlide.id}
@@ -133,102 +142,130 @@ export default function HeroCarousel({
             className="position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
           />
         </AnimatePresence>
+
+        {/* Arrows - positioned on image */}
+        {showArrows && total > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Previous slide"
+              onClick={prev}
+              className="btn position-absolute z-3 p-0 d-flex align-items-center justify-content-center hero-ctrl"
+              style={{
+                top: '50%', left: 16, transform: 'translateY(-50%)',
+                width: 48, height: 48, borderRadius: '50%',
+                background: 'rgba(255,255,255,.9)',
+                boxShadow: '0 2px 10px rgba(0,0,0,.15)'
+              }}
+            >
+              <ChevronLeft size={22} />
+            </button>
+            <button
+              type="button"
+              aria-label="Next slide"
+              onClick={next}
+              className="btn position-absolute z-3 p-0 d-flex align-items-center justify-content-center hero-ctrl"
+              style={{
+                top: '50%', right: 16, transform: 'translateY(-50%)',
+                width: 48, height: 48, borderRadius: '50%',
+                background: 'rgba(255,255,255,.9)',
+                boxShadow: '0 2px 10px rgba(0,0,0,.15)'
+              }}
+            >
+              <ChevronRight size={22} />
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Scrim for text contrast */}
-      <div
-        className="position-absolute top-0 start-0 w-100 h-100"
-        style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.28) 40%, rgba(0,0,0,0.42) 100%)' }}
-        aria-hidden="true"
-      />
-
-      {/* Fade-only overlay content with auto-inverted buttons */}
-      <div className="position-absolute top-50 start-50 translate-middle w-100 px-3 px-md-4 on-dark" style={{ maxWidth: 1200 }}>
-        <div className="mx-auto" style={{ maxWidth: 980 }}>
+      {/* Text Content Section - 30% height */}
+      <div 
+        className="position-relative d-flex align-items-center justify-content-center px-3 px-md-4"
+        style={{ 
+            height: '35%', 
+        }}
+      >
+        <div className="w-100" style={{ maxWidth: 980 }}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={`content-${currentSlide.id}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, transition: { duration: 0.4 } }}
-              exit={{ opacity: 0, transition: { duration: 0.3 } }}
+              variants={contentVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
               className="text-center"
             >
               {content.eyebrow && (
-                <div className="fw-semibold mb-2 text-white" style={{ letterSpacing: 1 }}>
+                <div 
+                  className="fw-semibold mb-2 text-black" 
+                  style={{ letterSpacing: 1, fontSize: 'clamp(0.75rem, 1.5vw, 0.9rem)' }}
+                >
                   {content.eyebrow}
                 </div>
               )}
 
               <h2
-                className="fw-bold mb-2"
-                style={{ color: '#fff', fontSize: 'clamp(2.3rem, 5.5vw, 4.2rem)', lineHeight: 1.08 }}
+                className="fw-bold mb-2 text-black"
+                style={{ fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)', lineHeight: 1.2 }}
               >
                 {content.heading}
               </h2>
 
               {content.sub && (
-                <p className="mb-3 mb-md-4" style={{ color: 'rgba(255,255,255,0.9)', fontSize: 'clamp(1rem, 1.8vw, 1.2rem)' }}>
+                <p 
+                  className="mb-3" 
+                  style={{ 
+                    color: 'rgba(0, 0, 0, 0.85)', 
+                    fontSize: 'clamp(0.85rem, 1.5vw, 1rem)' 
+                  }}
+                >
                   {content.sub}
                 </p>
               )}
 
               {content.cta && (
-                <FancyButton to={content.cta.href} className="fancy-sm" aria-label={content.cta.label}>
+                <FancyButton 
+                  to={content.cta.href} 
+                  className="fancy-sm" 
+                  aria-label={content.cta.label}
+                >
                   {content.cta.label} <ArrowRight size={18} />
                 </FancyButton>
               )}
             </motion.div>
           </AnimatePresence>
         </div>
+
+        {/* Indicators - positioned in text section */}
+        {showIndicators && total > 1 && (
+          <div 
+            className="position-absolute start-50 translate-middle-x d-flex gap-2 z-3" 
+            style={{ bottom: 16 }}
+          >
+            {slides.map((s, i) => {
+              const active = i === index;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  aria-label={`Go to slide ${i + 1}`}
+                  onClick={() => goTo(i)}
+                  className="p-0 border-0 hero-ind"
+                  style={{
+                    width: active ? 22 : 10,
+                    height: 10,
+                    borderRadius: 999,
+                    background: active ? 'rgba(0, 0, 0, 0.95)' : 'rgba(36, 36, 36, 0.6)',
+                    transition: 'all .25s ease'
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Arrows */}
-      {showArrows && total > 1 && (
-        <>
-          <button
-            type="button" aria-label="Previous slide" onClick={prev}
-            className="btn position-absolute z-3 p-0 d-flex align-items-center justify-content-center hero-ctrl"
-            style={{
-              top: '50%', left: 16, transform: 'translateY(-50%)', width: 48, height: 48,
-              borderRadius: '50%', background: 'rgba(255,255,255,.9)', boxShadow: '0 2px 10px rgba(0,0,0,.15)'
-            }}
-          >
-            <ChevronLeft size={22} />
-          </button>
-          <button
-            type="button" aria-label="Next slide" onClick={next}
-            className="btn position-absolute z-3 p-0 d-flex align-items-center justify-content-center hero-ctrl"
-            style={{
-              top: '50%', right: 16, transform: 'translateY(-50%)', width: 48, height: 48,
-              borderRadius: '50%', background: 'rgba(255,255,255,.9)', boxShadow: '0 2px 10px rgba(0,0,0,.15)'
-            }}
-          >
-            <ChevronRight size={22} />
-          </button>
-        </>
-      )}
-
-      {/* Indicators */}
-      {showIndicators && total > 1 && (
-        <div className="position-absolute start-50 translate-middle-x d-flex gap-2 z-3" style={{ bottom: 16 }}>
-          {slides.map((s, i) => {
-            const active = i === index;
-            return (
-              <button
-                key={s.id} type="button" aria-label={`Go to slide ${i + 1}`} onClick={() => goTo(i)}
-                className="p-0 border-0 hero-ind"
-                style={{
-                  width: active ? 22 : 10, height: 10, borderRadius: 999,
-                  background: active ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.6)',
-                  transition: 'all .25s ease'
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      {/* Local focus-visible styles for controls (keyboard users) */}
+      {/* Focus styles */}
       <style>{`
         .hero-ctrl:focus-visible,
         .hero-ind:focus-visible {

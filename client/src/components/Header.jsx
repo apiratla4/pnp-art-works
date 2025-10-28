@@ -6,8 +6,31 @@ import { ShoppingCart, Heart, X } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import CartDropdown from "./CartDropdown";
 import "./Header.css";
-import logo from "../assets/pnpartlogoheader.png";
+import logo from "../assets/pnplogoblack1.png";
 import FancyButton from "./FancyButton";
+
+const allProducts = [
+  { label: "Paintings", to: "/shop/category/paintings" },
+  { label: "Holiday gifts", to: "/shop/category/holiday-gifts" },
+  { label: "Landscapes", to: "/shop/category/landscapes" },
+  { label: "Modern art", to: "/shop/category/modern-art" },
+  { label: "Name sign", to: "/shop/category/name-sign" },
+  { label: "Limited editions", to: "/shop/category/limited-editions" },
+  { label: "Pencil sketches", to: "/shop/category/pencil-sketches" },
+  { label: "Digital prints", to: "/shop/category/digital-prints", disabled: true }
+];
+
+const indianProductsMain = [
+  { label: "Indian god paintings", to: "/shop/category/indian-god-paintings" },
+  { label: "Musical Art paintings", to: "/shop/category/musical-art-paintings" }
+];
+
+const returnGifts = [
+  { label: "Kolam coasters", to: "/shop/category/kolam-coasters" },
+  { label: "Kolam peetham", to: "/shop/category/kolam-peetham" },
+  { label: "Traditional magnets", to: "/shop/category/traditional-magnets" },
+  { label: "Trays", to: "/shop/category/trays" }
+];
 
 const Header = () => {
   const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
@@ -44,23 +67,6 @@ const Header = () => {
     setIsOpen(false);
   }, [location.pathname]);
 
-  const topCategories = [
-    { label: "All Products", to: "/shop", end: true },
-    { label: "Paintings", to: "/shop/category/paintings" },
-    { label: "Digital Prints", to: "/shop/category/digital-prints" },
-    { label: "Pencil Sketches", to: "/shop/category/pencil-sketches" },
-    { label: "Handcrafted Items", to: "/shop/category/handcrafted-items" },
-    { label: "Limited Editions", to: "/shop/category/limited-editions" },
-  ];
-
-  const indianProducts = [
-    { label: "Kolam coasters", to: "/shop/category/kolam-coasters" },
-    { label: "Kolam peetham", to: "/shop/category/kolam-peetham" },
-    { label: "Traditional magnets", to: "/shop/category/traditional-magnets" },
-    { label: "Trays", to: "/shop/category/trays" },
-    { label: "Diya holders", to: "/shop/category/diya-holders" },
-  ];
-
   const handleCartClick = () => {
     if (dispatch) dispatch({ type: "TOGGLE_CART" });
   };
@@ -90,7 +96,7 @@ const Header = () => {
                 alt="PnP art studio logo"
                 className="brand-logo me-2"
                 height={80}
-                width={80}
+                width={100}
                 loading="eager"
                 decoding="async"
                 fetchPriority="high"
@@ -133,6 +139,7 @@ const Header = () => {
                   </NavLink>
                 </li>
 
+                {/* SHOP DROPDOWN */}
                 <li
                   ref={dropdownRef}
                   className={`nav-item dropdown ${canHover ? "" : "dropdown-center"}`}
@@ -156,45 +163,54 @@ const Header = () => {
                       Shop <span className={`caret-inline ${canHover ? "" : "caret-mobile"}`}>▾</span>
                     </span>
                   </Link>
-
-                  <ul className={`dropdown-menu ${isShopDropdownOpen ? "show" : ""}`} aria-labelledby="shopDropdown" data-bs-display="static">
-                    {topCategories.map((c) => (
-                      <li key={c.label}>
-                        <NavLink
-                          to={c.to}
-                          end={Boolean(c.end)}
-                          onClick={handleNavClick}
-                          className={({ isActive }) => `dropdown-item nav-hover ${isActive ? "active" : ""}`}
-                        >
-                          {c.label}
-                        </NavLink>
-                      </li>
-                    ))}
-
-                    <li><hr className="dropdown-divider" /></li>
-
-                    {/* Indian Products submenu */}
-                    <li
-                      className="dropend"
-                      onMouseEnter={canHover ? (e) => {
-                        const toggle = e.currentTarget.querySelector(".dropdown-toggle");
-                        const menu = e.currentTarget.querySelector(".dropdown-menu");
-                        if (toggle) toggle.classList.add("show");
-                        if (menu) menu.classList.add("show");
-                      } : undefined}
-                      onMouseLeave={canHover ? (e) => {
-                        const toggle = e.currentTarget.querySelector(".dropdown-toggle");
-                        const menu = e.currentTarget.querySelector(".dropdown-menu");
-                        if (toggle) toggle.classList.remove("show");
-                        if (menu) menu.classList.remove("show");
-                      } : undefined}
-                    >
-                      <Link className="dropdown-item dropdown-toggle nav-hover" to="#" role="button" data-bs-toggle="dropdown" data-bs-display="static"
-                        onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); }}>
+                  <ul className={`dropdown-menu ${isShopDropdownOpen ? "show" : ""}`} aria-labelledby="shopDropdown" data-bs-display="static" style={{ minWidth: 260 }}>
+                    {/* All Products */}
+                    <li className="dropend">
+                      <Link className="dropdown-item dropdown-toggle nav-hover" to="#" role="button" data-bs-toggle="dropdown"
+                        onClick={e => { e.preventDefault(); }}>
+                        All Products
+                      </Link>
+                      <ul className="dropdown-menu">
+                        {allProducts.map((c) => (
+                          <li key={c.label}>
+                            {c.disabled ? (
+                              <span className="dropdown-item nav-hover disabled" style={{ opacity: 0.55, pointerEvents: 'none' }}>
+                                {c.label} (Coming soon)
+                              </span>
+                            ) : (
+                              <NavLink
+                                to={c.to}
+                                onClick={handleNavClick}
+                                className={({ isActive }) => `dropdown-item nav-hover ${isActive ? "active" : ""}`}
+                              >
+                                {c.label}
+                              </NavLink>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                    {/* Indian Products */}
+                    <li className="dropend">
+                      <Link className="dropdown-item dropdown-toggle nav-hover" to="#" role="button" data-bs-toggle="dropdown"
+                        onClick={e => { e.preventDefault(); }}>
                         Indian Products
                       </Link>
-                      <ul className="dropdown-menu" data-bs-display="static">
-                        {indianProducts.map((c) => (
+                      <ul className="dropdown-menu">
+                        {indianProductsMain.map((c) => (
+                          <li key={c.label}>
+                            <NavLink
+                              to={c.to}
+                              onClick={handleNavClick}
+                              className={({ isActive }) => `dropdown-item nav-hover ${isActive ? "active" : ""}`}
+                            >
+                              {c.label}
+                            </NavLink>
+                          </li>
+                        ))}
+                        <li><hr className="dropdown-divider" /></li>
+                        <li className="dropdown-header px-3 small text-muted">Return gifts</li>
+                        {returnGifts.map((c) => (
                           <li key={c.label}>
                             <NavLink
                               to={c.to}
@@ -249,7 +265,6 @@ const Header = () => {
                   <Heart size={20} />
                 </NavLink>
               </li>
-
               <li className="nav-item position-relative">
                 <button
                   className="btn nav-link position-relative d-flex align-items-center nav-hover"
@@ -267,7 +282,6 @@ const Header = () => {
                 </button>
                 <CartDropdown />
               </li>
-
               <li className="nav-item">
                 <FancyButton to="/track-order" className="ms-lg-2 fancy-sm" aria-label="Track Order">
                   Track Order

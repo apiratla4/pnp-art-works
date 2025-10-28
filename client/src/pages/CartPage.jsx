@@ -1,26 +1,19 @@
-// src/pages/CartPage.jsx (Monochrome + Fancy buttons)
-import React from 'react';
+// src/pages/CartPage.jsx
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Minus, X, ShoppingBag, ArrowLeft, Truck, Shield } from 'lucide-react';
+import { Plus, Minus, X, ShoppingBag, ArrowLeft, Truck, Shield, Award } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import FancyButton from '../components/FancyButton';
 
 const FALLBACK_IMG = '/placeholder.png';
 
-// Resolve a cover URL similar to ProductCard:
-// 1) Prefer item.image if it's a string
-// 2) Else take the first truthy entry from item.images
-//    - If string, use it
-//    - If object, try secure_url | url | src | path
 const getCover = (item) => {
   const single = typeof item?.image === 'string' ? item.image.trim() : '';
   if (single) return single;
-
   const arr = Array.isArray(item?.images) ? item.images : [];
   const first = arr.find(Boolean);
   if (!first) return '';
-
   if (typeof first === 'string') return first.trim();
   if (typeof first === 'object' && first !== null) {
     const url = first.secure_url || first.url || first.src || first.path || '';
@@ -29,14 +22,21 @@ const getCover = (item) => {
   return '';
 };
 
-// Fallback on broken URLs: swap to a local placeholder
 const handleImgError = (e) => {
   e.currentTarget.onerror = null;
   e.currentTarget.src = FALLBACK_IMG;
 };
 
+function wordLimitDesc(text, limit = 30) {
+  if (!text) return '';
+  const words = text.trim().split(/\s+/);
+  if (words.length <= limit) return text;
+  return words.slice(0, limit).join(' ') + ' ...';
+}
+
 const CartPage = () => {
   const { state, dispatch, totalPrice, totalItems } = useCart();
+  const [descExpanded, setDescExpanded] = useState({});
 
   const updateQuantity = (id, quantity) => {
     if (quantity <= 0) {
@@ -50,8 +50,10 @@ const CartPage = () => {
   const clearCart = () => dispatch({ type: 'CLEAR_CART' });
 
   const shippingCost = totalPrice > 100 ? 0 : 15;
-  const tax = totalPrice * 0.08;
-  const finalTotal = totalPrice + shippingCost + tax;
+  const finalTotal = totalPrice + shippingCost;
+
+  const toggleDesc = (id) =>
+    setDescExpanded((ex) => ({ ...ex, [id]: !ex[id] }));
 
   // Empty state
   if (state.items.length === 0) {
@@ -66,12 +68,10 @@ const CartPage = () => {
           >
             <ShoppingBag size={64} />
           </motion.div>
-
           <h2 className="fw-bold mb-3" style={{ color: '#000' }}>Your cart is empty</h2>
           <p className="mb-4" style={{ color: '#000' }}>
             Looks like no beautiful artworks have been added yet. Explore the collection and find a favorite.
           </p>
-
           <FancyButton to="/shop" className="fancy-sm">Start Shopping</FancyButton>
         </div>
       </div>
@@ -89,13 +89,11 @@ const CartPage = () => {
               {totalItems} item{totalItems !== 1 ? 's' : ''} in the cart
             </p>
           </div>
-
           <Link to="/shop" className="d-inline-flex align-items-center gap-2 text-decoration-none" style={{ color: '#000' }}>
             <ArrowLeft size={18} />
             <span className="fw-medium">Continue Shopping</span>
           </Link>
         </div>
-
         <div className="row g-4">
           {/* Cart Items + Benefits */}
           <div className="col-lg-8">
@@ -105,97 +103,113 @@ const CartPage = () => {
                 <h2 className="h5 fw-semibold mb-0">Your Items</h2>
                 <button onClick={clearCart} className="cart-link-btn" type="button">Clear Cart</button>
               </div>
-
               <div className="list-group list-group-flush">
-                {state.items.map((item, index) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="list-group-item p-4"
-                    style={{ color: '#000', background: '#fff' }}
-                  >
-                    <div className="d-flex gap-3">
-                      {/* Image */}
-                      <div className="flex-shrink-0">
-                        <img
-                          src={getCover(item) || FALLBACK_IMG}
-                          alt={item.title}
-                          className="rounded-3 object-fit-cover"
-                          style={{ width: 96, height: 96, border: '1px solid #000' }}
-                          loading="lazy"
-                          onError={handleImgError}
-                        />
-                      </div>
-
-                      {/* Details */}
-                      <div className="flex-grow-1">
-                        <div className="d-flex justify-content-between align-items-start">
-                          <div>
-                            <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>{item.title}</h3>
-                            <div className="small mb-2" style={{ color: '#000' }}>{item.category}</div>
-                            <div className="fs-5 fw-bold" style={{ color: '#000' }}>${item.price}</div>
-                          </div>
-
-                          <button
-                            onClick={() => removeItem(item.id)}
-                            className="cart-icon-btn"
-                            title="Remove item"
-                            type="button"
-                            aria-label={`Remove ${item.title}`}
-                          >
-                            <X size={18} />
-                          </button>
+                {state.items.map((item, index) => {
+                  const desc = item.description || '';
+                  const isLong = desc.trim().split(/\s+/).length > 30;
+                  return (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="list-group-item p-4"
+                      style={{ color: '#000', background: '#fff' }}
+                    >
+                      <div className="d-flex gap-3">
+                        {/* Image */}
+                        <div className="flex-shrink-0">
+                          <img
+                            src={getCover(item) || FALLBACK_IMG}
+                            alt={item.title}
+                            className="rounded-3 object-fit-cover"
+                            style={{ width: 96, height: 96, border: '1px solid #000' }}
+                            loading="lazy"
+                            onError={handleImgError}
+                          />
                         </div>
-
-                        <div className="d-flex justify-content-between align-items-center mt-3">
-                          {/* Quantity controls */}
-                          <div className="d-inline-flex align-items-center gap-2">
+                        {/* Details */}
+                        <div className="flex-grow-1">
+                          <div className="d-flex justify-content-between align-items-start">
+                            <div>
+                              <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>{item.title}</h3>
+                              <div className="small mb-2" style={{ color: '#000' }}>{item.category}</div>
+                              <div className="fs-5 fw-bold" style={{ color: '#000' }}>${item.price}</div>
+                              {/* Description with limit and toggle */}
+                              {desc && (
+                                <div className="small mt-2" style={{ color: "#000" }}>
+                                  {descExpanded[item.id]
+                                    ? desc
+                                    : wordLimitDesc(desc, 30)}
+                                  {isLong && (
+                                    <button
+                                      className="cart-link-btn ms-1"
+                                      onClick={() => toggleDesc(item.id)}
+                                      style={{
+                                        background: "none", border: "none", color: "#007bff",
+                                        cursor: "pointer", padding: 0, fontSize: "0.95em"
+                                      }}>
+                                      {descExpanded[item.id] ? "Show less" : "Show more"}
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                             <button
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              onClick={() => removeItem(item.id)}
                               className="cart-icon-btn"
-                              title="Decrease"
+                              title="Remove item"
                               type="button"
-                              aria-label={`Decrease quantity of ${item.title}`}
+                              aria-label={`Remove ${item.title}`}
                             >
-                              <Minus size={16} />
-                            </button>
-
-                            <span className="fw-medium" style={{ minWidth: 32, textAlign: 'center', color: '#000' }}>
-                              {item.quantity}
-                            </span>
-
-                            <button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="cart-icon-btn"
-                              title="Increase"
-                              type="button"
-                              aria-label={`Increase quantity of ${item.title}`}
-                            >
-                              <Plus size={16} />
+                              <X size={18} />
                             </button>
                           </div>
-
-                          {/* Line total */}
-                          <div className="fw-bold" style={{ color: '#000' }}>
-                            ${(item.price * item.quantity).toFixed(2)}
+                          <div className="d-flex justify-content-between align-items-center mt-3">
+                            {/* Quantity controls */}
+                            <div className="d-inline-flex align-items-center gap-2">
+                              <button
+                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                className="cart-icon-btn"
+                                title="Decrease"
+                                type="button"
+                                aria-label={`Decrease quantity of ${item.title}`}
+                              >
+                                <Minus size={16} />
+                              </button>
+                              <span className="fw-medium" style={{ minWidth: 32, textAlign: 'center', color: '#000' }}>
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                className="cart-icon-btn"
+                                title="Increase"
+                                type="button"
+                                aria-label={`Increase quantity of ${item.title}`}
+                              >
+                                <Plus size={16} />
+                              </button>
+                            </div>
+                            {/* Line total */}
+                            <div className="fw-bold" style={{ color: '#000' }}>
+                              ${(item.price * item.quantity).toFixed(2)}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
-
             {/* Benefits */}
             <div className="row g-3">
-              <div className="col-12 col-md-6">
+              {/* Free Shipping */}
+              <div className="col-12 col-md-4">
                 <div className="card h-100 text-center shadow-sm border-0 rounded-4" style={{ background: '#fff', color: '#000' }}>
                   <div className="card-body">
                     <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                         style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}>
+                      style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}>
                       <Truck size={22} />
                     </div>
                     <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>Free Shipping</h3>
@@ -203,12 +217,12 @@ const CartPage = () => {
                   </div>
                 </div>
               </div>
-
-              <div className="col-12 col-md-6">
+              {/* Secure Packaging */}
+              <div className="col-12 col-md-4">
                 <div className="card h-100 text-center shadow-sm border-0 rounded-4" style={{ background: '#fff', color: '#000' }}>
                   <div className="card-body">
                     <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                         style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}>
+                      style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}>
                       <Shield size={22} />
                     </div>
                     <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>Secure Packaging</h3>
@@ -216,36 +230,39 @@ const CartPage = () => {
                   </div>
                 </div>
               </div>
+              {/* Free Pickup in Studio */}
+              <div className="col-12 col-md-4">
+                <div className="card h-100 text-center shadow-sm border-0 rounded-4" style={{ background: '#fff', color: '#000' }}>
+                  <div className="card-body">
+                    <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                      style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}>
+                      <Award size={22} />
+                    </div>
+                    <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>Free Pickup in Studio</h3>
+                    <p className="small mb-0" style={{ color: '#000' }}>No shipping needed</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-
           {/* Summary */}
           <div className="col-lg-4">
             <div className="card shadow-sm border-0 rounded-4 p-4 sticky-top" style={{ top: '2rem', background: '#fff', color: '#000' }}>
               <h2 className="h5 fw-semibold mb-4" style={{ color: '#000' }}>Order Summary</h2>
-
               <div className="mb-4">
                 <div className="d-flex justify-content-between mb-2" style={{ color: '#000' }}>
                   <span>Subtotal ({totalItems} items)</span>
                   <span>${totalPrice.toFixed(2)}</span>
                 </div>
-
                 <div className="d-flex justify-content-between mb-2" style={{ color: '#000' }}>
                   <span>Shipping</span>
                   <span>{shippingCost === 0 ? 'Free' : `$${shippingCost.toFixed(2)}`}</span>
                 </div>
-
-                <div className="d-flex justify-content-between mb-3" style={{ color: '#000' }}>
-                  <span>Tax</span>
-                  <span>${tax.toFixed(2)}</span>
-                </div>
-
                 {totalPrice < 100 && (
                   <div className="mono-alert mb-3">
                     💡 Add ${(100 - totalPrice).toFixed(2)} more for free shipping!
                   </div>
                 )}
-
                 <div className="pt-3" style={{ borderTop: '1px solid #000' }}>
                   <div className="d-flex justify-content-between align-items-center" style={{ color: '#000' }}>
                     <span className="fw-bold fs-5">Total</span>
@@ -253,11 +270,9 @@ const CartPage = () => {
                   </div>
                 </div>
               </div>
-
               <div className="d-grid gap-2">
                 <FancyButton to="/checkout" className="fancy-sm">Proceed to Checkout</FancyButton>
               </div>
-
               <div className="mt-4 pt-3" style={{ borderTop: '1px solid #000' }}>
                 <h3 className="h6 fw-semibold mb-3" style={{ color: '#000' }}>Accepted Payment Methods</h3>
                 <div className="d-flex flex-wrap gap-2">
@@ -270,7 +285,6 @@ const CartPage = () => {
             </div>
           </div>
         </div>
-
         {/* Local styles for monochrome controls and focus visibility */}
         <style>{`
           .cart-icon-btn {
@@ -285,7 +299,6 @@ const CartPage = () => {
             outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
           }
           .cart-icon-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-
           .cart-link-btn {
             background: transparent; border: none; color: #000; padding: 0; font-weight: 600; cursor: pointer;
           }
@@ -294,7 +307,6 @@ const CartPage = () => {
             outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
           }
           .cart-link-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-
           .mono-badge {
             padding: 0.5rem 0.75rem; border: 1px solid #000; border-radius: 999px;
             background: #fff; color: #000; font-weight: 600; line-height: 1;

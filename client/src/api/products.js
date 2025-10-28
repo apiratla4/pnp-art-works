@@ -8,15 +8,17 @@ const http = axios.create({
   headers: { "Content-Type": "application/json" }
 });
 
+// Normalize API product (always up-to-date with backend schema)
 export const mapProductFromApi = (doc = {}) => {
   const id = doc._id || doc.id || "";
   const images = Array.isArray(doc.images) ? doc.images : [];
-  const image = typeof doc.image === "string" && doc.image.trim() ? doc.image : (images || "");
+  const image = typeof doc.image === "string" && doc.image.trim() ? doc.image : (images && images[0] ? images[0] : "");
   return {
     id,
     title: doc.title || "",
     category: doc.category || "",
     subcategory: doc.subcategory || "",
+    subsubcategory: doc.subsubcategory || "",
     price: typeof doc.price === "number" ? doc.price : 0,
     salePrice: doc.salePrice === null ? null : (typeof doc.salePrice === "number" ? doc.salePrice : null),
     stock: typeof doc.stock === "number" ? doc.stock : 0,
@@ -25,17 +27,17 @@ export const mapProductFromApi = (doc = {}) => {
     featured: !!doc.featured,
     description: doc.description || "",
     dimensions: doc.dimensions || "",
-    medium: doc.medium || "",
-    year: doc.year || "",
+    color: doc.color || "",
     image,
     images,
-    slug: doc.slug || ""
+    slug: doc.slug || "",
   };
 };
 
 export const listProducts = async (params = {}) => {
   const res = await http.get("/api/products", { params });
   const items = Array.isArray(res.data?.items) ? res.data.items.map(mapProductFromApi) : [];
+  // In case pagination keys are added to backend, handle them
   const total = typeof res.data?.total === "number" ? res.data.total : items.length;
   const page = typeof res.data?.page === "number" ? res.data.page : 1;
   const totalPages = typeof res.data?.totalPages === "number" ? res.data.totalPages : 1;
