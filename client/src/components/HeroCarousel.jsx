@@ -32,13 +32,13 @@ const SLIDE_CONTENT = {
     sub: 'Enjoy fast, secure delivery on eligible orders no code required.',
     cta: { label: 'Explore collections', href: '/shop' }
   },
-  p4: {
+  p3: {
     eyebrow: 'Custom Commissions',
     heading: 'Bring Ideas to Life with Custom Art',
     sub: 'Work 1:1 with an artist to craft a bespoke piece for your style and budget.',
     cta: { label: 'Start a commission', href: '/custom-order' }
   },
-  p3: 
+  p4: 
   {
     eyebrow: 'Learn & Create',
     heading: 'Live Online and Studio Art Classes',
