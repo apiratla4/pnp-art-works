@@ -19,7 +19,6 @@
 /* Only text beside the logo */
 .brand-title {
   /* Elegant cursive stack without external imports */
-  font-family: "Dancing Script", "Segoe Script", "Snell Roundhand", "Brush Script MT", cursive;
   font-weight: 700;
   font-size: 1.8rem;
   line-height: 1;

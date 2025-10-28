@@ -4,14 +4,6 @@ import { ShoppingCart } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "./FallingCart.css";
 
-/**
- * Auto-falling cart:
- * - Starts falling on mount and on every route change
- * - Slows while scrolling (modulates playbackRate)
- * - Pauses with ripple on hover/focus
- * - Navigates to /cart on click
- * - Respects prefers-reduced-motion
- */
 const FallingCart = ({
   right = 16,
   bottomOffset = 88,

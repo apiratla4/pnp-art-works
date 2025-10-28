@@ -1,5 +1,4 @@
-// src/components/CartDropdown.jsx
-import React, { useState } from "react";
+import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { X, Plus, Minus } from "lucide-react";
@@ -7,13 +6,15 @@ import { useCart } from "../context/CartContext";
 import FancyButton from "./FancyButton";
 
 const FALLBACK_SVG =
-  "data:image/svg+xml;utf8," +
+  'data:image/svg+xml;utf8,' +
   encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 600 600">
        <rect width="100%" height="100%" fill="white"/>
        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="black" font-size="20">No Image</text>
      </svg>`
   );
+
+const fmtUSD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
 const getCover = (item) => {
   if (typeof item?.image === "string" && item.image.trim()) return item.image.trim();
@@ -44,19 +45,13 @@ const handleImgError = (e) => {
   e.currentTarget.src = FALLBACK_SVG;
 };
 
-function wordLimitDesc(text, limit = 30) {
-  if (!text) return "";
-  const words = text.trim().split(/\s+/);
-  if (words.length <= limit) return text;
-  return words.slice(0, limit).join(" ") + " ...";
-}
+const getUnitPrice = (it) =>
+  typeof it.salePrice === "number" && it.salePrice !== null && it.salePrice < it.price
+    ? it.salePrice
+    : it.price;
 
 const CartDropdown = () => {
   const { state, dispatch, totalPrice } = useCart();
-  const [descExpanded, setDescExpanded] = useState({});
-
-  const toggleDesc = (id) =>
-    setDescExpanded((ex) => ({ ...ex, [id]: !ex[id] }));
 
   const updateQuantity = (id, quantity) => {
     if (quantity <= 0) {
@@ -123,9 +118,6 @@ const CartDropdown = () => {
                     {state.items.map((item) => {
                       const url = getCover(item);
                       const safeSrc = typeof url === "string" && url ? url : FALLBACK_SVG;
-                      const desc = item.description || "";
-                      const isLong = desc.trim().split(/\s+/).length > 30;
-                      const id = item.id;
                       return (
                         <div
                           key={item.id}
@@ -140,26 +132,29 @@ const CartDropdown = () => {
                             loading="lazy"
                             onError={handleImgError}
                           />
-                          <div className="flex-grow-1">
+                          <div className="grow">
                             <h6 className="mb-1" style={{ color: "#000" }}>{item.title}</h6>
-                            <p className="fw-bold mb-1" style={{ color: "#000" }}>${item.price}</p>
-                            {/* Description with limit and show more */}
-                            {desc && (
-                              <div className="small" style={{ color: "#000" }}>
-                                {descExpanded[id]
-                                  ? desc
-                                  : wordLimitDesc(desc, 30)}
-                                {isLong && (
-                                  <button
-                                    className="cart-link-btn ms-1"
-                                    onClick={() => toggleDesc(id)}
-                                    style={{ background: "none", border: "none", color: "#007bff", cursor: "pointer", padding: 0, fontSize: "0.95em" }}
-                                  >
-                                    {descExpanded[id] ? "Show less" : "Show more"}
-                                  </button>
-                                )}
-                              </div>
-                            )}
+                            {/* Sale logic: price + salePrice only */}
+                            <div className="fw-bold mb-1" style={{ color: '#000' }}>
+                              {typeof item.salePrice === "number" && item.salePrice !== null && item.salePrice < item.price ? (
+                                <>
+                                  <span style={{
+                                    textDecoration: "line-through",
+                                    color: "#888",
+                                    marginRight: 7,
+                                    fontWeight: 400,
+                                    fontSize: "0.97em"
+                                  }}>
+                                    {fmtUSD.format(item.price)}
+                                  </span>
+                                  <span>
+                                    {fmtUSD.format(item.salePrice)}
+                                  </span>
+                                </>
+                              ) : (
+                                fmtUSD.format(item.price)
+                              )}
+                            </div>
                             <div className="d-flex align-items-center mt-2">
                               <button
                                 onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -198,7 +193,7 @@ const CartDropdown = () => {
                   <div className="border-top pt-3" style={{ borderColor: "#000" }}>
                     <div className="d-flex justify-content-between mb-3" style={{ color: "#000" }}>
                       <span className="fw-bold">Total:</span>
-                      <span className="fw-bold">${totalPrice.toFixed(2)}</span>
+                      <span className="fw-bold">{fmtUSD.format(totalPrice)}</span>
                     </div>
                     <div className="d-grid gap-2">
                       <FancyButton
@@ -220,7 +215,6 @@ const CartDropdown = () => {
                 </>
               )}
             </div>
-            {/* Cart icon buttons, style as before */}
             <style>{`
               .cart-icon-btn {
                 width: 32px;
@@ -247,12 +241,6 @@ const CartDropdown = () => {
               }
               .cart-icon-btn:focus {
                 outline: 2px solid #000; outline-offset: 2px;
-              }
-              .cart-link-btn {
-                background: none; border: none; color: #007bff; font-weight: 500; text-decoration: underline; padding: 0; margin: 0;
-              }
-              .cart-link-btn:focus-visible {
-                outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
               }
             `}</style>
           </motion.div>

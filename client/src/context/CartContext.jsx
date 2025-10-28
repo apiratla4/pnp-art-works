@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useReducer } from "react";
 
 const initialState = {
-  items: [],        // [{ id, title, price, image, images, category, subcategory, subsubcategory, description, color, quantity }]
-  wishlist: [],     // [{ id, title, price, image, images, category, subcategory, color }]
+  items: [],
+  wishlist: [],
   isOpen: false
 };
 
@@ -21,7 +21,9 @@ const cartReducer = (state, action) => {
       const existing = state.items.find((it) => it.id === id);
       const items = existing
         ? state.items.map((it) =>
-            it.id === id ? { ...it, quantity: (it.quantity || 1) + (action.payload.quantity || 1) } : it
+            it.id === id
+              ? { ...it, quantity: (it.quantity || 1) + (action.payload.quantity || 1) }
+              : it
           )
         : [...state.items, { ...action.payload, quantity: action.payload.quantity || 1 }];
       return { ...state, items };
@@ -78,7 +80,15 @@ export const CartProvider = ({ children }) => {
   }, [state]);
 
   const totalItems = state.items.reduce((sum, it) => sum + (it.quantity || 1), 0);
-  const totalPrice = state.items.reduce((sum, it) => sum + (it.price || 0) * (it.quantity || 1), 0);
+
+  // CHANGED: Use salePrice if present and lower than price, otherwise use price
+  const totalPrice = state.items.reduce((sum, it) => {
+    const unit =
+      typeof it.salePrice === "number" && it.salePrice !== null && it.salePrice < it.price
+        ? it.salePrice
+        : it.price || 0;
+    return sum + unit * (it.quantity || 1);
+  }, 0);
 
   return (
     <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice }}>

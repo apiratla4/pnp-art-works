@@ -1,11 +1,11 @@
 /* src/components/Header.css */
 
-/* Theme */
+/* Theme & Color Scheme */
 :root {
   --bg: #fff;
   --black: #000000;
   --white: #ffffff;
-  --text: #000000;            /* force all header text to black */
+  --text: #000000;
   --hover: rgba(0,0,0,0.06);
   --hover-strong: rgba(0,0,0,0.12);
   --underline: #000000;
@@ -18,13 +18,12 @@
   color: var(--text);
 }
 
-/* Brand (wordmark beside logo) */
+/* Brand (logo + wordmark) */
 .brand-wrap { display: flex; align-items: center; gap: .5rem; }
 .brand-text { display: flex; flex-direction: column; line-height: 1; }
 .header-logo-title {
-  font-family: "Dancing Script", "Segoe Script", "Snell Roundhand", "Brush Script MT", cursive;
   font-weight: 700;
-  font-size: clamp(1.00rem, 5.2vw, 1.80rem); /* min, fluid, max */
+  font-size: clamp(1.00rem, 5.2vw, 1.80rem);
   line-height: 1;
   letter-spacing: .02em;
   color: #000;
@@ -33,67 +32,43 @@
 .header-logo-subline {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
   font-weight: 500;
-  font-size: clamp(.62rem, 2.8vw, .86rem);   /* min, fluid, max */
+  font-size: clamp(.62rem, 2.8vw, .86rem);
   letter-spacing: .06em;
-  text-transform: lowercase; /* "by priyanka vasista" */
+  text-transform: lowercase;
   color: #000;
   opacity: .95;
   margin-top: .18rem;
 }
 
-/* Base nav link styles + underline */
+/* Nav Links & Underline Hover/Active */
 .nav-link { color: var(--text); }
-.nav-link.nav-hover {
-  position: relative;
-  transition: color 160ms ease-in-out, opacity 160ms ease-in-out;
-}
-
-/* Solid black underline for non-dropdown links */
+.nav-link.nav-hover { position: relative; transition: color 160ms, opacity 160ms; }
 .nav-link.nav-hover:not(.dropdown-toggle)::after {
   content: "";
-  position: absolute;
-  left: 0;
-  bottom: 0.25rem;
-  height: 2px;
-  width: 0;
-  background: var(--underline);
-  transition: width 200ms ease;
+  position: absolute; left: 0; bottom: 0.25rem; height: 2px; width: 0;
+  background: var(--underline); transition: width 200ms;
 }
-
-/* Hover/focus shows underline */
 .nav-link.nav-hover:hover::after,
-.nav-link.nav-hover:focus::after {
-  width: 100%;
-}
-
-/* Active route keeps underline + stronger weight */
+.nav-link.nav-hover:focus::after { width: 100%; }
 .nav-link.nav-hover.active {
-  color: var(--black) !important;
-  font-weight: 600;
+  color: var(--black) !important; font-weight: 600;
 }
 .nav-link.nav-hover.active::after { width: 100%; }
 
-/* SHOP dropdown toggle: underline via ::before to avoid caret conflicts */
+/* SHOP dropdown underline via ::before */
 .nav-link.dropdown-toggle.nav-hover { position: relative; }
 .nav-link.dropdown-toggle.nav-hover::before {
   content: "";
-  position: absolute;
-  left: 0;
-  bottom: 0.25rem;
-  height: 2px;
-  width: 0;
-  background: var(--underline);
-  transition: width 200ms ease;
+  position: absolute; left: 0; bottom: 0.25rem; height: 2px; width: 0;
+  background: var(--underline); transition: width 200ms;
 }
 .nav-link.dropdown-toggle.nav-hover:hover::before,
 .nav-link.dropdown-toggle.nav-hover:focus::before,
-.nav-link.dropdown-toggle.nav-hover.active::before {
-  width: 100%;
-}
+.nav-link.dropdown-toggle.nav-hover.active::before { width: 100%; }
 
 /* Dropdown items: monochrome hover/active */
 .dropdown-item.nav-hover {
-  transition: background-color 150ms ease, color 150ms ease;
+  transition: background-color 150ms, color 150ms;
   background-image: none;
   color: var(--text);
 }
@@ -108,7 +83,7 @@
   font-weight: 600;
 }
 
-/* Dropdown menu animation */
+/* Dropdown menu animation (slide, not fade, for better feeling) */
 .dropdown-menu {
   transition: opacity 140ms ease, transform 140ms ease;
   transform-origin: top center;
@@ -122,10 +97,10 @@
   transform: translateY(0);
 }
 
-/* Remove Bootstrap caret arrow only for the Shop toggle */
+/* Remove Bootstrap caret for Shop toggle only */
 #shopDropdown.dropdown-toggle::after { display: none !important; }
 
-/* Submenu (dropend) open on hover for desktop/trackpad only */
+/* Submenu open on hover for desktop/trackpad only */
 @media (hover: hover) and (pointer: fine) {
   .dropdown-menu li.dropend { position: relative; }
   .dropdown-menu li.dropend > .dropdown-menu {
@@ -139,7 +114,7 @@
   .dropdown-menu li.dropend:hover > .dropdown-toggle { background-color: var(--hover); }
 }
 
-/* Remove outlines/shadows on pointer clicks (keep keyboard ring) */
+/* Remove outlines/shadows on pointer (mouse/tap) clicks but keep keyboard ring for accessibility */
 .header-bg .nav-link:focus:not(:focus-visible),
 .header-bg .dropdown-item:focus:not(:focus-visible),
 .header-bg .navbar-toggler:focus:not(:focus-visible),
@@ -157,18 +132,18 @@
   border-color: transparent !important;
 }
 
-/* Remove Bootstrap toggler border/shadow entirely */
+/* Remove Bootstrap toggler border/shadow */
 .navbar-toggler { border: 0 !important; }
 .navbar-toggler:focus { box-shadow: none !important; }
 
-/* Accessible ring for keyboard users */
+/* Accessible focus ring for keyboard */
 .header-bg a:focus-visible,
 .header-bg button:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--black), 0 0 0 5px var(--white);
 }
 
-/* Icons inherit currentColor (black) */
+/* Icons (cart, heart) inherit color */
 .header-bg .nav-link svg { color: currentColor; }
 
 /* Cart count badge */
@@ -176,39 +151,42 @@
   background-color: var(--black) !important;
   color: var(--white) !important;
   line-height: 1;
+  font-size: 0.82em;
+  padding: 4px 6px;
 }
 
-/* Phones: tighter title to keep hamburger on same row */
+/* Responsive: Brand title & spacing for mobile menus */
 @media (max-width: 576px) {
   .header-logo-title { font-size: 1.20rem; }
 }
-
-/* <= 420px */
 @media (max-width: 420px) {
   .header-logo-title { font-size: 1.10rem; }
   .header-logo-subline { font-size: .75rem; }
 }
-
-/* <= 380px */
 @media (max-width: 380px) {
   .header-logo-title { font-size: 1.00rem; }
   .header-logo-subline { font-size: .70rem; }
 }
-
-/* <= 340px */
 @media (max-width: 340px) {
   .header-logo-title { font-size: 0.96rem; }
   .header-logo-subline { font-size: .66rem; }
 }
-
-/* <= 320px */
 @media (max-width: 320px) {
   .header-logo-title { font-size: 0.92rem; }
   .header-logo-subline { font-size: .62rem; }
 }
 
-/* Optional: prevent wrapping on very tight widths */
+/* Prevent nav breaking on very tight widths */
 @media (max-width: 420px) {
-  .navbar > .container { flex-wrap: nowrap; } /* keep brand + toggler on one line */
-  .header-logo-title { white-space: nowrap; }       /* avoid breaking the wordmark */
+  .navbar > .container { flex-wrap: nowrap; }
+  .header-logo-title { white-space: nowrap; }
+}
+
+/* Fix overflow/scroll for dropdown menus on mobile if needed */
+@media (max-width: 400px) {
+  .dropdown-menu {
+    max-width: 95vw;
+    min-width: 160px;
+    overflow-x: auto;
+  }
 }

@@ -5,7 +5,6 @@ import { Heart, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { formatUSD } from '../utils/currency';
 
-// Utility: description truncation
 function truncateWords(desc = '', n = 10) {
   if (!desc) return '';
   const words = desc.trim().split(/\s+/);
@@ -20,7 +19,6 @@ const ProductCard = ({ product }) => {
   const cover = React.useMemo(() => {
     const single = typeof product?.image === 'string' ? product.image.trim() : '';
     if (single) return single;
-
     const arr = Array.isArray(product?.images) ? product.images : [];
     const first = arr.find(Boolean);
     if (!first) return '';
@@ -51,6 +49,7 @@ const ProductCard = ({ product }) => {
         id: product.id,
         title: product.title,
         price: product.price,
+        salePrice: product.salePrice,
         image: cover,
         category: product.category,
         subcategory: product.subcategory,
@@ -68,6 +67,7 @@ const ProductCard = ({ product }) => {
         id: product.id,
         title: product.title,
         price: product.price,
+        salePrice: product.salePrice,
         image: cover,
         category: product.category,
         subcategory: product.subcategory,
@@ -86,7 +86,6 @@ const ProductCard = ({ product }) => {
       transition={{ duration: 0.4 }}
     >
       <div className="position-relative">
-        {/* 1:1 thumbnail */}
         <div className="ratio ratio-1x1">
           <img
             src={cover}
@@ -99,7 +98,6 @@ const ProductCard = ({ product }) => {
           />
         </div>
 
-        {/* Main Category/Status */}
         <span className="mono-badge position-absolute top-0 start-0 m-2 rounded-pill">
           {product.category}
         </span>
@@ -115,7 +113,6 @@ const ProductCard = ({ product }) => {
           </span>
         )}
 
-        {/* Wishlist */}
         <button
           type="button"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
@@ -132,20 +129,26 @@ const ProductCard = ({ product }) => {
         <h3 className="h6 fw-semibold mb-1 line-clamp-2" style={{ color: '#000' }}>
           {product.title}
         </h3>
-        {/* Category hierarchy */}
         <div className="small mb-2" style={{ color: '#000' }}>
           {product.category}
           {product.subcategory && ` • ${product.subcategory}`}
           {product.subsubcategory && ` • ${product.subsubcategory}`}
         </div>
-        {/* 10-word truncated description */}
         <p className="small mb-3 line-clamp-2" style={{ color: '#000' }}>
           {truncateWords(product.description, 10)}
         </p>
-
         <div className="mt-auto d-flex align-items-center justify-content-between">
           <div className="fw-bold" style={{ color: '#000' }}>
-            {formatUSD(Number(product.price || 0))}
+            {typeof product.salePrice === "number" && product.salePrice !== null ? (
+              <>
+                <span style={{ textDecoration: "line-through", color: "#888", marginRight: 8, fontWeight: 400 }}>
+                  {formatUSD(Number(product.price || 0))}
+                </span>
+                <span>{formatUSD(Number(product.salePrice))}</span>
+              </>
+            ) : (
+              formatUSD(Number(product.price || 0))
+            )}
           </div>
           <div className="d-flex gap-2">
             <motion.button
@@ -169,7 +172,6 @@ const ProductCard = ({ product }) => {
           </div>
         </div>
       </div>
-      {/* Styles unchanged */}
       <style>{`
         .mono-badge {
           display: inline-block;

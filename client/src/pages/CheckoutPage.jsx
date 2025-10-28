@@ -37,34 +37,26 @@ const handleImgError = (e) => {
   e.currentTarget.src = FALLBACK_IMG;
 };
 
+const getUnitPrice = (it) =>
+  typeof it.salePrice === "number" && it.salePrice !== null && it.salePrice < it.price
+    ? it.salePrice
+    : it.price;
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { state } = useCart();
-
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    address1: '',
-    address2: '',
-    city: '',
-    state: '',
-    zip: '',
-    country: 'US',
-    sameAsShipping: true,
-    paymentMethod: 'cod',
-    promo: ''
+    firstName: '', lastName: '', email: '', phone: '', address1: '', address2: '',
+    city: '', state: '', zip: '', country: 'US', sameAsShipping: true, paymentMethod: 'cod', promo: ''
   });
-
   const [touched, setTouched] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [coupon, setCoupon] = useState({ code: '', percent: 0, status: '' });
   const [promoMsg, setPromoMsg] = useState('');
-
   const items = state.items || [];
+
   const subtotal = useMemo(
-    () => items.reduce((sum, it) => sum + Number(it.price) * Number(it.quantity || it.qty || 1), 0),
+    () => items.reduce((sum, it) => sum + getUnitPrice(it) * Number(it.quantity || it.qty || 1), 0),
     [items]
   );
   const shipping = subtotal >= 100 ? 0 : 15;
@@ -88,7 +80,6 @@ export default function CheckoutPage() {
 
   const setField = useCallback((name, value) => setForm((f) => ({ ...f, [name]: value })), []);
   const onBlur = useCallback((e) => setTouched((t) => ({ ...t, [e.target.name]: true })), []);
-
   const applyPromo = useCallback(async (e) => {
     e.preventDefault();
     const raw = form.promo.trim();
@@ -115,8 +106,8 @@ export default function CheckoutPage() {
     productId: it.id,
     name: it.name || it.title || '',
     quantity: Number(it.qty ?? it.quantity ?? 1),
-    price: Number(it.price),
-    total: Number(it.price) * Number(it.qty ?? it.quantity ?? 1),
+    price: Number(getUnitPrice(it)),
+    total: Number(getUnitPrice(it)) * Number(it.qty ?? it.quantity ?? 1),
     variant: it.variant || '',
     description: it.description || '',
     image: getCover(it) || '',
@@ -137,58 +128,45 @@ export default function CheckoutPage() {
     phone: form.phone,
     email: form.email
   }), [form]);
-
   const billingAddress = useMemo(
     () => form.sameAsShipping
       ? { ...shippingAddress }
       : {
-          fullName: `${form.firstName} ${form.lastName}`.trim(),
-          line1: form.address1,
-          line2: form.address2,
-          city: form.city,
-          state: form.state,
-          postalCode: form.zip,
-          countryCode: form.country,
-          phone: form.phone,
-          email: form.email
-        },
+        fullName: `${form.firstName} ${form.lastName}`.trim(),
+        line1: form.address1,
+        line2: form.address2,
+        city: form.city,
+        state: form.state,
+        postalCode: form.zip,
+        countryCode: form.country,
+        phone: form.phone,
+        email: form.email
+      },
     [form, shippingAddress]
   );
-
   const totals = useMemo(() => ({
-    subtotal,
-    shipping,
-    discount,
-    grandTotal: total,
-    currency: "USD"
+    subtotal, shipping, discount, grandTotal: total, currency: "USD"
   }), [subtotal, shipping, discount, total]);
-
   const saveOrder = useCallback(async (raw) => {
     const orderData = {
       customer: {
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
+        firstName: form.firstName, lastName: form.lastName, email: form.email,
       },
-      items: itemsPayload,
-      shippingAddress,
-      billingAddress,
-      totals,
-      paymentMethod: form.paymentMethod,
-      ...raw
+      items: itemsPayload, shippingAddress, billingAddress, totals,
+      paymentMethod: form.paymentMethod, ...raw
     };
     const { data } = await axios.post(api("/orders"), orderData, {
       headers: { "Content-Type": "application/json" }
     });
     return data;
   }, [form, itemsPayload, shippingAddress, billingAddress, totals]);
-
   const placeCodOrder = useCallback(async () => {
     setSubmitting(true);
     try {
       const data = await saveOrder({ status: 'pending' });
-      const orderId = data?.orderId || "ODR-LOCAL";
-      navigate(`/order/success?orderId=${encodeURIComponent(orderId)}`, { replace: true });
+      const referenceId = data?.referenceId || data?.orderId || "ODR-LOCAL";
+      navigate(`/order/success?orderId=${encodeURIComponent(referenceId)}`, { replace: true });
+
     } catch (error) {
       console.error('COD order creation failed:', error);
       navigate(`/order/success`, { replace: true });
@@ -196,27 +174,19 @@ export default function CheckoutPage() {
       setSubmitting(false);
     }
   }, [saveOrder, navigate]);
-
   const approvalLinkRef = useRef(null);
-
   const createPaypalOrder = useCallback(async () => {
     if (Object.keys(errors).length > 0) return undefined;
     try {
       const { data } = await axios.post(api("/paypal/create-order"), {
         items: itemsPayload,
         customer: {
-          email: form.email,
-          firstName: form.firstName,
-          lastName: form.lastName,
+          email: form.email, firstName: form.firstName, lastName: form.lastName,
         },
-        shippingAddress,
-        billingAddress,
-        totals,
+        shippingAddress, billingAddress, totals,
         returnUrl: "https://pnpartstudio.com/order/success",
         cancelUrl: "https://pnpartstudio.com/order/cancel"
-      }, {
-        headers: { "Content-Type": "application/json" }
-      });
+      }, { headers: { "Content-Type": "application/json" } });
       approvalLinkRef.current = data?.approvalLink || null;
       return data?.id;
     } catch (err) {
@@ -224,27 +194,23 @@ export default function CheckoutPage() {
       throw err;
     }
   }, [errors, itemsPayload, form, shippingAddress, billingAddress, totals]);
-
   const onApprovePaypal = useCallback(async (data) => {
     try {
       const captureRes = await axios.post(api('/paypal/capture-order'), { orderId: data.orderID }, {
         headers: { "Content-Type": "application/json" }
       });
       const orderData = {
-        paypalOrderId: data.orderID,
-        status: 'paid',
-        paymentMethod: 'paypal',
+        paypalOrderId: data.orderID, status: 'paid', paymentMethod: 'paypal',
         paypalCaptureResponse: captureRes.data
       };
       const saved = await saveOrder(orderData);
-      const orderId = saved?.orderId || data.orderID || "ODR-UNKNOWN";
-      navigate(`/order/success?orderId=${encodeURIComponent(orderId)}`, { replace: true });
+      const referenceId = saved?.referenceId || saved?.orderId || data.orderID || "ODR-UNKNOWN";
+      navigate(`/order/success?orderId=${encodeURIComponent(referenceId)}`, { replace: true });
     } catch (err) {
       console.error('Order creation failed:', err);
       alert('Payment captured but order creation failed. Please contact support.');
     }
   }, [navigate, saveOrder]);
-
   const onSubmit = useCallback(async (e) => {
     e.preventDefault();
     setTouched(t => {
@@ -258,7 +224,6 @@ export default function CheckoutPage() {
       return;
     }
   }, [errors, form.paymentMethod, placeCodOrder, required]);
-
   const onErrorPaypal = useCallback((err) => {
     console.error('PayPal error:', err);
     const msg = String(err?.message || err || '').toLowerCase();
@@ -268,8 +233,7 @@ export default function CheckoutPage() {
     }
     alert('PayPal error. Please try again.');
   }, []);
-
-  const onCancelPaypal = useCallback(() => {}, []);
+  const onCancelPaypal = useCallback(() => { }, []);
   const paypalKey = `pp-${total}-USD`;
 
   return (
@@ -458,40 +422,61 @@ export default function CheckoutPage() {
                 ) : (
                   <div className="vstack gap-3">
                     {items.map(it => (
-                      <div key={it.id} className="d-flex align-items-center">
+                      <div key={it.id} className="d-flex align-items-center gap-3 mb-3">
                         <img src={getCover(it) || FALLBACK_IMG}
                           alt={it.name || it.title}
-                          className="rounded me-3 object-fit-cover"
-                          style={{ width: 56, height: 56, border: '1px solid #000' }}
+                          className="rounded object-fit-cover"
+                          style={{ width: 72, height: 72, border: '1px solid #000', flexShrink: 0 }}
                           onError={handleImgError}
                         />
-                        <div className="flex-grow-1" style={{ color: '#000' }}>
-                          <div className="small fw-semibold">{it.name || it.title}</div>
-                          <div className="small">
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div className="fw-semibold" style={{ fontSize: 18, color: "#000" }}>
+                            {it.name || it.title}
+                          </div>
+                          <div style={{ fontSize: 16, color: "#444" }}>
                             {it.category} • Qty {it.qty || it.quantity || 1}
                           </div>
+                          <div className="d-none d-lg-block" style={{ minHeight: 20 }} />
                         </div>
-                        <div className="small fw-semibold" style={{ color: '#000' }}>
-                          {fmtUSD.format(it.price * (it.qty || it.quantity || 1))}
+                        {/* Price (sale logic) */}
+                        <div className="fw-bold text-end ms-auto" style={{ color: '#000', minWidth: 110, fontSize: 20 }}>
+                          {typeof it.salePrice === "number" && it.salePrice !== null && it.salePrice < it.price ? (
+                            <>
+                              <span style={{
+                                textDecoration: "line-through",
+                                color: "#888",
+                                marginRight: 7,
+                                fontWeight: 400,
+                                fontSize: "1em"
+                              }}>
+                                {fmtUSD.format(it.price * (it.qty || it.quantity || 1))}
+                              </span>
+                              <span>
+                                {fmtUSD.format(it.salePrice * (it.qty || it.quantity || 1))}
+                              </span>
+                            </>
+                          ) : (
+                            fmtUSD.format(it.price * (it.qty || it.quantity || 1))
+                          )}
                         </div>
                       </div>
                     ))}
                     <hr className="my-2" />
-                    <div className="d-flex justify-content-between small" style={{ color: '#000' }}>
+                    <div className="d-flex justify-content-between mb-1" style={{ fontSize: 20, color: "#111" }}>
                       <span>Subtotal</span>
                       <span>{fmtUSD.format(subtotal)}</span>
                     </div>
-                    <div className="d-flex justify-content-between small" style={{ color: '#000' }}>
+                    <div className="d-flex justify-content-between mb-1" style={{ fontSize: 20, color: "#111" }}>
                       <span>Shipping</span>
                       <span>{shipping === 0 ? 'Free' : fmtUSD.format(shipping)}</span>
                     </div>
                     {discount > 0 && (
-                      <div className="d-flex justify-content-between small" style={{ color: '#000' }}>
+                      <div className="d-flex justify-content-between mb-1" style={{ fontSize: 20, color: "#111" }}>
                         <span>Discount {coupon.code ? `(${coupon.code})` : ''}</span>
                         <span>-{fmtUSD.format(discount)}</span>
                       </div>
                     )}
-                    <div className="d-flex justify-content-between fw-bold" style={{ color: '#000' }}>
+                    <div className="d-flex justify-content-between align-items-center mt-3" style={{ fontSize: 25, fontWeight: 700, color: "#000" }}>
                       <span>Total</span>
                       <span>{fmtUSD.format(total)}</span>
                     </div>
@@ -526,8 +511,7 @@ export default function CheckoutPage() {
           </div>
         </div>
         <style>{`
-          .form-control:focus,
-          .form-select:focus { border-color: #000 !important; box-shadow: none !important; }
+          .form-control:focus, .form-select:focus { border-color: #000 !important; box-shadow: none !important; }
           .form-check-input { accent-color: #000; }
           .form-control.is-invalid,
           .was-validated .form-control:invalid { border-color: #000 !important; background-image: none !important; }

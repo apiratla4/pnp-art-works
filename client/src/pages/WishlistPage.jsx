@@ -89,7 +89,7 @@ const WishlistPage = () => {
                             />
                           </Link>
 
-                          <div className="ms-3 flex-grow-1">
+                          <div className="ms-3 grow">
                             <Link
                               to={`/product-details?id=${item.id}`}
                               className="text-decoration-none"

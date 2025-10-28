@@ -9,27 +9,49 @@ import "./Header.css";
 import logo from "../assets/pnplogoblack1.png";
 import FancyButton from "./FancyButton";
 
+// Utility to encode values for URLs
+function qp(val) {
+  return encodeURIComponent(val);
+}
+
+// Define ALL navigation using ShopPage query params
 const allProducts = [
-  { label: "Paintings", to: "/shop/category/paintings" },
-  { label: "Holiday gifts", to: "/shop/category/holiday-gifts" },
-  { label: "Landscapes", to: "/shop/category/landscapes" },
-  { label: "Modern art", to: "/shop/category/modern-art" },
-  { label: "Name sign", to: "/shop/category/name-sign" },
-  { label: "Limited editions", to: "/shop/category/limited-editions" },
-  { label: "Pencil sketches", to: "/shop/category/pencil-sketches" },
-  { label: "Digital prints", to: "/shop/category/digital-prints", disabled: true }
+  { label: "Paintings", to: `/shop?category=All Products&subcategory=Paintings` },
+  { label: "Holiday gifts", to: `/shop?category=All Products&subcategory=Holiday gifts` },
+  { label: "Landscapes", to: `/shop?category=All Products&subcategory=Landscapes` },
+  { label: "Modern art", to: `/shop?category=All Products&subcategory=Modern art` },
+  { label: "Name sign", to: `/shop?category=All Products&subcategory=Name sign` },
+  { label: "Limited editions", to: `/shop?category=All Products&subcategory=Limited editions` },
+  { label: "Pencil sketches", to: `/shop?category=All Products&subcategory=Pencil sketches` },
+  { label: "Digital prints", to: `/shop?category=All Products&subcategory=Digital prints`, disabled: true }
 ];
 
 const indianProductsMain = [
-  { label: "Indian god paintings", to: "/shop/category/indian-god-paintings" },
-  { label: "Musical Art paintings", to: "/shop/category/musical-art-paintings" }
+  { label: "Indian god paintings", to: `/shop?category=Indian Products&subcategory=Indian god paintings` },
+  { label: "Musical Art paintings", to: `/shop?category=Indian Products&subcategory=Musical Art paintings` }
 ];
 
 const returnGifts = [
-  { label: "Kolam coasters", to: "/shop/category/kolam-coasters" },
-  { label: "Kolam peetham", to: "/shop/category/kolam-peetham" },
-  { label: "Traditional magnets", to: "/shop/category/traditional-magnets" },
-  { label: "Trays", to: "/shop/category/trays" }
+  {
+    label: "Kolam coasters",
+    to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Kolam coasters`
+  },
+  {
+    label: "Kolam peetham",
+    to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Kolam peetham`
+  },
+  {
+    label: "Traditional magnets",
+    to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Traditional magnets`
+  },
+  {
+    label: "Trays",
+    to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Trays`
+  },
+  {
+    label: "Diya holders",
+    to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Diya holders`
+  }
 ];
 
 const Header = () => {
@@ -37,7 +59,6 @@ const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [canHover, setCanHover] = useState(false);
   const dropdownRef = useRef(null);
-
   const { totalItems, dispatch } = useCart();
   const location = useLocation();
 
@@ -83,7 +104,6 @@ const Header = () => {
     <header className="shadow-sm fixed-top header-bg header-text-black">
       <nav className="navbar navbar-expand-lg navbar-light header-bg">
         <div className="container">
-          {/* Brand (logo + wordmark) */}
           <Link
             className="navbar-brand d-flex align-items-center brand-link"
             to="/"
@@ -109,7 +129,6 @@ const Header = () => {
               </div>
             </div>
           </Link>
-
           {/* Toggler */}
           <button
             className="navbar-toggler d-lg-none d-flex align-items-center justify-content-center"
@@ -121,24 +140,19 @@ const Header = () => {
           >
             {isOpen ? <X size={24} /> : <span className="navbar-toggler-icon" />}
           </button>
-
-          {/* Collapsible */}
           <div id="navbarNav" className={`collapse navbar-collapse ${isOpen ? "show" : ""}`}>
-            {/* Center nav */}
-            <div className="flex-grow-1 d-lg-flex justify-content-center">
+            <div className="grow d-lg-flex justify-content-center">
               <ul className="navbar-nav mb-2 mb-lg-0 gap-lg-1">
                 <li className="nav-item">
                   <NavLink end to="/" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
                     Home
                   </NavLink>
                 </li>
-
                 <li className="nav-item">
                   <NavLink to="/about" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
                     About Us
                   </NavLink>
                 </li>
-
                 {/* SHOP DROPDOWN */}
                 <li
                   ref={dropdownRef}
@@ -225,25 +239,21 @@ const Header = () => {
                     </li>
                   </ul>
                 </li>
-
                 <li className="nav-item">
                   <NavLink to="/art-classes" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
                     Art Classes
                   </NavLink>
                 </li>
-
                 <li className="nav-item">
                   <NavLink to="/custom-order" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
                     Custom Art
                   </NavLink>
                 </li>
-
                 <li className="nav-item">
                   <NavLink to="/gallery" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
                     Gallery
                   </NavLink>
                 </li>
-
                 <li className="nav-item">
                   <NavLink to="/contact" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
                     Contact
@@ -251,7 +261,6 @@ const Header = () => {
                 </li>
               </ul>
             </div>
-
             {/* Right actions */}
             <ul className="navbar-nav ms-lg-3 d-flex align-items-center flex-row gap-2 gap-mobile-icons mt-2 mt-lg-0">
               <li className="nav-item">

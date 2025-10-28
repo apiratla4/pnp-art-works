@@ -1,4 +1,3 @@
-// src/pages/CartPage.jsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -55,7 +54,6 @@ const CartPage = () => {
   const toggleDesc = (id) =>
     setDescExpanded((ex) => ({ ...ex, [id]: !ex[id] }));
 
-  // Empty state
   if (state.items.length === 0) {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f1efef' }}>
@@ -114,11 +112,27 @@ const CartPage = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
                       className="list-group-item p-4"
-                      style={{ color: '#000', background: '#fff' }}
+                      style={{ color: '#000', background: '#fff', position: 'relative', minHeight: 100 }}
                     >
+                      {/* Remove button, absolutely positioned */}
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="cart-icon-btn"
+                        title="Remove item"
+                        type="button"
+                        style={{
+                          position: 'absolute',
+                          top: 12,
+                          right: 12,
+                          zIndex: 2,
+                        }}
+                        aria-label={`Remove ${item.title}`}
+                      >
+                        <X size={18} />
+                      </button>
                       <div className="d-flex gap-3">
                         {/* Image */}
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                           <img
                             src={getCover(item) || FALLBACK_IMG}
                             alt={item.title}
@@ -129,13 +143,32 @@ const CartPage = () => {
                           />
                         </div>
                         {/* Details */}
-                        <div className="flex-grow-1">
+                        <div className="grow">
                           <div className="d-flex justify-content-between align-items-start">
                             <div>
                               <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>{item.title}</h3>
                               <div className="small mb-2" style={{ color: '#000' }}>{item.category}</div>
-                              <div className="fs-5 fw-bold" style={{ color: '#000' }}>${item.price}</div>
-                              {/* Description with limit and toggle */}
+                              {/* Price (SALE logic) */}
+                              <div className="fs-5 fw-bold" style={{ color: '#000' }}>
+                                {typeof item.salePrice === "number" && item.salePrice !== null && item.salePrice < item.price ? (
+                                  <>
+                                    <span style={{
+                                      textDecoration: "line-through",
+                                      color: "#888",
+                                      marginRight: 7,
+                                      fontWeight: 400,
+                                      fontSize: "0.97em"
+                                    }}>
+                                      ${(item.price).toFixed(2)}
+                                    </span>
+                                    <span>
+                                      ${(item.salePrice).toFixed(2)}
+                                    </span>
+                                  </>
+                                ) : (
+                                  `$${item.price.toFixed(2)}`
+                                )}
+                              </div>
                               {desc && (
                                 <div className="small mt-2" style={{ color: "#000" }}>
                                   {descExpanded[item.id]
@@ -155,15 +188,6 @@ const CartPage = () => {
                                 </div>
                               )}
                             </div>
-                            <button
-                              onClick={() => removeItem(item.id)}
-                              className="cart-icon-btn"
-                              title="Remove item"
-                              type="button"
-                              aria-label={`Remove ${item.title}`}
-                            >
-                              <X size={18} />
-                            </button>
                           </div>
                           <div className="d-flex justify-content-between align-items-center mt-3">
                             {/* Quantity controls */}
@@ -189,10 +213,6 @@ const CartPage = () => {
                               >
                                 <Plus size={16} />
                               </button>
-                            </div>
-                            {/* Line total */}
-                            <div className="fw-bold" style={{ color: '#000' }}>
-                              ${(item.price * item.quantity).toFixed(2)}
                             </div>
                           </div>
                         </div>
@@ -279,7 +299,6 @@ const CartPage = () => {
                   <span className="mono-badge">VISA</span>
                   <span className="mono-badge">MASTERCARD</span>
                   <span className="mono-badge">PAYPAL</span>
-                  <span className="mono-badge">APPLE PAY</span>
                 </div>
               </div>
             </div>

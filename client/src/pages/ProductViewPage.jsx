@@ -41,7 +41,6 @@ const ProductViewPage = () => {
   const [err, setErr] = useState("");
   const [descExpanded, setDescExpanded] = useState(false);
 
-  // Load product by idOrSlug via API
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -61,11 +60,10 @@ const ProductViewPage = () => {
       }
     }
     load();
-    setDescExpanded(false); // Reset desc toggle on new product
+    setDescExpanded(false);
     return () => { cancelled = true; };
   }, [id]);
 
-  // Related: same category + subcategory, exclude self (max 4)
   const [related, setRelated] = useState([]);
   useEffect(() => {
     let cancelled = false;
@@ -114,7 +112,6 @@ const ProductViewPage = () => {
     e.currentTarget.src = FALLBACK_IMG;
   };
 
-  // Add to cart with all product info
   const addToCart = () => {
     if (!product?.inStock) return;
     const cover = images || FALLBACK_IMG;
@@ -124,6 +121,7 @@ const ProductViewPage = () => {
         id: product.id,
         title: product.title,
         price: product.price,
+        salePrice: product.salePrice,
         image: cover,
         images,
         category: product.category,
@@ -149,15 +147,16 @@ const ProductViewPage = () => {
         id: product.id,
         title: product.title,
         price: product.price,
+        salePrice: product.salePrice,
         image: cover,
         category: product.category,
         subcategory: product.subcategory,
+        subsubcategory: product.subsubcategory,
         color: product.color
       }
     });
   };
 
-  // Loading / error / not found
   if (loading) {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f1efef' }}>
@@ -183,10 +182,25 @@ const ProductViewPage = () => {
   }
 
   const cover = images || FALLBACK_IMG;
-
-  // Description logic for show more/less
   const desc = product.description || "";
   const isLong = desc.trim().split(/\s+/).length > 30;
+
+  // *** Modern price rendering ***
+  const renderPrice = () => (
+    <span className="fw-bold" style={{ fontSize: 28, color: '#000' }}>
+      {typeof product.salePrice === "number" && product.salePrice !== null && product.salePrice < product.price ? (
+        <>
+          <span style={{ 
+            textDecoration: "line-through", color: "#888", marginRight: 9, fontWeight: 400, fontSize: '0.94em' }}>
+            {fmtUSD.format(product.price)}
+          </span>
+          <span>{fmtUSD.format(product.salePrice)}</span>
+        </>
+      ) : (
+        fmtUSD.format(product.price)
+      )}
+    </span>
+  );
 
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#f1efef' }}>
@@ -257,7 +271,7 @@ const ProductViewPage = () => {
               <span className="mono-badge mb-3">{product.category}</span>
               <h1 className="fw-bold display-6 mb-2" style={{ color: '#000' }}>{product.title}</h1>
               <div className="d-flex align-items-center flex-wrap gap-3 mb-3">
-                <div className="fw-bold" style={{ fontSize: 28, color: '#000' }}>{fmtUSD.format(product.price)}</div>
+                {renderPrice()}
                 <div className="d-flex align-items-center">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star key={i} size={18} color="#000000" fill="#000000" className="me-1" />
@@ -273,8 +287,9 @@ const ProductViewPage = () => {
                     <button
                       className="cart-link-btn ms-1"
                       onClick={() => setDescExpanded((v) => !v)}
-                      style={{ background: "none", border: "none", color: "#007bff", cursor: "pointer", padding: 0, fontSize: "0.97em" }}
-                    >
+                      style={{
+                        background: "none", border: "none", color: "#007bff", cursor: "pointer", padding: 0, fontSize: "0.97em"
+                      }}>
                       {descExpanded ? "Show less" : "Show more"}
                     </button>
                   )}
@@ -315,7 +330,7 @@ const ProductViewPage = () => {
                   </div>
                 </div>
                 <div className="d-flex gap-2">
-                  <FancyButton as="button" type="button" className="fancy-sm flex-grow-1" onClick={addToCart} disabled={!product.inStock}>
+                  <FancyButton as="button" type="button" className="fancy-sm grow" onClick={addToCart} disabled={!product.inStock}>
                     <ShoppingCart size={18} />
                     Add to Cart
                   </FancyButton>
@@ -324,8 +339,7 @@ const ProductViewPage = () => {
                     onClick={toggleWishlist}
                     className={`mono-square-btn ${isWishlisted ? 'active' : ''}`}
                     aria-label="Toggle wishlist"
-                    title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-                  >
+                    title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}>
                     <Heart size={20} />
                   </button>
                   <button
@@ -338,8 +352,7 @@ const ProductViewPage = () => {
                       if (navigator.clipboard?.writeText) {
                         navigator.clipboard.writeText(url);
                       }
-                    }}
-                  >
+                    }}>
                     <Share2 size={20} />
                   </button>
                 </div>
@@ -362,7 +375,8 @@ const ProductViewPage = () => {
             <div className="row g-3 g-lg-4">
               {related.map((rp, idx) => (
                 <motion.div key={rp.id} className="col-12 col-md-6 col-lg-3"
-                  initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: idx * 0.05 }} viewport={{ once: true }}>
+                  initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: idx * 0.05 }} viewport={{ once: true }}>
                   <ProductCard product={rp} />
                 </motion.div>
               ))}
@@ -370,7 +384,7 @@ const ProductViewPage = () => {
           </section>
         )}
       </div>
-      <style>{`
+     <style>{`
         .thumb-btn { background: transparent; border: 0; padding: 0; flex: 0 0 auto; cursor: pointer; }
         .thumb-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
         .thumb-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
