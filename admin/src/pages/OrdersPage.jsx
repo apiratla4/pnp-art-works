@@ -1,4 +1,3 @@
-// admin/src/pages/OrdersPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Receipt, Eye, X, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
@@ -11,22 +10,45 @@ const ORDERS_URL = `${API_BASE}/api/orders`;
 axios.defaults.withCredentials = true;
 
 const STATUS_OPTIONS = [
-  "pending",
-  "paid",
-  "fulfilled",
-  "unfulfilled",
-  "cancelled",
-  "refunded",
-  "failed"
+  { value: "Placed", display: "Placed" },
+  { value: "Confirmed", display: "Confirmed" },
+  { value: "Shipped", display: "Shipped" },
+  { value: "Out for delivery", display: "Out for delivery" },
+  { value: "Delivered", display: "Delivered" },
+  { value: "cancelled", display: "Cancelled" },
+  { value: "refunded", display: "Refunded" },
+  { value: "failed", display: "Failed" },
 ];
+
+const STATUS_MAP = {
+  "Placed": "pending",
+  "Confirmed": "confirmed",
+  "Shipped": "shipped",
+  "Out for delivery": "out_for_delivery",
+  "Delivered": "delivered",
+  "cancelled": "cancelled",
+  "refunded": "refunded",
+  "failed": "failed",
+};
+
+function displayStatusText(status) {
+  if (!status || status === "pending" || status === "Placed") return "Placed";
+  if (status === "confirmed") return "Confirmed";
+  if (status === "shipped") return "Shipped";
+  if (status === "out_for_delivery") return "Out for delivery";
+  if (status === "delivered") return "Delivered";
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
 
 const OrdersPage = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Details panel
   const [openId, setOpenId] = useState("");
-  const openOrder = useMemo(() => items.find(i => (i._id || "") === openId), [items, openId]);
+  const openOrder = useMemo(
+    () => items.find(i => (i._id || "") === openId),
+    [items, openId]
+  );
 
   const load = async () => {
     try {
@@ -43,11 +65,21 @@ const OrdersPage = () => {
 
   useEffect(() => { load(); }, []);
 
-  // PATCH status
   const updateStatus = async (id, status) => {
+    const backendStatus = STATUS_MAP[status] || status;
     try {
-      const { data } = await axios.patch(`${ORDERS_URL}/${id}`, { status }, { withCredentials: true });
-      setItems(prev => prev.map(o => (o._id === id ? { ...o, status: data?.status ?? status } : o)));
+      const { data } = await axios.patch(
+        `${ORDERS_URL}/${id}`,
+        { status: backendStatus },
+        { withCredentials: true }
+      );
+      setItems(prev =>
+        prev.map(o =>
+          o._id === id
+            ? { ...o, status: data?.status ? displayStatusText(data.status) : status }
+            : o
+        )
+      );
       toast.success(`Status updated to ${status}`);
     } catch (e) {
       console.error(e);
@@ -55,9 +87,10 @@ const OrdersPage = () => {
     }
   };
 
-  // Quick actions
-  const markFulfilled = (id) => updateStatus(id, "fulfilled");
-  const markUnfulfilled = (id) => updateStatus(id, "unfulfilled");
+  const markFulfilled = id => updateStatus(id, "Delivered");
+  const markUnfulfilled = id => updateStatus(id, "Placed");
+
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 900;
 
   return (
     <div>
@@ -74,10 +107,8 @@ const OrdersPage = () => {
           {loading && <span className="text-muted small">Loading…</span>}
         </div>
       </div>
-
       <div className="card border-0 shadow-sm rounded-4">
         <div className="card-body p-0">
-          {/* Scroll on small screens only */}
           <div className="table-responsive-sm">
             <table className="table align-middle mb-0">
               <thead className="table-light">
@@ -96,30 +127,39 @@ const OrdersPage = () => {
                   const short = (o.orderNo || id || "").toString().slice(-6);
                   const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleString() : "-";
                   const totalStr = `$${Number(o.total || 0).toFixed(2)}`;
+                  const displayStatus = displayStatusText(o.status);
+
                   return (
-                    <tr key={id}>
+                    <tr
+                      key={id}
+                      className={isMobile ? "orders-table-card" : ""}
+                    >
                       <td>{short}</td>
                       <td>{o.customer?.name || o.customerName || "-"}</td>
                       <td className="d-none d-sm-table-cell">{totalStr}</td>
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <span className={`badge ${
-                            o.status === "paid" ? "bg-success-subtle text-success" :
-                            o.status === "pending" ? "bg-warning-subtle text-warning" :
-                            o.status === "fulfilled" ? "bg-primary-subtle text-primary" :
-                            o.status === "unfulfilled" ? "bg-secondary-subtle text-secondary" :
-                            o.status === "cancelled" ? "bg-danger-subtle text-danger" :
-                            o.status === "refunded" ? "bg-info-subtle text-info" :
+                            displayStatus === "Delivered" ? "bg-success-subtle text-success" :
+                            displayStatus === "Placed" ? "bg-warning-subtle text-warning" :
+                            displayStatus === "Confirmed" ? "bg-info-subtle text-info" :
+                            displayStatus === "Shipped" ? "bg-primary-subtle text-primary" :
+                            displayStatus === "Out for delivery" ? "bg-info-subtle text-info" :
+                            displayStatus === "cancelled" ? "bg-danger-subtle text-danger" :
+                            displayStatus === "refunded" ? "bg-info-subtle text-info" :
+                            displayStatus === "failed" ? "bg-danger-subtle text-danger" :
                             "bg-secondary-subtle text-secondary"
                           }`}>
-                            {o.status || "unknown"}
+                            {displayStatus}
                           </span>
                           <select
                             className="form-select form-select-sm w-auto"
-                            value={o.status || "pending"}
-                            onChange={(e) => updateStatus(id, e.target.value)}
+                            value={displayStatus}
+                            onChange={e => updateStatus(id, e.target.value)}
                           >
-                            {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                            {STATUS_OPTIONS.map(s => (
+                              <option key={s.value} value={s.value}>{s.display}</option>
+                            ))}
                           </select>
                         </div>
                       </td>
@@ -129,10 +169,10 @@ const OrdersPage = () => {
                           <button className="btn btn-outline-secondary" title="View details" onClick={() => setOpenId(id)}>
                             <Eye size={16} />
                           </button>
-                          <button className="btn btn-outline-success" title="Mark fulfilled" onClick={() => markFulfilled(id)}>
+                          <button className="btn btn-outline-success" title="Mark delivered" onClick={() => markFulfilled(id)}>
                             <CheckCircle2 size={16} />
                           </button>
-                          <button className="btn btn-outline-secondary" title="Mark unfulfilled" onClick={() => markUnfulfilled(id)}>
+                          <button className="btn btn-outline-secondary" title="Mark placed" onClick={() => markUnfulfilled(id)}>
                             <XCircle size={16} />
                           </button>
                           <button className="btn btn-outline-secondary" title="View invoice">
@@ -144,7 +184,11 @@ const OrdersPage = () => {
                   );
                 })}
                 {items.length === 0 && !loading && (
-                  <tr><td colSpan={6} className="text-center text-muted py-4">No orders yet.</td></tr>
+                  <tr>
+                    <td colSpan={6} className="text-center text-muted py-4">
+                      No orders yet.
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -162,7 +206,7 @@ const OrdersPage = () => {
             aria-label="Close order details overlay"
           />
           <div
-            className="position-fixed top-0 end-0 bg-white shadow p-3 p-md-4"
+            className="position-fixed top-0 end-0 bg-white shadow p-3 p-md-4 offcanvas-order-detail"
             style={{ width: "100%", maxWidth: 520, height: "100%", zIndex: 1051, overflowY: "auto" }}
             role="dialog"
             aria-modal="true"
@@ -189,19 +233,21 @@ const OrdersPage = () => {
               <div className="d-flex align-items-center gap-2">
                 <select
                   className="form-select form-select-sm w-auto"
-                  value={openOrder.status || "pending"}
+                  value={displayStatusText(openOrder.status)}
                   onChange={async (e) => {
                     const next = e.target.value;
                     await updateStatus(openOrder._id, next);
                   }}
                 >
-                  {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  {STATUS_OPTIONS.map(s => (
+                    <option key={s.value} value={s.value}>{s.display}</option>
+                  ))}
                 </select>
                 <button className="btn btn-outline-success btn-sm" onClick={() => markFulfilled(openOrder._id)}>
-                  <CheckCircle2 size={14} className="me-1" /> Fulfilled
+                  <CheckCircle2 size={14} className="me-1" /> Delivered
                 </button>
                 <button className="btn btn-outline-secondary btn-sm" onClick={() => markUnfulfilled(openOrder._id)}>
-                  <XCircle size={14} className="me-1" /> Unfulfilled
+                  <XCircle size={14} className="me-1" /> Placed
                 </button>
               </div>
             </div>
@@ -245,7 +291,12 @@ const OrdersPage = () => {
                 </div>
                 <div className="d-flex justify-content-between">
                   <span>Discounts</span>
-                  <span>-${Array.isArray(openOrder.discounts) ? openOrder.discounts.reduce((s, d) => s + Number(d?.amount || 0), 0).toFixed(2) : "0.00"}</span>
+                  <span>
+                    -$
+                    {Array.isArray(openOrder.discounts)
+                      ? openOrder.discounts.reduce((s, d) => s + Number(d?.amount || 0), 0).toFixed(2)
+                      : "0.00"}
+                  </span>
                 </div>
                 <div className="d-flex justify-content-between">
                   <span>Shipping</span>

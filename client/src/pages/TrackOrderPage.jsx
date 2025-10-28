@@ -1,4 +1,3 @@
-// src/pages/TrackOrderPage.jsx
 import React, { useMemo, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -6,11 +5,11 @@ import toast from "react-hot-toast";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 const DEFAULT_STEPS = [
-  { key: "PLACED", label: "Placed" },
-  { key: "CONFIRMED", label: "Confirmed" },
-  { key: "SHIPPED", label: "Shipped" },
-  { key: "OUT_FOR_DELIVERY", label: "Out for delivery" },
-  { key: "DELIVERED", label: "Delivered" }
+  { key: "pending", label: "Placed" },
+  { key: "confirmed", label: "Confirmed" },
+  { key: "shipped", label: "Shipped" },
+  { key: "out_for_delivery", label: "Out for delivery" },
+  { key: "delivered", label: "Delivered" }
 ];
 const fmtUSD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
@@ -20,10 +19,12 @@ export default function TrackOrderPage() {
   const [order, setOrder] = useState(null);
   const cleanId = orderId.trim();
 
+  // determine step based on order.status
   const stepIndex = useMemo(() => {
     if (!order?.status) return -1;
-    const idx = DEFAULT_STEPS.findIndex(s => s.key === order.status);
-    return idx >= 0 ? idx : -1;
+    const normalizedStatus = (order.status || "").toLowerCase();
+    const idx = DEFAULT_STEPS.findIndex(s => s.key === normalizedStatus);
+    return idx >= 0 ? idx : 0; // If unknown, show at "Placed"
   }, [order]);
 
   const progressPct = useMemo(() => {
@@ -42,14 +43,22 @@ export default function TrackOrderPage() {
     setOrder(null);
     await toast.promise(
       (async () => {
-        const url = `${API_BASE}/api/orders/track?orderId=${encodeURIComponent(cleanId)}`;
+        // Use referenceId endpoint
+        const url = `${API_BASE}/api/orders/ref/${encodeURIComponent(cleanId)}`;
         const { data } = await axios.get(url, { withCredentials: true });
-        if (!data || !data.orderId) {
+        if (!data || !data.order) {
           const err = new Error("Order not found");
           err.code = "NOT_FOUND";
           throw err;
         }
-        setOrder(data);
+        const order = data.order;
+        setOrder({
+          ...order,
+          subtotal: order.totals?.subtotal ?? 0,
+          shipping: order.totals?.shipping ?? 0,
+          total: order.totals?.grandTotal ?? 0,
+          status: (order.status || "pending").toLowerCase()
+        });
         return "Order found";
       })(),
       {
@@ -99,7 +108,7 @@ export default function TrackOrderPage() {
             {/* Progress header */}
             <div className="order-progressbar-area">
               <div className="mono-pill-title">
-                <span>Order <strong>#{order.orderId}</strong></span>
+                <span>Order <strong>#{order.referenceId}</strong></span>
                 <span className={`mono-pill-status st-${order.status || 'unknown'}`}>
                   {DEFAULT_STEPS.find(s => s.key === order.status)?.label || "Unknown"}
                 </span>
@@ -128,25 +137,22 @@ export default function TrackOrderPage() {
               <div className="mono-card-split-inner">
                 <h4>Timeline</h4>
                 <div className="mono-card-list">
-                  <span><b>Placed:</b> {order.placedAt || "—"}</span>
-                  <span><b>Confirmed:</b> {order.confirmedAt || "—"}</span>
-                  <span><b>Shipped:</b> {order.shippedAt || "—"}</span>
-                  <span><b>Out for delivery:</b> {order.outForDeliveryAt || "—"}</span>
-                  <span><b>Delivered:</b> {order.deliveredAt || "—"}</span>
+                  <span><b>Placed:</b> {order.createdAt ? new Date(order.createdAt).toLocaleString() : "—"}</span>
+                  <span><b>Status:</b> {order.status}</span>
                 </div>
               </div>
               <div className="mono-card-split-inner">
                 <h4>Shipping</h4>
                 <div className="mono-card-list">
-                  <span><b>Recipient:</b> {order?.customer?.name || "—"}</span>
-                  <span><b>Phone:</b> {order?.customer?.phone || "—"}</span>
-                  <span><b>Address:</b> {order?.customer?.address || "—"}</span>
+                  <span><b>Recipient:</b> {order.customer?.firstName} {order.customer?.lastName}</span>
+                  <span><b>Phone:</b> {order.shippingAddress?.phone || "—"}</span>
+                  <span><b>Address:</b> {order.shippingAddress?.line1} {order.shippingAddress?.line2 || ""}, {order.shippingAddress?.city} {order.shippingAddress?.state} {order.shippingAddress?.postalCode}</span>
                 </div>
               </div>
               <div className="mono-card-split-inner">
                 <h4>Payment & totals</h4>
                 <div className="mono-card-list">
-                  <span><b>Items:</b> {Array.isArray(order?.items) ? order.items.length : 0}</span>
+                  <span><b>Items:</b> {Array.isArray(order.items) ? order.items.length : 0}</span>
                   <span><b>Subtotal:</b> {order?.subtotal != null ? fmtUSD.format(Number(order.subtotal)) : "—"}</span>
                   <span><b>Shipping:</b> {order?.shipping != null ? fmtUSD.format(Number(order.shipping)) : "—"}</span>
                   <div className="mono-total-row">
@@ -172,7 +178,7 @@ export default function TrackOrderPage() {
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="mono-itemlist-title" title={it.title}>{it.title}</div>
-                      <div className="mono-itemlist-meta">Qty: {it.qty}</div>
+                      <div className="mono-itemlist-meta">Qty: {it.qty || it.quantity || it.qtyOrdered || 1}</div>
                     </div>
                     <div className="mono-itemlist-cost">
                       {it.price != null ? fmtUSD.format(Number(it.price)) : "—"}
@@ -187,8 +193,6 @@ export default function TrackOrderPage() {
           </section>
         )}
       </div>
-
-      {/* Monochrome CSS */}
       <style>{`
       .order-track-wrap {
         min-height: 100vh;

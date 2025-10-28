@@ -79,10 +79,31 @@ export async function getOrder(req, res) {
 export async function updateOrderStatus(req, res) {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    let { status } = req.body;
+
+    // Accept human-friendly status (from UI) and convert to backend codes
+    const STATUS_MAP = {
+      "Placed": "pending",
+      "Confirmed": "confirmed",
+      "Shipped": "shipped",
+      "Out for delivery": "out_for_delivery",
+      "Delivered": "delivered",
+      "cancelled": "cancelled",
+      "refunded": "refunded",
+      "failed": "failed",
+      // System codes passthrough
+      "pending": "pending",
+      "confirmed": "confirmed",
+      "shipped": "shipped",
+      "out_for_delivery": "out_for_delivery",
+      "delivered": "delivered"
+    };
+    status = STATUS_MAP[status] || status;
+
     const validStatuses = [
       'pending', 'paid', 'fulfilled', 'unfulfilled', 'cancelled', 'refunded', 'failed',
-      'CREATED', 'SAVED', 'APPROVED', 'VOIDED', 'COMPLETED', 'PAYER_ACTION_REQUIRED'
+      'CREATED', 'SAVED', 'APPROVED', 'VOIDED', 'COMPLETED', 'PAYER_ACTION_REQUIRED',
+      'confirmed', 'shipped', 'out_for_delivery', 'delivered'
     ];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ success: false, error: 'Invalid status' });
@@ -98,6 +119,7 @@ export async function updateOrderStatus(req, res) {
     res.status(500).json({ success: false, error: 'Failed to update status' });
   }
 }
+
 // Get an order by referenceId
 export async function getOrderByReferenceId(req, res) {
   try {
