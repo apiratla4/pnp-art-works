@@ -98,6 +98,19 @@ export async function updateOrderStatus(req, res) {
     res.status(500).json({ success: false, error: 'Failed to update status' });
   }
 }
+// Get an order by referenceId
+export async function getOrderByReferenceId(req, res) {
+  try {
+    const { referenceId } = req.params;
+    const order = await Order.findOne({ referenceId });
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+    res.json({ success: true, order });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to fetch order', message: e.message });
+  }
+}
 
 export async function updateOrderWithCapture(req, res) {
   try {
