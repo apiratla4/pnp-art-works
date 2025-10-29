@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { Receipt, Eye, X, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { Receipt, Eye, X, CheckCircle2, XCircle, RefreshCw, Calendar, Search } from "lucide-react";
 import { toast } from "react-toastify";
-import "./admin.css";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const ORDERS_URL = `${API_BASE}/api/orders`;
@@ -40,42 +39,51 @@ function displayStatusText(status) {
 
 const statusPillStyle = (status) => {
   switch (displayStatusText(status)) {
-    case "Delivered":
-      return "bg-green-100 text-green-700";
-    case "Placed":
-      return "bg-yellow-100 text-yellow-800";
-    case "Confirmed":
-      return "bg-blue-100 text-blue-700";
-    case "Shipped":
-      return "bg-indigo-100 text-indigo-700";
-    case "Out for delivery":
-      return "bg-cyan-100 text-cyan-800";
-    case "Cancelled":
-      return "bg-red-100 text-red-700";
-    case "Refunded":
-      return "bg-amber-100 text-amber-800";
-    case "Failed":
-      return "bg-red-200 text-red-900";
-    default:
-      return "bg-gray-200 text-gray-800";
+    case "Delivered": return "bg-green-100 text-green-700";
+    case "Placed": return "bg-yellow-100 text-yellow-800";
+    case "Confirmed": return "bg-blue-100 text-blue-700";
+    case "Shipped": return "bg-indigo-100 text-indigo-700";
+    case "Out for delivery": return "bg-cyan-100 text-cyan-800";
+    case "Cancelled": return "bg-red-100 text-red-700";
+    case "Refunded": return "bg-amber-100 text-amber-800";
+    case "Failed": return "bg-red-200 text-red-900";
+    default: return "bg-gray-200 text-gray-800";
   }
 };
+
+function isSameDay(d1, d2) {
+  return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+}
+function isThisWeek(date) {
+  const now = new Date();
+  const target = new Date(date);
+  const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+  return target >= weekStart && target < weekEnd;
+}
+function inRange(date, from, to) {
+  const d = new Date(date);
+  return (!from || d >= from) && (!to || d <= to);
+}
 
 const OrdersPage = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [openId, setOpenId] = useState("");
-  const openOrder = useMemo(
-    () => items.find(i => (i._id || "") === openId),
-    [items, openId]
-  );
+  const openOrder = useMemo(() => items.find(i => (i._id || "") === openId), [items, openId]);
+
+  const [dateFilter, setDateFilter] = useState("today");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
 
   const load = async () => {
     try {
       setLoading(true);
       const res = await axios.get(ORDERS_URL, { withCredentials: true });
-      setItems(Array.isArray(res.data?.items) ? res.data.items : []);
+      const arr = Array.isArray(res.data?.items) ? res.data.items.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)) : [];
+      setItems(arr);
     } catch (e) {
       console.error(e);
       toast.error("Failed to load orders");
@@ -85,6 +93,22 @@ const OrdersPage = () => {
   };
 
   useEffect(() => { load(); }, []);
+
+  const filteredItems = useMemo(() => {
+    let filtered = items;
+    if (dateFilter === "today") {
+      filtered = filtered.filter(o => o.createdAt && isSameDay(new Date(o.createdAt), new Date()));
+    }
+    if (dateFilter === "week") {
+      filtered = filtered.filter(o => o.createdAt && isThisWeek(new Date(o.createdAt)));
+    }
+    if (dateFilter === "custom") {
+      const from = customFrom ? new Date(customFrom) : null;
+      const to = customTo ? new Date(customTo) : null;
+      filtered = filtered.filter(o => o.createdAt && inRange(new Date(o.createdAt), from, to));
+    }
+    return filtered.slice(0, 10);
+  }, [items, dateFilter, customFrom, customTo]);
 
   const updateStatus = async (id, status) => {
     const backendStatus = STATUS_MAP[status] || status;
@@ -112,13 +136,23 @@ const OrdersPage = () => {
   const markUnfulfilled = id => updateStatus(id, "Placed");
 
   return (
-    <div className="max-w-7xl mx-auto w-full px-2 py-5">
-      <div className="flex flex-col md:flex-row items-center justify-between mb-5 gap-3">
+    <div className="max-w-7xl mx-auto w-full px-2 py-5 h-full min-h-0 flex flex-col">
+      {/* Header & Filters */}
+      <div className="flex flex-col md:flex-row items-center justify-between mb-3 gap-3">
         <div>
           <h1 className="text-2xl font-black mb-0 text-black tracking-tight">Orders</h1>
-          <div className="text-gray-600 text-sm">Order history &amp; real-time status</div>
+          <div className="text-gray-600 text-sm">Latest 10 orders, date filtering, realtime status</div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button className={`btn-mono-sm px-4 ${dateFilter === "today" && "bg-black text-white"}`} onClick={() => setDateFilter("today")}>
+            <Calendar size={16} className="inline me-1" /> Today
+          </button>
+          <button className={`btn-mono-sm px-4 ${dateFilter === "week" && "bg-black text-white"}`} onClick={() => setDateFilter("week")}>
+            <Calendar size={16} className="inline me-1" /> This Week
+          </button>
+          <button className={`btn-mono-sm px-4 ${dateFilter === "custom" && "bg-black text-white"}`} onClick={() => setDateFilter("custom")}>
+            <Calendar size={16} className="inline me-1" /> Custom
+          </button>
           <button
             className="inline-flex items-center gap-1 border border-black bg-white rounded-full px-4 py-1.5 text-base font-semibold shadow-sm hover:bg-gray-100 transition"
             onClick={load}
@@ -132,88 +166,76 @@ const OrdersPage = () => {
           )}
         </div>
       </div>
-      <div className="overflow-x-auto rounded-xl shadow bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-left">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 font-bold text-xs tracking-wider text-gray-700">#</th>
-              <th className="px-4 py-3 font-bold text-xs tracking-wider text-gray-700">Customer</th>
-              <th className="px-4 py-3 font-bold text-xs tracking-wider text-gray-700 hidden md:table-cell">Total</th>
-              <th className="px-4 py-3 font-bold text-xs tracking-wider text-gray-700">Status</th>
-              <th className="px-4 py-3 font-bold text-xs tracking-wider text-gray-700 hidden md:table-cell">Date</th>
-              <th className="px-4 py-3 font-bold text-xs tracking-wider text-gray-700 text-end">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((o, idx) => {
-              const id = o._id || "";
-              const short = (o.orderNo || id || "").toString().slice(-6);
-              const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleString() : "-";
-              const totalStr = `$${Number(o.total || 0).toFixed(2)}`;
-              const displayStatus = displayStatusText(o.status);
-
-              return (
-                <tr
-                  key={id}
-                  className="hover:bg-gray-50 transition"
-                >
-                  <td className="pl-4 pr-1 py-3 align-top font-mono text-sm">{short}</td>
-                  <td className="px-2 py-3 align-top">{o.customer?.name || o.customerName || "-"}</td>
-                  <td className="px-2 py-3 align-top hidden md:table-cell">{totalStr}</td>
-                  <td className="px-2 py-3 align-top">
-                    <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${statusPillStyle(displayStatus)}`}>
-                      {displayStatus}
-                    </span>
-                    <select
-                      className="ml-3 border rounded px-2 py-1 text-xs bg-white"
-                      value={displayStatus}
-                      onChange={e => updateStatus(id, e.target.value)}
-                    >
-                      {STATUS_OPTIONS.map(s => (
-                        <option key={s.value} value={s.value}>{s.display}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-2 py-3 align-top hidden md:table-cell">{dateStr}</td>
-                  <td className="pr-4 pl-1 py-3 align-top text-end">
-                    <div className="inline-flex gap-2">
-                      <button
-                        className="inline-flex items-center px-3 py-1 border rounded-full font-bold bg-gray-100 hover:bg-blue-50 text-blue-600 transition"
-                        title="View details" onClick={() => setOpenId(id)}>
-                        <Eye size={15} />
-                      </button>
-                      <button
-                        className="inline-flex items-center px-3 py-1 border rounded-full font-bold bg-green-50 hover:bg-green-100 text-green-800 transition"
-                        title="Mark delivered" onClick={() => markFulfilled(id)}>
-                        <CheckCircle2 size={15} />
-                      </button>
-                      <button
-                        className="inline-flex items-center px-3 py-1 border rounded-full font-bold bg-yellow-50 hover:bg-yellow-100 text-yellow-700 transition"
-                        title="Mark placed" onClick={() => markUnfulfilled(id)}>
-                        <XCircle size={15} />
-                      </button>
-                      <button
-                        className="inline-flex items-center px-3 py-1 border rounded-full font-bold bg-gray-50 hover:bg-gray-200 text-gray-600 transition"
-                        title="View invoice" onClick={() => toast.info('Invoice view coming soon!')}>
-                        <Receipt size={15} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {items.length === 0 && !loading && (
-              <tr>
-                <td colSpan={6} className="text-center text-gray-400 py-8 text-lg tracking-wide font-bold">
-                  No orders yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      {dateFilter === "custom" && (
+        <div className="flex items-center gap-3 mb-5">
+          <span>From:</span>
+          <input type="date" className="border px-2 py-1 rounded" value={customFrom}
+            onChange={e => setCustomFrom(e.target.value)} />
+          <span>To:</span>
+          <input type="date" className="border px-2 py-1 rounded" value={customTo}
+            onChange={e => setCustomTo(e.target.value)} />
+          <button className="btn-mono-sm" onClick={load} title="Reload orders">
+            <Search size={15} />
+            Search
+          </button>
+        </div>
+      )}
+      {/* Card list UI */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 flex-1 min-h-0">
+        {filteredItems.length === 0 && !loading && (
+          <div className="col-span-full text-center text-gray-400 py-10 text-lg font-bold tracking-wide">
+            No orders found for period.
+          </div>
+        )}
+        {filteredItems.map(o => {
+          const id = o._id;
+          const short = (o.orderNo || id || "").toString().slice(-6);
+          const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleString() : "-";
+          const totalStr = `$${Number(o.total || 0).toFixed(2)}`;
+          const displayStatus = displayStatusText(o.status);
+          return (
+            <div key={id} className="rounded-2xl shadow bg-white border border-black/10 p-6 flex flex-col gap-1 relative hover:shadow-lg transition">
+              {/* Top row */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-base font-bold bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">{short}</span>
+                  <span className={`font-semibold px-3 py-1.5 rounded-full text-xs capitalize ${statusPillStyle(displayStatus)}`}>
+                    {displayStatus}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button className="btn-mono-sm" title="View" onClick={() => setOpenId(id)}><Eye size={18}/></button>
+                  <button className="btn-mono-sm" title="Mark Delivered" onClick={() => markFulfilled(id)}><CheckCircle2 size={18}/></button>
+                  <button className="btn-mono-sm" title="Mark Placed" onClick={() => markUnfulfilled(id)}><XCircle size={18}/></button>
+                </div>
+              </div>
+              <div className="font-bold text-lg mb-0 text-black">{o.customer?.name || o.customerName || "-"}</div>
+              <div className="text-xs text-gray-500 mb-0.5">{dateStr}</div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-black text-sm font-bold">{totalStr}</div>
+                <div className="flex gap-2">
+                  <select
+                    className="border border-black rounded px-3 py-1 text-sm bg-white focus:ring-2 focus:ring-black font-semibold"
+                    value={displayStatus}
+                    onChange={e => updateStatus(id, e.target.value)}
+                  >
+                    {STATUS_OPTIONS.map(s => (
+                      <option key={s.value} value={s.value}>{s.display}</option>
+                    ))}
+                  </select>
+                  <button
+                    className="btn-mono-sm"
+                    onClick={() => toast.info('Invoice view coming soon!')}
+                    title="View invoice"
+                  ><Receipt size={18}/></button>
+                </div>
+              </div>
+              <div className="text-xs text-gray-600 line-clamp-1">{Array.isArray(o.items) ? o.items.map(i => i.title).join(", ") : ""}</div>
+            </div>
+          );
+        })}
       </div>
-
-      {/* Details panel (modern offcanvas) */}
+      {/* Offcanvas details panel */}
       {openOrder && (
         <>
           <div
@@ -236,7 +258,6 @@ const OrdersPage = () => {
                 <X size={18} strokeWidth={2.2} />
               </button>
             </div>
-
             <div className="px-5 py-3">
               <div className="mb-4">
                 <div className="text-xs text-gray-400">Customer</div>
@@ -244,7 +265,6 @@ const OrdersPage = () => {
                 <div className="text-gray-500 text-xs">{openOrder.customer?.email || "-"}</div>
                 <div className="text-gray-500 text-xs">{openOrder.customer?.phone || "-"}</div>
               </div>
-
               <div className="mb-4">
                 <div className="text-xs text-gray-400 mb-1">Status</div>
                 <div className="flex items-center gap-2">
@@ -260,15 +280,14 @@ const OrdersPage = () => {
                       <option key={s.value} value={s.value}>{s.display}</option>
                     ))}
                   </select>
-                  <button className="btn btn-outline-success btn-xs" onClick={() => markFulfilled(openOrder._id)}>
+                  <button className="btn-mono-sm" onClick={() => markFulfilled(openOrder._id)}>
                     <CheckCircle2 size={14} className="me-1" /> Delivered
                   </button>
-                  <button className="btn btn-outline-secondary btn-xs" onClick={() => markUnfulfilled(openOrder._id)}>
+                  <button className="btn-mono-sm" onClick={() => markUnfulfilled(openOrder._id)}>
                     <XCircle size={14} className="me-1" /> Placed
                   </button>
                 </div>
               </div>
-
               <div className="mb-4">
                 <div className="text-xs text-gray-400 mb-1">Items</div>
                 <div className="table-responsive">
@@ -298,7 +317,6 @@ const OrdersPage = () => {
                   </table>
                 </div>
               </div>
-
               <div className="mb-4">
                 <div className="text-xs text-gray-400 mb-1">Totals</div>
                 <div className="flex flex-col gap-1 text-xs">
@@ -328,7 +346,6 @@ const OrdersPage = () => {
                   </div>
                 </div>
               </div>
-
               {openOrder.shippingAddress && (
                 <div className="mb-4">
                   <div className="text-xs text-gray-400 mb-1">Shipping Address</div>
@@ -340,7 +357,6 @@ const OrdersPage = () => {
                   </div>
                 </div>
               )}
-
               {openOrder.notes && (
                 <div className="mb-4">
                   <div className="text-xs text-gray-400 mb-1">Notes</div>
@@ -351,6 +367,31 @@ const OrdersPage = () => {
           </div>
         </>
       )}
+      <style>{`
+        .btn-mono-sm {
+          border: 1.5px solid #000;
+          background: #fff;
+          color: #000;
+          border-radius: 9999px;
+          padding: 7px 16px;
+          font-weight: 700;
+          font-size: 1.09em;
+          transition: all .16s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .btn-mono-sm:hover, .btn-mono-sm:focus {
+          background: #000;
+          color: #fff;
+        }
+        .btn-mono-sm:active { transform: scale(0.97); }
+        .btn-mono-sm:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
+        }
+        .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+      `}</style>
     </div>
   );
 };

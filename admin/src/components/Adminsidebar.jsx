@@ -1,8 +1,6 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import {
-  Package, GraduationCap, Images, Receipt, LogOut, TicketPercent, Send, Star
-} from "lucide-react";
+import { Package, GraduationCap, Images, Receipt, LogOut, TicketPercent, Send, Star, X } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -15,7 +13,7 @@ const getClass = ({ isActive }) =>
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const LOGOUT_URL = `${API_BASE}/api/auth/logout`;
 
-const AdminSidebar = () => {
+const AdminSidebar = ({ open, onClose }) => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -31,72 +29,99 @@ const AdminSidebar = () => {
   };
 
   return (
-    <div className="flex flex-col h-full min-h-screen bg-[#f4f4f4]">
-      {/* Admin header */}
-      <div className="px-5 py-4 border-b border-black/20 bg-white">
-        <div className="flex items-center gap-2">
-          <span
-            className="rounded-full flex items-center justify-center w-10 h-10 border border-black bg-white text-black font-extrabold text-lg shadow-sm"
-            aria-hidden="true"
+    <>
+      {/* Overlay for mobile */}
+      <div
+        className={`fixed inset-0 bg-black/40 z-98 transition-opacity lg:hidden ${open ? "block" : "hidden"}`}
+        aria-hidden={!open}
+        onClick={onClose}
+      />
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed z-99 top-0 left-0 w-[90vw] max-w-xs h-full bg-[#f4f4f4] shadow-2xl border-r border-black/10 flex flex-col
+          transition-transform duration-200
+          ${open ? "translate-x-0" : "-translate-x-full"}
+          lg:static lg:translate-x-0 lg:shadow-none lg:max-w-[260px]
+        `}
+        role="navigation"
+        aria-label="Admin Sidebar"
+      >
+        {/* Header */}
+        <div className="px-4 py-4 border-b border-black/15 bg-white shrink-0 relative flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="rounded-full flex items-center justify-center w-11 h-11 border border-black bg-black/80 text-white font-black text-2xl shadow-sm" aria-hidden="true">
+              A
+            </span>
+            <span className="text-xl font-black tracking-tight text-black">Admin</span>
+          </div>
+          {/* Close icon, only mobile */}
+          <button
+            className="lg:hidden block absolute right-4 top-4 text-black/70 hover:text-black transition"
+            aria-label="Close sidebar"
+            style={{ zIndex: 110 }}
+            onClick={onClose}
+            tabIndex={open ? 0 : -1}
           >
-            A
-          </span>
-          <span className="text-lg font-black">Admin</span>
+            <X size={28}/>
+          </button>
         </div>
-      </div>
-      <nav className="flex-1 flex flex-col p-3 gap-2 overflow-y-auto">
-        <div className="px-1.5 pt-1 pb-1 text-xs font-bold tracking-wide uppercase text-gray-500">Main</div>
-        <NavLink to="/admin/products" className={getClass}><Package size={18} /> Products</NavLink>
-        <NavLink to="/admin/classes" className={getClass}><GraduationCap size={18} /> Classes</NavLink>
-        <NavLink to="/admin/gallery" className={getClass}><Images size={18} /> Gallery</NavLink>
-        <NavLink to="/admin/orders" className={getClass}><Receipt size={18} /> Orders</NavLink>
-        <NavLink to="/admin/store-pickup-orders" className={getClass}><Receipt size={18} />Store Orders</NavLink>
-        <NavLink to="/admin/hero-sliders" className={getClass}><Images size={18} /> Hero Sliders</NavLink>
-        <NavLink to="/admin/testimonials" className={getClass}><Star size={18} /> Testimonials</NavLink>
-        <NavLink to="/admin/coupons" className={getClass}><TicketPercent size={18} /> Coupons</NavLink>
-        <NavLink to="/admin/newsletters" className={getClass}><Send size={18} /> Newsletters</NavLink>
-      </nav>
-      <footer className="mt-auto w-full px-4 py-4 bg-[#f4f4f4] flex flex-col gap-3">
-        <button
-          type="button"
-          className="btn-logout flex items-center gap-2 w-full justify-center"
-          onClick={handleLogout}
-          aria-label="Logout"
-          title="Logout"
-        >
-          <LogOut size={18} />
-          <span>Logout</span>
-        </button>
-        <span className="block text-center w-full text-xs text-black/60 select-none">
-          © {new Date().getFullYear()} ArtistryStudio
-        </span>
-        <style>{`
-          .btn-logout {
-            border: 1.5px solid #991b1b;
-            background: #fff;
-            color: #991b1b;
-            border-radius: 9999px;
-            padding: 10px 0;
-            font-weight: 700;
-            font-size: 1.09em;
-            letter-spacing: .01em;
-            transition: all .17s cubic-bezier(.6,.1,.13,1.02);
-            width: 100%;
-            text-align: center;
-          }
-          .btn-logout:hover, .btn-logout:focus {
-            background: #991b1b;
-            color: #fff;
-            border-color: #991b1b;
-          }
-          .btn-logout:active { transform: scale(0.97); }
-          .btn-logout:focus-visible {
-            outline: none;
-            box-shadow: 0 0 0 2px #991b1b, 0 0 0 4px #fff;
-          }
-        `}</style>
-      </footer>
-    </div>
+        {/* Main nav */}
+        <nav className="flex-1 flex flex-col p-3 gap-1.5 overflow-y-auto min-h-0">
+          <div className="px-1.5 pt-1 pb-1 text-xs font-bold tracking-wide uppercase text-gray-500">Management</div>
+          <NavLink to="/admin/products" className={getClass} onClick={onClose}><Package size={20} /> Products</NavLink>
+          <NavLink to="/admin/classes" className={getClass} onClick={onClose}><GraduationCap size={19} /> Classes</NavLink>
+          <NavLink to="/admin/gallery" className={getClass} onClick={onClose}><Images size={19} /> Gallery</NavLink>
+          <NavLink to="/admin/orders" className={getClass} onClick={onClose}><Receipt size={19} /> Orders</NavLink>
+          <NavLink to="/admin/store-pickup-orders" className={getClass} onClick={onClose}><Receipt size={19} />Store Orders</NavLink>
+          <NavLink to="/admin/hero-sliders" className={getClass} onClick={onClose}><Images size={19} /> Hero Sliders</NavLink>
+          <NavLink to="/admin/testimonials" className={getClass} onClick={onClose}><Star size={18} /> Testimonials</NavLink>
+          <NavLink to="/admin/coupons" className={getClass} onClick={onClose}><TicketPercent size={19} /> Coupons</NavLink>
+          <NavLink to="/admin/newsletters" className={getClass} onClick={onClose}><Send size={18} /> Newsletters</NavLink>
+        </nav>
+        {/* Footer */}
+        <footer className="mt-auto w-full px-6 py-5 bg-[#f4f4f4] flex flex-col gap-3 border-t border-black/15 shrink-0">
+          <button
+            type="button"
+            className="btn-logout flex items-center gap-2 w-full justify-center"
+            onClick={handleLogout}
+            aria-label="Logout"
+            title="Logout"
+          >
+            <LogOut size={19} />
+            <span>Logout</span>
+          </button>
+          <span className="block text-center w-full text-xs text-black/60 select-none mt-2">
+            © {new Date().getFullYear()} ArtistryStudio
+          </span>
+          <style>{`
+            .btn-logout {
+              border: 1.5px solid #991b1b;
+              background: #fff;
+              color: #991b1b;
+              border-radius: 9999px;
+              padding: 12px 0;
+              font-weight: 700;
+              font-size: 1.09em;
+              letter-spacing: .01em;
+              transition: all .17s cubic-bezier(.6,.1,.13,1.02);
+              width: 100%;
+              text-align: center;
+            }
+            .btn-logout:hover, .btn-logout:focus {
+              background: #991b1b;
+              color: #fff;
+              border-color: #991b1b;
+            }
+            .btn-logout:active { transform: scale(0.97); }
+            .btn-logout:focus-visible {
+              outline: none;
+              box-shadow: 0 0 0 2px #991b1b, 0 0 0 4px #fff;
+            }
+          `}</style>
+        </footer>
+      </aside>
+    </>
   );
 };
 

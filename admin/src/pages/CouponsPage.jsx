@@ -109,7 +109,7 @@ export default function CouponsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl w-full p-4 text-black bg-[#f4f4f4] min-h-screen">
+    <div className="mx-auto max-w-6xl w-full p-4 text-black min-h-screen">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <h2 className="flex items-center gap-2 text-2xl font-extrabold mb-0 select-none tracking-tight">
           <TicketPercent size={23} /> Coupons
@@ -220,6 +220,7 @@ export default function CouponsPage() {
                         <Trash2 size={16} />
                       </button>
                     </div>
+
                   </div>
                 </div>
               ))

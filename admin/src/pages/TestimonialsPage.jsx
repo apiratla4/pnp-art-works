@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Edit } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
 import TestimonialUploadModal from "./TestimonialUploadModal.jsx";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
@@ -14,7 +15,14 @@ const TestimonialsPage = () => {
   const fetchTestimonials = async () => {
     try {
       const { data } = await axios.get(TESTIMONIALS_URL);
-      setTestimonials(Array.isArray(data?.testimonials) ? data.testimonials : []);
+      let items = Array.isArray(data?.testimonials)
+        ? data.testimonials
+        : Array.isArray(data?.items)
+        ? data.items
+        : Array.isArray(data)
+        ? data
+        : [];
+      setTestimonials(items);
     } catch {
       setTestimonials([]);
     }
@@ -32,6 +40,17 @@ const TestimonialsPage = () => {
     setShowModal(true);
   };
 
+  const handleDelete = async (t) => {
+    if (!window.confirm(`Delete testimonial of ${t.name}?`)) return;
+    try {
+      await axios.delete(`${TESTIMONIALS_URL}/${t._id}`);
+      toast.success("Testimonial deleted.");
+      fetchTestimonials();
+    } catch {
+      toast.error("Delete failed.");
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto py-10 px-2">
       <div className="flex justify-between items-center mb-7">
@@ -47,8 +66,8 @@ const TestimonialsPage = () => {
         {testimonials.map(t => (
           <div key={t._id} className="bg-white rounded-2xl shadow-md border border-black/10 p-5 flex flex-col relative min-h-[220px]">
             <div className="flex items-center gap-4 mb-2">
-              {t.imageUrl ?
-                <img src={t.imageUrl} alt={t.name} className="h-14 w-14 object-cover rounded-full border border-black/10" />
+              {t.imageUrl
+                ? <img src={t.imageUrl} alt={t.name} className="h-14 w-14 object-cover rounded-full border border-black/10" />
                 : <div className="h-14 w-14 bg-gray-100 rounded-full border border-black/10" />
               }
               <div className="flex flex-col">
@@ -57,17 +76,27 @@ const TestimonialsPage = () => {
                 <span className="text-xs text-yellow-600 font-bold">Rating: {t.rating}/5</span>
               </div>
             </div>
-            <div className="my-2 grow italic text-gray-800 text-sm">
+            <div className="my-2 grow italic text-gray-800 text-sm overflow-hidden line-clamp-5 wrap-break-word">
               {t.review}
             </div>
-            <button
-              className="absolute top-3 right-3 flex items-center gap-1 bg-white border border-gray-300 hover:border-black text-gray-600 hover:text-black rounded-full px-3 py-1 shadow-sm text-xs font-bold transition-all focus:outline-none"
-              onClick={() => handleEdit(t)}
-              title="Edit testimonial"
-            >
-              <Edit size={14} strokeWidth={2} />
-              Edit
-            </button>
+            {/* Edit and Delete Buttons - positioned side by side, absolute in corner */}
+            <div className="absolute top-3 right-3 flex gap-1">
+              <button
+                className="flex items-center gap-1 bg-white border border-gray-300 hover:border-black text-gray-600 hover:text-black rounded-full px-3 py-1 shadow-sm text-xs font-bold transition-all focus:outline-none"
+                onClick={() => handleEdit(t)}
+                title="Edit testimonial"
+              >
+                <Edit size={14} strokeWidth={2} />
+                Edit
+              </button>
+              <button
+                className="flex items-center gap-1 bg-white border border-gray-300 hover:border-black text-gray-600 hover:text-black rounded-full px-2 py-1 shadow-sm text-xs font-bold transition-all focus:outline-none"
+                onClick={() => handleDelete(t)}
+                title="Delete testimonial"
+              >
+                <Trash2 size={15} strokeWidth={2} />
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -77,6 +106,14 @@ const TestimonialsPage = () => {
         onSuccess={fetchTestimonials}
         editTestimonial={editTestimonial}
       />
+      <style>{`
+        .line-clamp-5 {
+          display: -webkit-box;
+          -webkit-line-clamp: 5;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   );
 };

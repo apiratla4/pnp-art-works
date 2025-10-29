@@ -33,6 +33,5 @@ routes.use('/paypal/webhook', paypalWebhookRoutes); // PayPal webhook endpoint
 routes.use('/orders', ordersRoutes);               // Orders API
 routes.use('/testimonials', testimonialsRoutes);   // Testimonials API
 routes.use('/store-pickup-orders', storePickupRoutes);
-routes.use('/hero-sliders', heroSliderRouter);
-
+routes.use('/hero-sliders', heroSliderRouter); 
 export default routes;

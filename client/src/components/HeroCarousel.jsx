@@ -1,45 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import FancyButton from './FancyButton';
 
-import img1 from '../assets/hero1.jpg';
-import img2 from '../assets/hero4.png';
-import img3 from '../assets/hero3.jpg';
-import img4 from '../assets/ma_durga.png'
+const API = (import.meta.env.VITE_API_URL ?? "") + "/api/hero-sliders";
 
-const PAINTING_SLIDES = [
-  { id: 'p1', image: img1, alt: 'Abstract canvas with rich colors' },
-  { id: 'p2', image: img4, alt: 'Oil painting materials and palette' },
-  { id: 'p3', image: img3, alt: 'Paintings displayed in an interior' },
-  { id: 'p4', image: img2, alt: 'Students painting in a live art class' },
-];
-const SLIDE_CONTENT = {
-  p1: {
-    eyebrow: 'Original Art',
-    heading: 'Handcrafted Paintings for Inspired Spaces',
-    sub: 'Discover acrylics, watercolors, and mixed media from curated collections.',
-    cta: { label: 'Shop new arrivals', href: '/shop' }
-  },
-  p2: {
-    eyebrow: 'Limited Offer',
-    heading: 'Free Shipping Over $100',
-    sub: 'Free Pickup in Studio or Free Shipping on orders $100+ within the continental US.',
-    cta: { label: 'Explore collections', href: '/shop' }
-  },
-  p3: {
-    eyebrow: 'Custom Commissions',
-    heading: 'Bring Ideas to Life with Custom Art',
-    sub: 'Work 1:1 with an artist to craft a bespoke piece for your style and budget.',
-    cta: { label: 'Start a commission', href: '/custom-order' }
-  },
-  p4: {
-    eyebrow: 'Learn & Create',
-    heading: 'Live Online and Studio Art Classes',
-    sub: 'Build skills in drawing, watercolor, and acrylics with guided sessions.',
-    cta: { label: 'Explore art classes', href: '/art-classes' }
-  }
-};
 const imageVariants = {
   enter: (dir) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
   center: { x: 0, opacity: 1, transition: { duration: 0.55, ease: 'easeOut' } },
@@ -52,22 +18,31 @@ const contentVariants = {
 };
 
 const HeroCarousel = ({
-  slides = PAINTING_SLIDES,
   autoPlay = true,
-  interval = 3000,
+  interval = 3600,
   showArrows = true,
   showIndicators = true,
   onSlideChange
 }) => {
+  const [slides, setSlides] = useState([]);
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const timeoutRef = useRef(null);
   const pausedRef = useRef(false);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
+
+  // --- Fetch slides from backend
+  useEffect(() => {
+    axios.get(API)
+      .then(res => setSlides(Array.isArray(res.data) ? res.data : res.data.items || []))
+      .catch(() => setSlides([]));
+  }, []);
+
   const total = slides.length;
 
-  const goTo = (i) => {
+  const goTo = i => {
+    if (!total) return;
     const nextIdx = (i + total) % total;
     const dir = nextIdx === index ? 0 : (nextIdx > index ? 1 : -1);
     setDirection(dir || 1);
@@ -86,16 +61,15 @@ const HeroCarousel = ({
   useEffect(() => { startTimer(); return clearTimer; }, [index, autoPlay, interval, total]);
   const onMouseEnter = () => { pausedRef.current = true; clearTimer(); };
   const onMouseLeave = () => { pausedRef.current = false; startTimer(); };
-  const onTouchStart = (e) => { if (e.changedTouches?.length) touchStartX.current = e.changedTouches[0].clientX; };
-  const onTouchMove = (e) => { if (e.changedTouches?.length) touchEndX.current = e.changedTouches[0].clientX; };
+  const onTouchStart = e => { if (e.changedTouches?.length) touchStartX.current = e.changedTouches[0].clientX; };
+  const onTouchMove = e => { if (e.changedTouches?.length) touchEndX.current = e.changedTouches[0].clientX; };
   const onTouchEnd = () => {
     const dx = touchEndX.current - touchStartX.current;
     if (Math.abs(dx) > 40) (dx > 0 ? prev() : next());
     touchStartX.current = 0; touchEndX.current = 0;
   };
 
-  const currentSlide = useMemo(() => slides[index], [slides, index]);
-  const content = SLIDE_CONTENT[currentSlide?.id] || SLIDE_CONTENT.p1;
+  const currentSlide = useMemo(() => slides[index] || {}, [slides, index]);
 
   return (
     <div
@@ -113,19 +87,21 @@ const HeroCarousel = ({
       {/* Image Section */}
       <div className="relative w-full" style={{ height: '65%' }}>
         <AnimatePresence custom={direction} initial={false} mode="popLayout">
-          <motion.img
-            key={currentSlide.id}
-            src={currentSlide.image}
-            alt={currentSlide.alt || ''}
-            variants={imageVariants}
-            custom={direction}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            className="absolute inset-0 w-full h-full object-cover"
-            draggable={false}
-            style={{ userSelect: "none", height: '100%' }}
-          />
+          {currentSlide.image && (
+            <motion.img
+              key={currentSlide._id || currentSlide.image}
+              src={currentSlide.image}
+              alt={currentSlide.alt || ''}
+              variants={imageVariants}
+              custom={direction}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="absolute inset-0 w-full h-full object-cover"
+              draggable={false}
+              style={{ userSelect: "none", height: '100%' }}
+            />
+          )}
         </AnimatePresence>
         {/* Arrows */}
         {showArrows && total > 1 && (
@@ -169,28 +145,28 @@ const HeroCarousel = ({
         <div className="w-full" style={{ maxWidth: 980 }}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={`content-${currentSlide.id}`}
+              key={`content-${currentSlide._id || index}`}
               variants={contentVariants}
               initial="enter"
               animate="center"
               exit="exit"
               className="text-center"
             >
-              {content.eyebrow && (
+              {currentSlide.eyebrow && (
                 <div
                   className="font-semibold mb-2 text-black"
                   style={{ letterSpacing: 1, fontSize: 'clamp(0.75rem, 1.5vw, 0.9rem)' }}
                 >
-                  {content.eyebrow}
+                  {currentSlide.eyebrow}
                 </div>
               )}
               <h2
                 className="font-bold mb-2 text-black"
                 style={{ fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)', lineHeight: 1.2 }}
               >
-                {content.heading}
+                {currentSlide.heading}
               </h2>
-              {content.sub && (
+              {currentSlide.sub && (
                 <p
                   className="mb-3"
                   style={{
@@ -198,16 +174,16 @@ const HeroCarousel = ({
                     fontSize: 'clamp(0.85rem, 1.5vw, 1rem)'
                   }}
                 >
-                  {content.sub}
+                  {currentSlide.sub}
                 </p>
               )}
-              {content.cta && (
+              {currentSlide.ctaLabel && currentSlide.ctaHref && (
                 <FancyButton
-                  to={content.cta.href}
+                  to={currentSlide.ctaHref}
                   className="fancy-sm"
-                  aria-label={content.cta.label}
+                  aria-label={currentSlide.ctaLabel}
                 >
-                  {content.cta.label}
+                  {currentSlide.ctaLabel} <ArrowRight className="inline" size={17} />
                 </FancyButton>
               )}
             </motion.div>
@@ -223,7 +199,7 @@ const HeroCarousel = ({
               const active = i === index;
               return (
                 <button
-                  key={s.id}
+                  key={s._id || i}
                   type="button"
                   aria-label={`Go to slide ${i + 1}`}
                   onClick={() => goTo(i)}
@@ -233,7 +209,6 @@ const HeroCarousel = ({
                     width: active ? 22 : 10,
                     height: 10,
                     background: active ? 'rgba(0, 0, 0, 0.95)' : 'rgba(36, 36, 36, 0.6)',
-                    transition: 'all .25s ease',
                     outline: 'none',
                     border: 'none'
                   }}
@@ -244,13 +219,6 @@ const HeroCarousel = ({
           </div>
         )}
       </div>
-      <style>{`
-        .hero-ctrl:focus-visible,
-        .hero-ind:focus-visible {
-          outline: 2px solid #fff;
-          outline-offset: 2px;
-        }
-      `}</style>
     </div>
   );
 };

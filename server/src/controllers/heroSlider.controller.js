@@ -1,13 +1,13 @@
 import HeroSlider from '../models/HeroSlider.js';
 
-// GET all
-export async function listHeroSlides(req, res) {
+// GET ALL
+export const listHeroSlides = async (req, res) => {
   const slides = await HeroSlider.find().sort({ createdAt: 1 });
   res.json(slides);
-}
+};
 
-// POST create
-export async function createHeroSlide(req, res) {
+// CREATE
+export const createHeroSlide = async (req, res) => {
   try {
     const { image, alt, eyebrow, heading, sub, ctaLabel, ctaHref } = req.body;
     if (!image || !alt || !heading || !ctaLabel || !ctaHref)
@@ -17,24 +17,27 @@ export async function createHeroSlide(req, res) {
   } catch (err) {
     res.status(500).json({ message: err.message || 'Server error' });
   }
-}
+};
 
-// PATCH update
-export async function updateHeroSlide(req, res) {
+// PATCH (update)
+export const updateHeroSlide = async (req, res) => {
   try {
     const { image, alt, eyebrow, heading, sub, ctaLabel, ctaHref } = req.body;
-    const updateFields = { image, alt, eyebrow, heading, sub, ctaLabel, ctaHref };
-    const slide = await HeroSlider.findByIdAndUpdate(req.params.id, updateFields, { new: true });
+    const slide = await HeroSlider.findByIdAndUpdate(
+      req.params.id,
+      { image, alt, eyebrow, heading, sub, ctaLabel, ctaHref },
+      { new: true }
+    );
     if (!slide) return res.status(404).json({ message: 'Slide not found' });
     res.json(slide);
   } catch (err) {
     res.status(500).json({ message: err.message || 'Server error' });
   }
-}
+};
 
-// DELETE slide
-export async function deleteHeroSlide(req, res) {
+// DELETE
+export const deleteHeroSlide = async (req, res) => {
   const slide = await HeroSlider.findByIdAndDelete(req.params.id);
   if (!slide) return res.status(404).json({ message: 'Slide not found' });
   res.json({ message: 'Slide deleted' });
-}
+};

@@ -7,10 +7,8 @@ import {
 } from '../controllers/heroSlider.controller.js';
 
 const router = Router();
-
-router.get('/', listHeroSlides);                // GET all
-router.post('/', createHeroSlide);              // POST create (expects image field as Cloudinary URL)
-router.patch('/:id', updateHeroSlide);          // PATCH update
-router.delete('/:id', deleteHeroSlide);         // DELETE by id
-
+router.get('/', listHeroSlides);
+router.post('/', createHeroSlide);
+router.patch('/:id', updateHeroSlide);
+router.delete('/:id', deleteHeroSlide);
 export default router;

@@ -119,52 +119,52 @@ const Header = () => {
                 {/* Click-based Step Navigation */}
                 {shopOpen && (
                   <div id="desktop-shop-menu" className="absolute left-0 top-8 bg-white border border-gray-300 rounded-lg shadow min-w-[220px] text-base py-2 z-40">
-                    {shopSubPage === "" && (
-                      <>
-                        <button
-                          className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 w-full text-left rounded"
-                          onClick={() => setShopSubPage("all")}
-                        >
-                          All Products <ChevronRight size={18} />
-                        </button>
-                        <button
-                          className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 w-full text-left rounded"
-                          onClick={() => setShopSubPage("indian")}
-                        >
-                          Indian Products <ChevronRight size={18} />
-                        </button>
-                      </>
-                    )}
-                    {shopSubPage === "all" && (
-                      <>
-                        <button className="px-3 py-2 text-black mb-1" onClick={() => setShopSubPage("")}>← Back</button>
-                        {allProducts.map(({ label, to, disabled }) =>
-                          disabled
-                            ? <span key={to} className="block px-4 py-2 opacity-60 cursor-not-allowed">{label} (soon)</span>
-                            : <NavLink key={to} to={to} className="block px-4 py-2 rounded hover:bg-gray-100" onClick={() => setShopOpen(false)}>{label}</NavLink>
-                        )}
-                      </>
-                    )}
-                    {shopSubPage === "indian" && (
-                      <>
-                        <button className="px-3 py-2 text-black mb-1" onClick={() => setShopSubPage("")}>← Back</button>
-                        {indianProductsMain.map(({ label, to }) => (
-                          <NavLink key={to} to={to} className="block px-4 py-2 rounded hover:bg-gray-100" onClick={() => setShopOpen(false)}>{label}</NavLink>
-                        ))}
-                        <button className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 w-full text-left rounded font-semibold mt-1" onClick={() => setShopSubPage("return")}>
-                          Return gifts <ChevronRight size={15} />
-                        </button>
-                      </>
-                    )}
-                    {shopSubPage === "return" && (
-                      <>
-                        <button className="px-3 py-2 text-black mb-1" onClick={() => setShopSubPage("indian")}>← Back</button>
-                        {returnGifts.map(({ label, to }) => (
-                          <NavLink key={to} to={to} className="block px-4 py-2 rounded hover:bg-gray-100" onClick={() => setShopOpen(false)}>{label}</NavLink>
-                        ))}
-                      </>
-                    )}
-                  </div>
+                      {shopSubPage === "" && (
+                        <>
+                          <button
+                            className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 w-full text-left rounded"
+                            onClick={() => setShopSubPage("all")}
+                          >
+                            All Products <ChevronRight size={18} />
+                          </button>
+                          <button
+                            className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 w-full text-left rounded"
+                            onClick={() => setShopSubPage("indian")}
+                          >
+                            Indian Products <ChevronRight size={18} />
+                          </button>
+                        </>
+                      )}
+                      {shopSubPage === "all" && (
+                        <>
+                          <button className="px-3 py-2 text-black mb-1" onClick={() => setShopSubPage("")}>← Back</button>
+                          {allProducts.map(({ label, to, disabled }) =>
+                            disabled
+                              ? <span key={to} className="block px-4 py-2 opacity-60 cursor-not-allowed">{label} (soon)</span>
+                              : <NavLink key={to} to={to} className="block px-4 py-2 rounded hover:bg-gray-100" onClick={() => setShopOpen(false)}>{label}</NavLink>
+                          )}
+                        </>
+                      )}
+                      {shopSubPage === "indian" && (
+                        <>
+                          <button className="px-3 py-2 text-black mb-1" onClick={() => setShopSubPage("")}>← Back</button>
+                          {indianProductsMain.map(({ label, to }) => (
+                            <NavLink key={to} to={to} className="block px-4 py-2 rounded hover:bg-gray-100" onClick={() => setShopOpen(false)}>{label}</NavLink>
+                          ))}
+                          <button className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 w-full text-left rounded font-semibold mt-1" onClick={() => setShopSubPage("return")}>
+                            Return gifts <ChevronRight size={15} />
+                          </button>
+                        </>
+                      )}
+                      {shopSubPage === "return" && (
+                        <>
+                          <button className="px-3 py-2 text-black mb-1" onClick={() => setShopSubPage("indian")}>← Back</button>
+                          {returnGifts.map(({ label, to }) => (
+                            <NavLink key={to} to={to} className="block px-4 py-2 rounded hover:bg-gray-100" onClick={() => setShopOpen(false)}>{label}</NavLink>
+                          ))}
+                        </>
+                      )}
+                    </div>
                 )}
               </li>
             )
@@ -183,8 +183,8 @@ const Header = () => {
           {isDesktop && (
             <FancyButton
               to="/track-order"
-              className="rounded-xl font-bold bg-black text-white px-6 py-2 text-base tracking-tight hover:bg-gray-900 shadow-none transition"
-              style={{ minWidth: 140 }}
+              className="rounded-xl font-bold bg-black text-white px-3 py-1 text-[0.98rem] tracking-tight hover:bg-gray-900 shadow-none transition"
+              style={{ minWidth: 120, height: 40, fontSize: "0.62rem", }}
             >
               Track Order
             </FancyButton>
@@ -212,7 +212,7 @@ const Header = () => {
           </button>
         </div>
       </div>
-      {/* Mobile drawer - unchanged, already click-based step-by-step */}
+      {/* Mobile drawer unchanged */}
       {menuOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
           <div className="bg-black/30 absolute inset-0" onClick={() => setMenuOpen(false)} />

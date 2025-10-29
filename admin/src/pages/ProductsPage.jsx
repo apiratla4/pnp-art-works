@@ -5,7 +5,8 @@ import {
   Maximize2, X, ChevronLeft, ChevronRight
 } from "lucide-react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const PRODUCTS_URL = `${API_BASE}/api/products`;
@@ -25,7 +26,6 @@ const PRODUCT_CATEGORIES = {
     }
   ]
 };
-
 const EMPTY_PRODUCT = {
   id: "", title: "", category: "", subcategory: "", subsubcategory: "", price: "", salePrice: "", stock: 1,
   images: [], description: "", published: true, dimensions: "", color: "", inStock: true, featured: false
@@ -62,6 +62,7 @@ export default function ProductsPage() {
   const [form, setForm] = useState(EMPTY_PRODUCT);
   const [uploadingImgs, setUploadingImgs] = useState(false);
   const fileInputRef = useRef(null);
+  // Expand Modal State
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(null);
   const [slide, setSlide] = useState(0);
@@ -103,7 +104,6 @@ export default function ProductsPage() {
 
   const removeImageAt = (idx) => setForm((f) => ({ ...f, images: (f.images || []).filter((_, i) => i !== idx) }));
   const resetForm = () => { setForm(EMPTY_PRODUCT); setEditingId(""); if (fileInputRef.current) fileInputRef.current.value = ""; };
-
   const refetchAfter = async (fn) => { await fn(); await load(); };
 
   const saveProduct = async (e) => {
@@ -115,7 +115,6 @@ export default function ProductsPage() {
     if (form.category === "Indian Products" && !form.subcategory) return toast.warning("Select a subcategory");
     if (form.subcategory === "Return gifts" && !form.subsubcategory) return toast.warning("Select return gift");
     if (form.salePrice !== "" && form.salePrice !== null && Number(form.salePrice) > Number(form.price)) return toast.warning("Sale price cannot exceed price");
-
     try {
       const payload = {
         title: form.title, category: form.category, subcategory: form.subcategory,
@@ -126,7 +125,6 @@ export default function ProductsPage() {
         dimensions: form.dimensions || "", color: toCapitalWords(form.color),
         inStock: !!form.inStock, featured: !!form.featured
       };
-
       if (editingId) {
         await refetchAfter(async () => {
           await axios.put(`${PRODUCTS_URL}/${editingId}`, payload, {
@@ -182,6 +180,11 @@ export default function ProductsPage() {
   };
   const short = (s, n = 80) => (s && s.length > n ? s.slice(0, n) + "…" : s || "-");
 
+  // EXPAND MODAL
+  const closeExpand = () => { setOpen(false); setActive(null); setSlide(0); };
+  const goPrev = () => setSlide(s => (active?.images?.length ? (s + active.images.length - 1) % active.images.length : 0));
+  const goNext = () => setSlide(s => (active?.images?.length ? (s + 1) % active.images.length : 0));
+
   return (
     <div className="max-w-7xl mx-auto w-full px-2">
       {/* Heading */}
@@ -200,7 +203,7 @@ export default function ProductsPage() {
         <h2 className="text-lg font-bold mb-3 text-black">
           {editingId ? "Edit Product" : "Add New Product"}
         </h2>
-        <form onSubmit={saveProduct} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <form onSubmit={saveProduct} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           <div>
             <label className="block font-semibold text-sm mb-1">Title</label>
             <input className="w-full rounded-lg border border-black px-3 py-2 bg-white"
@@ -402,6 +405,76 @@ export default function ProductsPage() {
             </div>
           );
         })}
+         {/* ADDED: Expand Modal */}
+      {open && active && (
+        <div className="fixed inset-0 z-60 bg-black/70 flex items-center justify-center px-3 py-12 md:py-0">
+          <div className="relative w-full max-w-2xl mx-auto p-6 md:p-9 rounded-2xl bg-white border border-black shadow-2xl flex flex-col gap-4 max-h-[99vh] overflow-y-auto animate-fadein">
+            <button
+              className="absolute z-100 top-4 right-4 text-black/70 hover:text-black bg-white rounded-full p-2 border border-black shadow-sm"
+              onClick={closeExpand}
+              aria-label="Close"
+            >
+              <X size={22} />
+            </button>
+            {/* IMAGES */}
+            <div className="relative w-full aspect-5/3 bg-gray-100 rounded-lg border border-black overflow-hidden mb-2 flex items-center justify-center">
+              {active.images && active.images.length > 0 ? (
+                <>
+                  <img
+                    src={active.images[slide]}
+                    alt={active.title}
+                    className="object-contain max-h-80 w-auto mx-auto"
+                    style={{ maxHeight: 320, maxWidth: '100%' }}
+                    onError={handleImgError}
+                  />
+                  {active.images.length > 1 && (
+                    <>
+                      <button className="absolute left-1 top-1/2 -translate-y-1/2 bg-white border border-black rounded-full p-1.5 text-black hover:bg-black hover:text-white transition"
+                        onClick={goPrev} aria-label="Prev">
+                        <ChevronLeft size={22} />
+                      </button>
+                      <button className="absolute right-1 top-1/2 -translate-y-1/2 bg-white border border-black rounded-full p-1.5 text-black hover:bg-black hover:text-white transition"
+                        onClick={goNext} aria-label="Next">
+                        <ChevronRight size={22} />
+                      </button>
+                    </>
+                  )}
+                  {active.images.length > 1 && (
+                    <span className="absolute right-4 bottom-2 text-xs bg-white/70 px-2 py-0.5 rounded-full border border-black font-bold">{slide + 1}/{active.images.length}</span>
+                  )}
+                </>
+              ) : (
+                <div className="text-gray-400 flex flex-col items-center gap-2 py-8"><ImageIcon size={40} />No Image</div>
+              )}
+            </div>
+            {/* Product Details */}
+            <div>
+              <div className="flex flex-col md:flex-row md:items-start md:gap-9 mb-3">
+                <div className="flex-1">
+                  <div className="font-black text-2xl mb-1">{active.title}</div>
+                  <div className="mb-1 text-xs text-gray-700 flex flex-wrap gap-2">
+                    {[active.category, active.subcategory, active.subsubcategory].filter(Boolean).join(" / ")}
+                  </div>
+                  <div className="flex gap-4 items-end mb-1">
+                    <span className="font-bold text-xl text-black">${active.salePrice ? active.salePrice : active.price}</span>
+                    {active.salePrice && <span className="line-through text-gray-500 text-base">${active.price}</span>}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <span className="rounded-full px-3 py-0.5 text-xs font-bold border border-black bg-white text-black">{active.color}</span>
+                    <span className="rounded-full px-3 py-0.5 text-xs font-bold border border-black bg-white text-black">Stock: {active.stock}</span>
+                    <span className="rounded-full px-3 py-0.5 text-xs font-bold border border-black bg-white text-black">{active.dimensions}</span>
+                    {active.featured && <span className="rounded-full px-3 py-0.5 text-xs font-bold border border-black bg-white text-black">Featured</span>}
+                    <span className={`rounded-full px-3 py-0.5 text-xs font-bold border border-black ${active.published ? "bg-black text-white" : "bg-white text-black"}`}>
+                      {active.published ? "Published" : "Draft"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2 text-gray-800 text-sm font-light">{active.description}</div>
+            </div>
+          </div>
+        </div>
+      )}
         {!loading && products.length === 0 && (
           <div className="rounded-2xl border border-black/10 bg-white p-8 text-center col-span-full text-gray-500 font-semibold">
             No products yet.
@@ -433,6 +506,8 @@ export default function ProductsPage() {
         }
         .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .animate-fadein { animation: fadein .19s cubic-bezier(.41,1.08,.67,1); }
+        @keyframes fadein { from { opacity: 0; transform: scale(.98);} to { opacity: 1; transform: scale(1);} }
       `}</style>
     </div>
   );

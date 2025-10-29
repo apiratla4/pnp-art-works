@@ -5,8 +5,95 @@ import { PayPalButtons } from '@paypal/react-paypal-js';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import FancyButton from '../components/FancyButton';
-import StorePickupModal from '../components/StorePickupModal';
 
+// --- Store Pickup Modal ---
+function StorePickupModal({ show, onClose, onSubmit }) {
+  const [fields, setFields] = useState({ fullName: '', phone: '', email: '' });
+  const [touched, setTouched] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+
+  const handleChange = (e) => setFields(f => ({ ...f, [e.target.name]: e.target.value }));
+  const handleBlur = (e) => setTouched(t => ({ ...t, [e.target.name]: true }));
+  const validate = () => {
+    const e = {};
+    if (!fields.fullName.trim()) e.fullName = 'Required';
+    if (!fields.phone.trim()) e.phone = 'Required';
+    if (fields.phone && !/^\+?[0-9 ()-]{7,}$/.test(fields.phone)) e.phone = 'Invalid phone';
+    if (!fields.email.trim()) e.email = 'Required';
+    if (fields.email && !/^\S+@\S+\.\S+$/.test(fields.email)) e.email = 'Invalid email';
+    return e;
+  };
+  const errors = validate();
+  const disabled = Object.keys(errors).length > 0 || loading;
+
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+      <div className="bg-white p-7 rounded-2xl shadow-lg w-full max-w-lg relative">
+        <button className="absolute top-2 right-3 text-xl font-bold" onClick={onClose}>&times;</button>
+        <h3 className="font-bold text-lg mb-3">Store Pickup Details</h3>
+        <form onSubmit={e => {
+          e.preventDefault();
+          setTouched({ fullName: true, phone: true, email: true });
+          setErr("");
+          if (Object.keys(validate()).length > 0) return;
+          setLoading(true);
+          Promise.resolve(onSubmit(fields))
+            .then(onClose)
+            .catch(e => setErr(e?.message || "Failed"))
+            .finally(() => setLoading(false));
+        }} className="space-y-4">
+          <div>
+            <label className="font-semibold block mb-1">Full Name</label>
+            <input
+              name="fullName"
+              className={`w-full border rounded px-3 py-2 ${touched.fullName && errors.fullName ? "border-red-500" : "border-gray-300"}`}
+              value={fields.fullName}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              disabled={loading}
+            />
+            {touched.fullName && errors.fullName && <div className="text-red-600 text-xs">{errors.fullName}</div>}
+          </div>
+          <div>
+            <label className="font-semibold block mb-1">Phone</label>
+            <input
+              name="phone"
+              className={`w-full border rounded px-3 py-2 ${touched.phone && errors.phone ? "border-red-500" : "border-gray-300"}`}
+              value={fields.phone}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              disabled={loading}
+              placeholder="+1 555 555 5555"
+            />
+            {touched.phone && errors.phone && <div className="text-red-600 text-xs">{errors.phone}</div>}
+          </div>
+          <div>
+            <label className="font-semibold block mb-1">Email</label>
+            <input
+              name="email"
+              type="email"
+              className={`w-full border rounded px-3 py-2 ${touched.email && errors.email ? "border-red-500" : "border-gray-300"}`}
+              value={fields.email}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              disabled={loading}
+            />
+            {touched.email && errors.email && <div className="text-red-600 text-xs">{errors.email}</div>}
+          </div>
+          <div className="flex items-center gap-3 mt-3">
+            <button type="submit" disabled={disabled} className="bg-black text-white px-5 py-2 rounded font-bold hover:bg-gray-900 disabled:opacity-60">{loading ? "Placing..." : "Confirm Pickup"}</button>
+            <button type="button" className="px-5 py-2 rounded border" onClick={onClose} disabled={loading}>Cancel</button>
+          </div>
+          {err && <div className="text-red-600">{err}</div>}
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// --- CheckoutPage component ---
 const API_ORIGIN = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const api = (path) => `${API_ORIGIN}/api${path}`;
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -39,6 +126,9 @@ const getUnitPrice = (it) =>
     ? it.salePrice
     : it.price;
 
+const SHIPPING_THRESHOLD = 100;
+const SHIPPING_FEE = 15;
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { state, clearCart } = useCart();
@@ -57,11 +147,12 @@ const CheckoutPage = () => {
     () => items.reduce((sum, it) => sum + getUnitPrice(it) * Number(it.qty ?? it.quantity ?? 1), 0),
     [items]
   );
+  const shipping = subtotal > 0 && subtotal < SHIPPING_THRESHOLD ? SHIPPING_FEE : 0;
   const discount = useMemo(
     () => Math.round(subtotal * (coupon.percent / 100) * 100) / 100,
     [subtotal, coupon.percent]
   );
-  const total = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
+  const total = Math.max(0, Math.round((subtotal + shipping - discount) * 100) / 100);
 
   const itemsPayload = useMemo(() => items.map(it => ({
     productId: it.id,
@@ -110,7 +201,7 @@ const CheckoutPage = () => {
       clearCart();
       navigate("/store-pickup-success", { replace: true });
     } catch (e) {
-      alert("Failed to place store pickup order: " + (e?.response?.data?.error || e.message));
+      throw new Error("Failed to place store pickup order: " + (e?.response?.data?.error || e.message));
     }
   };
 
@@ -154,8 +245,8 @@ const CheckoutPage = () => {
     [form, shippingAddress]
   );
   const totals = useMemo(() => ({
-    subtotal, discount, grandTotal: total, currency: "USD"
-  }), [subtotal, discount, total]);
+    subtotal, shipping, discount, grandTotal: total, currency: "USD"
+  }), [subtotal, discount, total, shipping]);
 
   // PayPal logic
   const approvalLinkRef = useRef(null);
@@ -202,7 +293,6 @@ const CheckoutPage = () => {
       };
       const saved = await saveOrder(orderData);
       const referenceId = saved?.referenceId || saved?.orderId || data.orderID || "ODR-UNKNOWN";
-      // For order tracking: store order ID to sessionStorage
       sessionStorage.setItem("lastOrderId", referenceId);
       clearCart();
       navigate(`/order/success?orderId=${encodeURIComponent(referenceId)}`, { replace: true });
@@ -225,6 +315,13 @@ const CheckoutPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {showPickup && (
+        <StorePickupModal
+          show={showPickup}
+          onClose={() => setShowPickup(false)}
+          onSubmit={handleStorePickup}
+        />
+      )}
       <div className="max-w-7xl mx-auto p-2 sm:p-6">
         <div className="mb-5">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Checkout</h1>
@@ -409,11 +506,6 @@ const CheckoutPage = () => {
               >
                 Place Store Pickup Order
               </FancyButton>
-              <StorePickupModal
-                show={showPickup}
-                onClose={() => setShowPickup(false)}
-                onSubmit={handleStorePickup}
-              />
             </div>
           </div>
           {/* Order summary */}
@@ -456,6 +548,17 @@ const CheckoutPage = () => {
                     <span>Subtotal</span>
                     <span>{fmtUSD.format(subtotal)}</span>
                   </div>
+                  {shipping > 0 ? (
+                    <div className="flex justify-between text-base">
+                      <span>Shipping</span>
+                      <span>{fmtUSD.format(shipping)}</span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-base text-green-700">
+                      <span>Shipping</span>
+                      <span>FREE</span>
+                    </div>
+                  )}
                   {discount > 0 && (
                     <div className="flex justify-between text-base">
                       <span>Discount {coupon.code ? `(${coupon.code})` : ''}</span>

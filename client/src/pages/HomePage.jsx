@@ -8,6 +8,7 @@ import axios from 'axios';
 import HeroCarousel from '../components/HeroCarousel';
 import ProductCard from '../components/ProductCard';
 import FancyButton from '../components/FancyButton';
+import TestimonialsCarousel from '../components/TestimonialsCarousel';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -238,42 +239,9 @@ function HomePage() {
 
       {/* TESTIMONIALS */}
       <section className="py-10 px-4 sm:px-0" style={{ backgroundColor: '#f1efef' }}>
-        <div className="max-w-7xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}
-            className="text-center mb-8">
-            <h2 className="font-bold mb-2 text-black">What Our Customers Say</h2>
-            <p className="text-black">Trusted by art lovers worldwide</p>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
-            {testimonials.map((t, idx) => (
-              <motion.div key={t.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: idx * 0.1 }} viewport={{ once: true }}>
-                <div className="card h-full border-0 shadow rounded-2xl p-6 bg-white text-black">
-                  <div className="card-body">
-                    <div className="flex mb-3">
-                      {Array.from({ length: t.rating }).map((_, i) => (
-                        <span key={i} className="icon-chip mr-1">
-                          <Star size={18} color="#000000" fill="#000000" />
-                        </span>
-                      ))}
-                    </div>
-                    <p className="italic mb-4 text-black">“{t.text}”</p>
-                    <div className="flex items-center gap-3">
-                      <img src={t.avatar} alt={t.name} className="rounded-full object-cover border" style={{ width: 48, height: 48, border: '1px solid #000' }} />
-                      <div>
-                        <div className="font-semibold text-black">{t.name}</div>
-                        <div className="text-sm text-black">Verified Customer</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+        <TestimonialsCarousel />
       </section>
 
-      {/* NEWSLETTER SECTION REMOVED */}
     </div>
   );
 }
