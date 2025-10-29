@@ -10,7 +10,8 @@ const CartContext = createContext({
   state: initialState,
   dispatch: () => {},
   totalItems: 0,
-  totalPrice: 0
+  totalPrice: 0,
+  clearCart: () => {}
 });
 
 const cartReducer = (state, action) => {
@@ -80,8 +81,6 @@ export const CartProvider = ({ children }) => {
   }, [state]);
 
   const totalItems = state.items.reduce((sum, it) => sum + (it.quantity || 1), 0);
-
-  // CHANGED: Use salePrice if present and lower than price, otherwise use price
   const totalPrice = state.items.reduce((sum, it) => {
     const unit =
       typeof it.salePrice === "number" && it.salePrice !== null && it.salePrice < it.price
@@ -90,8 +89,18 @@ export const CartProvider = ({ children }) => {
     return sum + unit * (it.quantity || 1);
   }, 0);
 
+  const clearCart = () => dispatch({ type: "CLEAR_CART" });
+
   return (
-    <CartContext.Provider value={{ state, dispatch, totalItems, totalPrice }}>
+    <CartContext.Provider
+      value={{
+        state,
+        dispatch,
+        totalItems,
+        totalPrice,
+        clearCart,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

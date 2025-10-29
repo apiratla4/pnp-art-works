@@ -1,53 +1,27 @@
-// src/components/DiscountPopup.jsx
 import React, { useEffect, useRef, useState } from "react";
+import discountimg from "../assets/ma_durga.png";
 
-const DISMISS_KEY = "popup:lastDismissedAt";
-const SUB_KEY = "popup:subscribed";
-const DISMISS_COOLDOWN_DAYS = 7; // do not show again for 7 days
-
-export default function DiscountPopup({ delayMs = 5000 }) {
+const DiscountPopup = ({ delayMs = 5000 }) => {
+  // Force always show in all environments (for dev/test)
   const [open, setOpen] = useState(false);
   const emailRef = useRef(null);
   const timeoutRef = useRef(null);
 
-  // decide if popup should show
   useEffect(() => {
-    try {
-      const subscribed = localStorage.getItem(SUB_KEY) === "1";
-      if (subscribed) return; // never show again if subscribed
-      const last = Number(localStorage.getItem(DISMISS_KEY) || 0);
-      const cooldownMs = DISMISS_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
-      const canShow = !last || Date.now() - last > cooldownMs;
-      if (!canShow) return;
-
-      // start 5s timer
-      timeoutRef.current = setTimeout(() => setOpen(true), delayMs);
-      return () => clearTimeout(timeoutRef.current);
-    } catch {
-      // if storage blocked, still attempt timed open
-      timeoutRef.current = setTimeout(() => setOpen(true), delayMs);
-      return () => clearTimeout(timeoutRef.current);
-    }
+    // Always show for every user/page refresh (disable localStorage logic)
+    timeoutRef.current = setTimeout(() => setOpen(true), delayMs);
+    return () => clearTimeout(timeoutRef.current);
   }, [delayMs]);
 
-  // autofocus email when opened
   useEffect(() => {
     if (open) emailRef.current?.focus();
   }, [open]);
 
-  const closeForNow = () => {
-    try {
-      localStorage.setItem(DISMISS_KEY, String(Date.now()));
-    } catch {}
-    setOpen(false);
-  };
+  const closeForNow = () => setOpen(false);
 
   const onSubmit = (e) => {
     e.preventDefault();
-    // TODO: call newsletters API then mark subscribed
-    try {
-      localStorage.setItem(SUB_KEY, "1");
-    } catch {}
+    // Optionally, add newsletter subscription logic here
     setOpen(false);
   };
 
@@ -55,125 +29,78 @@ export default function DiscountPopup({ delayMs = 5000 }) {
 
   return (
     <div
-      className="popup-overlay"
-      aria-hidden="true"
+      className="fixed inset-0 bg-black/50 z-10000 flex items-end sm:items-center justify-center"
       onClick={closeForNow}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,.45)",
-        zIndex: 2000
-      }}
+      aria-hidden="true"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="discountTitle"
         aria-describedby="discountDesc"
-        className="popup-card"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          position: "fixed",
-          right: 16,
-          bottom: 16,
-          width: "min(560px, 95vw)",
-          background: "#fff",
-          color: "#000",
-          borderRadius: 16,
-          boxShadow: "0 24px 64px rgba(0,0,0,.25)",
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          overflow: "hidden",
-          zIndex: 2001
-        }}
+        className="relative w-full max-w-xl sm:max-w-2xl bg-white/90 backdrop-blur-lg rounded-2xl shadow-2xl grid grid-cols-1 sm:grid-cols-2 overflow-hidden mx-4 mb-8 sm:mx-0 sm:mb-0"
+        onClick={e => e.stopPropagation()}
       >
-        {/* Left image */}
+        {/* Left image (desktop) */}
         <div
+          className="hidden sm:block min-h-[280px] bg-cover bg-center"
           style={{
-            background:
-              "url(https://images.pexels.com/photos/3739656/pexels-photo-3739656.jpeg?auto=compress&cs=tinysrgb&w=600&h=800&fit=crop) center/cover",
-            minHeight: 280
+            backgroundImage: `url(${discountimg})`
+          }}
+        />
+        {/* Top image (mobile) */}
+        <div
+          className="sm:hidden h-32 w-full bg-cover bg-center"
+          style={{
+            backgroundImage:
+              "url(https://images.pexels.com/photos/3739656/pexels-photo-3739656.jpeg?auto=compress&cs=tinysrgb&w=600&h=800&fit=crop)"
           }}
         />
 
-        {/* Right content */}
-        <div style={{ padding: 24 }}>
+        {/* Popup content */}
+        <div className="relative flex flex-col items-center justify-center px-6 sm:px-8 py-7 sm:py-10 w-full">
           <button
             type="button"
             aria-label="Close"
             onClick={closeForNow}
-            style={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              width: 32,
-              height: 32,
-              borderRadius: 999,
-              border: "1px solid #000",
-              background: "#fff",
-              cursor: "pointer"
-            }}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full border border-black bg-white text-black hover:bg-black hover:text-white flex items-center justify-center transition-colors"
           >
-            ×
+            <span className="text-xl">&times;</span>
           </button>
 
-          <div className="text-center">
-            <div style={{ fontFamily: "serif", letterSpacing: 2, marginBottom: 8 }}>
-              PNP ART STUDIO
-            </div>
-            <h2 id="discountTitle" className="fw-bold" style={{ fontSize: 32, marginBottom: 8 }}>
+          <div className="text-center w-full">
+            <div className="font-mono text-sm uppercase tracking-widest mb-2 font-bold">PNP ART STUDIO</div>
+            <h2 id="discountTitle" className="font-serif font-extrabold text-2xl sm:text-3xl mb-3 text-black">
               Get 35% OFF your order
             </h2>
-            <p id="discountDesc" style={{ marginBottom: 16 }}>
+            <p id="discountDesc" className="text-black/80 mb-5">
               Sign up and unlock an instant discount.
             </p>
           </div>
 
-          <form onSubmit={onSubmit} className="vstack gap-2" style={{ display: "grid", gap: 12 }}>
+          <form onSubmit={onSubmit} className="w-full flex flex-col gap-3">
             <input
               ref={emailRef}
               type="email"
               required
               placeholder="Email address"
               aria-label="Email address"
-              className="form-control"
-              style={{
-                width: "100%",
-                padding: "12px 14px",
-                borderRadius: 12,
-                border: "1px solid #000"
-              }}
+              className="w-full px-4 py-3 rounded-lg border border-black bg-white text-black placeholder:text-black/50 outline-none focus:border-black/80 focus:ring-2 focus:ring-black"
             />
             <button
               type="submit"
-              className="btn"
-              style={{
-                padding: "12px 16px",
-                borderRadius: 12,
-                border: "1px solid #000",
-                background: "#000",
-                color: "#fff",
-                fontWeight: 700
-              }}
+              className="w-full px-4 py-3 rounded-lg border border-black bg-black text-white font-bold hover:bg-white hover:text-black transition-colors"
             >
               Claim discount
             </button>
             <button
               type="button"
               onClick={closeForNow}
-              className="btn btn-link"
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "#0d6efd",
-                textDecoration: "underline",
-                fontWeight: 600,
-                padding: 0
-              }}
+              className="w-full text-sm font-semibold text-blue-600 underline bg-transparent border-none py-1"
             >
               No, thanks
             </button>
-            <small className="text-muted">
+            <small className="text-xs text-black/50 text-center mt-1">
               You are signing up to receive communication via email and can unsubscribe at any time.
             </small>
           </form>
@@ -181,4 +108,6 @@ export default function DiscountPopup({ delayMs = 5000 }) {
       </div>
     </div>
   );
-}
+};
+
+export default DiscountPopup;

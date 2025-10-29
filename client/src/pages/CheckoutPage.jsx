@@ -1,16 +1,16 @@
-// src/pages/CheckoutPage.jsx
 import React, { useMemo, useState, useCallback, useRef } from 'react';
-import { CreditCard, Truck, ShieldCheck, Percent, Tag } from 'lucide-react';
+import { CreditCard, Truck, ShieldCheck, Percent, Tag, Store } from 'lucide-react';
 import axios from 'axios';
 import { PayPalButtons } from '@paypal/react-paypal-js';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import FancyButton from '../components/FancyButton';
+import StorePickupModal from '../components/StorePickupModal';
 
 const API_ORIGIN = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const api = (path) => `${API_ORIGIN}/api${path}`;
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
-const hasClient = typeof PAYPAL_CLIENT_ID === 'string' && PAYPAL_CLIENT_ID.trim().length > 0;
+const hasPayPalClient = typeof PAYPAL_CLIENT_ID === 'string' && PAYPAL_CLIENT_ID.trim().length > 0;
 const fmtUSD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const FALLBACK_IMG = '/placeholder.png';
 
@@ -23,7 +23,6 @@ const toUrl = (entry) => {
   }
   return '';
 };
-
 const getCover = (item) => {
   const single = toUrl(item?.image);
   if (single) return single;
@@ -31,61 +30,59 @@ const getCover = (item) => {
   const first = arr.find(Boolean);
   return toUrl(first);
 };
-
 const handleImgError = (e) => {
   e.currentTarget.onerror = null;
   e.currentTarget.src = FALLBACK_IMG;
 };
-
 const getUnitPrice = (it) =>
   typeof it.salePrice === "number" && it.salePrice !== null && it.salePrice < it.price
     ? it.salePrice
     : it.price;
 
-export default function CheckoutPage() {
+const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { state } = useCart();
-  const [form, setForm] = useState({
-    firstName: '', lastName: '', email: '', phone: '', address1: '', address2: '',
-    city: '', state: '', zip: '', country: 'US', sameAsShipping: true, paymentMethod: 'cod', promo: ''
-  });
-  const [touched, setTouched] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [coupon, setCoupon] = useState({ code: '', percent: 0, status: '' });
-  const [promoMsg, setPromoMsg] = useState('');
+  const { state, clearCart } = useCart();
   const items = state.items || [];
 
+  const [coupon, setCoupon] = useState({ code: '', percent: 0, status: '' });
+  const [promoMsg, setPromoMsg] = useState('');
+  const [form, setForm] = useState({
+    firstName: '', lastName: '', email: '', phone: '', address1: '', address2: '',
+    city: '', state: '', zip: '', country: 'US', sameAsShipping: true, promo: ''
+  });
+  const [touched, setTouched] = useState({});
+  const [showPickup, setShowPickup] = useState(false);
+
   const subtotal = useMemo(
-    () => items.reduce((sum, it) => sum + getUnitPrice(it) * Number(it.quantity || it.qty || 1), 0),
+    () => items.reduce((sum, it) => sum + getUnitPrice(it) * Number(it.qty ?? it.quantity ?? 1), 0),
     [items]
   );
-  const shipping = subtotal >= 100 ? 0 : 15;
   const discount = useMemo(
     () => Math.round(subtotal * (coupon.percent / 100) * 100) / 100,
     [subtotal, coupon.percent]
   );
-  const total = Math.max(0, Math.round((subtotal + shipping - discount) * 100) / 100);
+  const total = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
 
-  const required = ['firstName', 'lastName', 'email', 'address1', 'city', 'state', 'zip'];
-  const errors = useMemo(() => {
-    const e = {};
-    for (const k of required) {
-      const v = (form[k] || '').trim();
-      if (!v) e[k] = 'Required';
-    }
-    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) e.email = 'Invalid email';
-    if (form.phone && form.phone.trim() && !/^\+?[0-9 ()-]{7,}$/.test(form.phone)) e.phone = 'Invalid phone';
-    return e;
-  }, [form]);
-
+  const itemsPayload = useMemo(() => items.map(it => ({
+    productId: it.id,
+    name: it.name || it.title || '',
+    qty: Number(it.qty ?? it.quantity ?? 1),
+    price: Number(getUnitPrice(it)),
+    total: Number(getUnitPrice(it)) * Number(it.qty ?? it.quantity ?? 1),
+    variant: it.variant || '',
+    description: it.description || '',
+    image: getCover(it) || '',
+    category: it.category || '',
+    sku: it.sku || '',
+    brand: it.brand || '',
+    meta: it.meta || {}
+  })), [items]);
   const setField = useCallback((name, value) => setForm((f) => ({ ...f, [name]: value })), []);
-  const onBlur = useCallback((e) => setTouched((t) => ({ ...t, [e.target.name]: true })), []);
   const applyPromo = useCallback(async (e) => {
     e.preventDefault();
     const raw = form.promo.trim();
     if (!raw) {
-      setPromoMsg('Enter a code');
-      return;
+      setPromoMsg('Enter a code'); return;
     }
     try {
       const { data } = await axios.get(api(`/coupons/validate/${encodeURIComponent(raw)}`));
@@ -101,22 +98,34 @@ export default function CheckoutPage() {
       setPromoMsg('Unable to validate code. Try again.');
     }
   }, [form.promo]);
+  const handleStorePickup = async (fields) => {
+    try {
+      await axios.post(api("/store-pickup-orders"), {
+        fullName: fields.fullName,
+        phone: fields.phone,
+        email: fields.email,
+        items: itemsPayload,
+        total
+      });
+      clearCart();
+      navigate("/store-pickup-success", { replace: true });
+    } catch (e) {
+      alert("Failed to place store pickup order: " + (e?.response?.data?.error || e.message));
+    }
+  };
 
-  const itemsPayload = useMemo(() => items.map(it => ({
-    productId: it.id,
-    name: it.name || it.title || '',
-    quantity: Number(it.qty ?? it.quantity ?? 1),
-    price: Number(getUnitPrice(it)),
-    total: Number(getUnitPrice(it)) * Number(it.qty ?? it.quantity ?? 1),
-    variant: it.variant || '',
-    description: it.description || '',
-    image: getCover(it) || '',
-    category: it.category || '',
-    sku: it.sku || '',
-    brand: it.brand || '',
-    meta: it.meta || {}
-  })), [items]);
-
+  const required = ['firstName', 'lastName', 'email', 'address1', 'city', 'state', 'zip'];
+  const errors = useMemo(() => {
+    const e = {};
+    for (const k of required) {
+      const v = (form[k] || '').trim();
+      if (!v) e[k] = 'Required';
+    }
+    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) e.email = 'Invalid email';
+    if (form.phone && form.phone.trim() && !/^\+?[0-9 ()-]{7,}$/.test(form.phone)) e.phone = 'Invalid phone';
+    return e;
+  }, [form]);
+  const onBlur = useCallback((e) => setTouched((t) => ({ ...t, [e.target.name]: true })), []);
   const shippingAddress = useMemo(() => ({
     fullName: `${form.firstName} ${form.lastName}`.trim(),
     line1: form.address1,
@@ -145,47 +154,35 @@ export default function CheckoutPage() {
     [form, shippingAddress]
   );
   const totals = useMemo(() => ({
-    subtotal, shipping, discount, grandTotal: total, currency: "USD"
-  }), [subtotal, shipping, discount, total]);
+    subtotal, discount, grandTotal: total, currency: "USD"
+  }), [subtotal, discount, total]);
+
+  // PayPal logic
+  const approvalLinkRef = useRef(null);
   const saveOrder = useCallback(async (raw) => {
     const orderData = {
       customer: {
         firstName: form.firstName, lastName: form.lastName, email: form.email,
       },
       items: itemsPayload, shippingAddress, billingAddress, totals,
-      paymentMethod: form.paymentMethod, ...raw
+      paymentMethod: 'paypal', ...raw
     };
     const { data } = await axios.post(api("/orders"), orderData, {
       headers: { "Content-Type": "application/json" }
     });
     return data;
   }, [form, itemsPayload, shippingAddress, billingAddress, totals]);
-  const placeCodOrder = useCallback(async () => {
-    setSubmitting(true);
-    try {
-      const data = await saveOrder({ status: 'pending' });
-      const referenceId = data?.referenceId || data?.orderId || "ODR-LOCAL";
-      navigate(`/order/success?orderId=${encodeURIComponent(referenceId)}`, { replace: true });
-
-    } catch (error) {
-      console.error('COD order creation failed:', error);
-      navigate(`/order/success`, { replace: true });
-    } finally {
-      setSubmitting(false);
-    }
-  }, [saveOrder, navigate]);
-  const approvalLinkRef = useRef(null);
   const createPaypalOrder = useCallback(async () => {
     if (Object.keys(errors).length > 0) return undefined;
     try {
       const { data } = await axios.post(api("/paypal/create-order"), {
         items: itemsPayload,
         customer: {
-          email: form.email, firstName: form.firstName, lastName: form.lastName,
+          firstName: form.firstName, lastName: form.lastName, email: form.email
         },
         shippingAddress, billingAddress, totals,
-        returnUrl: "https://pnpartstudio.com/order/success",
-        cancelUrl: "https://pnpartstudio.com/order/cancel"
+        returnUrl: `${window.location.origin}/order/success`,
+        cancelUrl: `${window.location.origin}/order/cancel`
       }, { headers: { "Content-Type": "application/json" } });
       approvalLinkRef.current = data?.approvalLink || null;
       return data?.id;
@@ -205,25 +202,15 @@ export default function CheckoutPage() {
       };
       const saved = await saveOrder(orderData);
       const referenceId = saved?.referenceId || saved?.orderId || data.orderID || "ODR-UNKNOWN";
+      // For order tracking: store order ID to sessionStorage
+      sessionStorage.setItem("lastOrderId", referenceId);
+      clearCart();
       navigate(`/order/success?orderId=${encodeURIComponent(referenceId)}`, { replace: true });
     } catch (err) {
       console.error('Order creation failed:', err);
       alert('Payment captured but order creation failed. Please contact support.');
     }
-  }, [navigate, saveOrder]);
-  const onSubmit = useCallback(async (e) => {
-    e.preventDefault();
-    setTouched(t => {
-      const all = { ...t };
-      required.forEach(k => (all[k] = true));
-      return all;
-    });
-    if (Object.keys(errors).length > 0) return;
-    if (form.paymentMethod === 'cod') {
-      await placeCodOrder();
-      return;
-    }
-  }, [errors, form.paymentMethod, placeCodOrder, required]);
+  }, [navigate, saveOrder, clearCart]);
   const onErrorPaypal = useCallback((err) => {
     console.error('PayPal error:', err);
     const msg = String(err?.message || err || '').toLowerCase();
@@ -237,288 +224,278 @@ export default function CheckoutPage() {
   const paypalKey = `pp-${total}-USD`;
 
   return (
-    <div className="min-vh-100" style={{ backgroundColor: '#f1efef' }}>
-      <div className="container py-4 py-lg-5">
-        <div className="mb-4">
-          <h1 className="fw-bold h3 mb-1" style={{ color: '#000' }}>Checkout</h1>
-          <p className="mb-0" style={{ color: '#000' }}>Secure payment and fast delivery</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-2 sm:p-6">
+        <div className="mb-5">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Checkout</h1>
         </div>
-        <div className="row g-4 g-lg-5">
-          <div className="col-12 col-lg-7">
-            <form id="checkoutForm" noValidate onSubmit={onSubmit} className="needs-validation">
-              <div className="card border-0 shadow-sm rounded-4 mb-3" style={{ background: '#fff', color: '#000' }}>
-                <div className="card-body">
-                  <h5 className="fw-semibold mb-3 d-flex align-items-center gap-2" style={{ color: '#000' }}>
-                    <Truck size={18} /> Shipping address
-                  </h5>
-                  <div className="row g-3">
-                    <div className="col-sm-6">
-                      <label className="form-label" htmlFor="firstName">First name</label>
-                      <input id="firstName" name="firstName" autoComplete="given-name" type="text"
-                        className={`form-control ${touched.firstName && errors.firstName ? 'is-invalid' : ''}`}
-                        value={form.firstName} onChange={(e) => setField('firstName', e.target.value)}
-                        onBlur={onBlur} required />
-                      <div className="invalid-feedback">First name is required</div>
-                    </div>
-                    <div className="col-sm-6">
-                      <label className="form-label" htmlFor="lastName">Last name</label>
-                      <input id="lastName" name="lastName" autoComplete="family-name" type="text"
-                        className={`form-control ${touched.lastName && errors.lastName ? 'is-invalid' : ''}`}
-                        value={form.lastName} onChange={(e) => setField('lastName', e.target.value)}
-                        onBlur={onBlur} required />
-                      <div className="invalid-feedback">Last name is required</div>
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label" htmlFor="email">Email</label>
-                      <input id="email" name="email" autoComplete="email" type="email"
-                        className={`form-control ${touched.email && errors.email ? 'is-invalid' : ''}`}
-                        value={form.email} onChange={(e) => setField('email', e.target.value)}
-                        onBlur={onBlur} required />
-                      <div className="invalid-feedback">{errors.email || 'Valid email required'}</div>
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label" htmlFor="phone">Phone (optional)</label>
-                      <input id="phone" name="phone" autoComplete="tel" type="tel"
-                        className={`form-control ${touched.phone && errors.phone ? 'is-invalid' : ''}`}
-                        value={form.phone} onChange={(e) => setField('phone', e.target.value)}
-                        onBlur={onBlur} placeholder="+1 555 555 5555" />
-                      <div className="invalid-feedback">{errors.phone}</div>
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label" htmlFor="address1">Address line 1</label>
-                      <input id="address1" name="address1" autoComplete="address-line1" type="text"
-                        className={`form-control ${touched.address1 && errors.address1 ? 'is-invalid' : ''}`}
-                        value={form.address1} onChange={(e) => setField('address1', e.target.value)}
-                        onBlur={onBlur} required />
-                      <div className="invalid-feedback">Address is required</div>
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label" htmlFor="address2">Address line 2 (optional)</label>
-                      <input id="address2" name="address2" autoComplete="address-line2" type="text"
-                        className="form-control" value={form.address2}
-                        onChange={(e) => setField('address2', e.target.value)}
-                        onBlur={onBlur} />
-                    </div>
-                    <div className="col-md-5">
-                      <label className="form-label" htmlFor="country">Country</label>
-                      <select id="country" name="country" autoComplete="country" className="form-select"
-                        value={form.country} onChange={(e) => setField('country', e.target.value)}>
-                        <option value="US">United States</option>
-                        <option value="IN">India</option>
-                        <option value="GB">United Kingdom</option>
-                        <option value="AE">UAE</option>
-                      </select>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label" htmlFor="state">State</label>
-                      <input id="state" name="state" autoComplete="address-level1" type="text"
-                        className={`form-control ${touched.state && errors.state ? 'is-invalid' : ''}`}
-                        value={form.state} onChange={(e) => setField('state', e.target.value)}
-                        onBlur={onBlur} required />
-                      <div className="invalid-feedback">State is required</div>
-                    </div>
-                    <div className="col-md-3">
-                      <label className="form-label" htmlFor="city">City</label>
-                      <input id="city" name="city" autoComplete="address-level2" type="text"
-                        className={`form-control ${touched.city && errors.city ? 'is-invalid' : ''}`}
-                        value={form.city} onChange={(e) => setField('city', e.target.value)}
-                        onBlur={onBlur} required />
-                      <div className="invalid-feedback">City is required</div>
-                    </div>
-                    <div className="col-md-3">
-                      <label className="form-label" htmlFor="zip">ZIP</label>
-                      <input id="zip" name="zip" autoComplete="postal-code" type="text"
-                        className={`form-control ${touched.zip && errors.zip ? 'is-invalid' : ''}`}
-                        value={form.zip} onChange={(e) => setField('zip', e.target.value)}
-                        onBlur={onBlur} required />
-                      <div className="invalid-feedback">ZIP is required</div>
-                    </div>
-                  </div>
-                  <div className="form-check mt-3">
-                    <input id="sameAsShipping" name="sameAsShipping" className="form-check-input" type="checkbox"
-                      checked={form.sameAsShipping} onChange={(e) => setField('sameAsShipping', e.target.checked)} />
-                    <label className="form-check-label" htmlFor="sameAsShipping">
-                      Billing address same as shipping
-                    </label>
-                  </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Form and Store Pickup in left/center */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-sm mb-7 p-5">
+              <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
+                <Truck size={18} /> Shipping & PayPal
+              </h2>
+              <form noValidate className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                    First name<span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    name="firstName"
+                    className={`w-full rounded border bg-gray-50 px-3 py-2 text-base focus:ring-2 focus:ring-black outline-none ${touched.firstName && errors.firstName ? 'border-red-500' : 'border-gray-300'}`}
+                    value={form.firstName}
+                    onChange={e => setField('firstName', e.target.value)}
+                    onBlur={onBlur}
+                  />
                 </div>
-              </div>
-              <div className="card border-0 shadow-sm rounded-4 mb-3" style={{ background: '#fff', color: '#000' }}>
-                <div className="card-body">
-                  <h5 className="fw-semibold mb-3 d-flex align-items-center gap-2" style={{ color: '#000' }}>
-                    <CreditCard size={18} /> Payment
-                  </h5>
-                  <div className="form-check mb-2">
-                    <input id="pm-cod" name="paymentMethod" className="form-check-input" type="radio"
-                      checked={form.paymentMethod === 'cod'}
-                      onChange={() => setField('paymentMethod', 'cod')} />
-                    <label className="form-check-label" htmlFor="pm-cod">
-                      Cash on Delivery (COD)
-                    </label>
-                  </div>
-                  <div className="form-check mb-3">
-                    <input id="pm-paypal" name="paymentMethod" className="form-check-input" type="radio"
-                      checked={form.paymentMethod === 'paypal'}
-                      onChange={() => setField('paymentMethod', 'paypal')}
-                      disabled={items.length === 0} />
-                    <label className="form-check-label" htmlFor="pm-paypal">
-                      PayPal
-                    </label>
-                  </div>
-                  {form.paymentMethod === 'paypal' ? (
-                    <div className="mb-0">
-                      {hasClient ? (
-                        <PayPalButtons
-                          key={paypalKey}
-                          style={{ layout: 'vertical' }}
-                          createOrder={createPaypalOrder}
-                          onApprove={onApprovePaypal}
-                          onError={onErrorPaypal}
-                          onCancel={onCancelPaypal}
-                          disabled={items.length === 0 || Object.keys(errors).length > 0}
-                        />
-                      ) : (
-                        <div className="mono-alert small">
-                          PayPal is unavailable: missing client ID.
-                        </div>
-                      )}
-                      <div className="mono-alert d-flex align-items-center gap-2 mb-0 mt-2">
-                        <ShieldCheck size={18} />
-                        <div className="small mb-0" style={{ color: '#000' }}>
-                          Pay securely with PayPal; capture occurs immediately after approval.
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mono-alert d-flex align-items-center gap-2 mb-0">
-                      <ShieldCheck size={18} />
-                      <div className="small mb-0" style={{ color: '#000' }}>
-                        Select PayPal to pay now, or place a COD order.
-                      </div>
-                    </div>
-                  )}
+                <div>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                    Last name<span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    name="lastName"
+                    className={`w-full rounded border bg-gray-50 px-3 py-2 text-base focus:ring-2 focus:ring-black outline-none ${touched.lastName && errors.lastName ? 'border-red-500' : 'border-gray-300'}`}
+                    value={form.lastName}
+                    onChange={e => setField('lastName', e.target.value)}
+                    onBlur={onBlur}
+                  />
                 </div>
-              </div>
-              {form.paymentMethod === 'cod' && (
-                <div className="d-grid mt-3">
-                  <FancyButton
-                    as="button"
-                    type="submit"
-                    form="checkoutForm"
-                    className="fancy-sm py-3"
-                    disabled={submitting || items.length === 0}>
-                    {submitting ? 'Placing order...' : `Place order • ${fmtUSD.format(total)}`}
-                  </FancyButton>
+                <div className="md:col-span-2">
+                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                    Email<span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    name="email"
+                    type="email"
+                    className={`w-full rounded border bg-gray-50 px-3 py-2 text-base focus:ring-2 focus:ring-black outline-none ${touched.email && errors.email ? 'border-red-500' : 'border-gray-300'}`}
+                    value={form.email}
+                    onChange={e => setField('email', e.target.value)}
+                    onBlur={onBlur}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                    Phone
+                  </label>
+                  <input
+                    name="phone"
+                    type="tel"
+                    className="w-full rounded border border-gray-300 bg-gray-50 px-3 py-2 text-base focus:ring-2 focus:ring-black outline-none"
+                    value={form.phone}
+                    onChange={e => setField('phone', e.target.value)}
+                    onBlur={onBlur}
+                    placeholder="+1 555 555 5555"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                    Address line 1<span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    name="address1"
+                    className={`w-full rounded border bg-gray-50 px-3 py-2 text-base focus:ring-2 focus:ring-black outline-none ${touched.address1 && errors.address1 ? 'border-red-500' : 'border-gray-300'}`}
+                    value={form.address1}
+                    onChange={e => setField('address1', e.target.value)}
+                    onBlur={onBlur}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                    Address line 2
+                  </label>
+                  <input
+                    name="address2"
+                    className="w-full rounded border border-gray-300 bg-gray-50 px-3 py-2 text-base focus:ring-2 focus:ring-black outline-none"
+                    value={form.address2}
+                    onChange={e => setField('address2', e.target.value)}
+                    onBlur={onBlur}
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                    Country<span className="text-red-600">*</span>
+                  </label>
+                  <select
+                    name="country"
+                    className="w-full rounded border bg-gray-50 px-3 py-2 text-base border-gray-300 focus:ring-2 focus:ring-black outline-none"
+                    value={form.country}
+                    onChange={e => setField('country', e.target.value)}
+                  >
+                    <option value="US">United States</option>
+                    <option value="IN">India</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="AE">UAE</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                    State<span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    name="state"
+                    className={`w-full rounded border bg-gray-50 px-3 py-2 text-base focus:ring-2 focus:ring-black outline-none ${touched.state && errors.state ? 'border-red-500' : 'border-gray-300'}`}
+                    value={form.state}
+                    onChange={e => setField('state', e.target.value)}
+                    onBlur={onBlur}
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                    City<span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    name="city"
+                    className={`w-full rounded border bg-gray-50 px-3 py-2 text-base focus:ring-2 focus:ring-black outline-none ${touched.city && errors.city ? 'border-red-500' : 'border-gray-300'}`}
+                    value={form.city}
+                    onChange={e => setField('city', e.target.value)}
+                    onBlur={onBlur}
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-sm font-bold text-gray-700">
+                    ZIP<span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    name="zip"
+                    className={`w-full rounded border bg-gray-50 px-3 py-2 text-base focus:ring-2 focus:ring-black outline-none ${touched.zip && errors.zip ? 'border-red-500' : 'border-gray-300'}`}
+                    value={form.zip}
+                    onChange={e => setField('zip', e.target.value)}
+                    onBlur={onBlur}
+                  />
+                </div>
+                <div className="md:col-span-2 flex items-center mt-2">
+                  <input
+                    id="sameAsShipping"
+                    name="sameAsShipping"
+                    type="checkbox"
+                    className="mr-2 h-4 w-4 border-gray-300 rounded focus:ring-black"
+                    checked={form.sameAsShipping}
+                    onChange={e => setField('sameAsShipping', e.target.checked)}
+                  />
+                  <label htmlFor="sameAsShipping" className="text-sm text-gray-700">
+                    Billing address same as shipping
+                  </label>
+                </div>
+              </form>
+              {hasPayPalClient && (
+                <div className="mt-6">
+                  <PayPalButtons
+                    key={paypalKey}
+                    style={{ layout: 'vertical' }}
+                    createOrder={createPaypalOrder}
+                    onApprove={onApprovePaypal}
+                    onError={onErrorPaypal}
+                    onCancel={onCancelPaypal}
+                    disabled={items.length === 0 || Object.keys(errors).length > 0}
+                  />
+                  <div className="border border-black bg-white rounded-lg p-3 mt-3 flex items-center gap-2 text-black">
+                    <ShieldCheck size={20} />
+                    <span className="text-sm">Pay securely with PayPal; capture occurs immediately after approval.</span>
+                  </div>
                 </div>
               )}
-            </form>
-          </div>
-          <div className="col-12 col-lg-5">
-            <div className="card border-0 shadow-sm rounded-4 mb-3" style={{ background: '#fff', color: '#000' }}>
-              <div className="card-body">
-                <h5 className="fw-semibold mb-3" style={{ color: '#000' }}>Order summary</h5>
-                {items.length === 0 ? (
-                  <p className="mb-0" style={{ color: '#000' }}>No items in cart.</p>
-                ) : (
-                  <div className="vstack gap-3">
-                    {items.map(it => (
-                      <div key={it.id} className="d-flex align-items-center gap-3 mb-3">
-                        <img src={getCover(it) || FALLBACK_IMG}
-                          alt={it.name || it.title}
-                          className="rounded object-fit-cover"
-                          style={{ width: 72, height: 72, border: '1px solid #000', flexShrink: 0 }}
-                          onError={handleImgError}
-                        />
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div className="fw-semibold" style={{ fontSize: 18, color: "#000" }}>
-                            {it.name || it.title}
-                          </div>
-                          <div style={{ fontSize: 16, color: "#444" }}>
-                            {it.category} • Qty {it.qty || it.quantity || 1}
-                          </div>
-                          <div className="d-none d-lg-block" style={{ minHeight: 20 }} />
-                        </div>
-                        {/* Price (sale logic) */}
-                        <div className="fw-bold text-end ms-auto" style={{ color: '#000', minWidth: 110, fontSize: 20 }}>
-                          {typeof it.salePrice === "number" && it.salePrice !== null && it.salePrice < it.price ? (
-                            <>
-                              <span style={{
-                                textDecoration: "line-through",
-                                color: "#888",
-                                marginRight: 7,
-                                fontWeight: 400,
-                                fontSize: "1em"
-                              }}>
-                                {fmtUSD.format(it.price * (it.qty || it.quantity || 1))}
-                              </span>
-                              <span>
-                                {fmtUSD.format(it.salePrice * (it.qty || it.quantity || 1))}
-                              </span>
-                            </>
-                          ) : (
-                            fmtUSD.format(it.price * (it.qty || it.quantity || 1))
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    <hr className="my-2" />
-                    <div className="d-flex justify-content-between mb-1" style={{ fontSize: 20, color: "#111" }}>
-                      <span>Subtotal</span>
-                      <span>{fmtUSD.format(subtotal)}</span>
-                    </div>
-                    <div className="d-flex justify-content-between mb-1" style={{ fontSize: 20, color: "#111" }}>
-                      <span>Shipping</span>
-                      <span>{shipping === 0 ? 'Free' : fmtUSD.format(shipping)}</span>
-                    </div>
-                    {discount > 0 && (
-                      <div className="d-flex justify-content-between mb-1" style={{ fontSize: 20, color: "#111" }}>
-                        <span>Discount {coupon.code ? `(${coupon.code})` : ''}</span>
-                        <span>-{fmtUSD.format(discount)}</span>
-                      </div>
-                    )}
-                    <div className="d-flex justify-content-between align-items-center mt-3" style={{ fontSize: 25, fontWeight: 700, color: "#000" }}>
-                      <span>Total</span>
-                      <span>{fmtUSD.format(total)}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
-            <div className="card border-0 shadow-sm rounded-4" style={{ background: '#fff', color: '#000' }}>
-              <div className="card-body">
-                <h6 className="fw-semibold mb-2 d-flex align-items-center gap-2" style={{ color: '#000' }}>
-                  <Tag size={16} /> Apply promo code
-                </h6>
-                <form onSubmit={applyPromo} className="d-flex gap-2">
-                  <input
-                    type="text"
-                    id="promo"
-                    name="promo"
-                    autoComplete="off"
-                    className="form-control"
-                    placeholder="Enter code"
-                    value={form.promo}
-                    onChange={(e) => setField('promo', e.target.value.toUpperCase())}
-                  />
-                  <FancyButton as="button" type="submit" className="fancy-sm d-inline-flex align-items-center gap-2">
-                    <Percent size={16} />
-                    Apply
-                  </FancyButton>
-                </form>
-                {promoMsg && <div className="small mt-2" style={{ color: '#000' }}>{promoMsg}</div>}
-              </div>
+            {/* Store Pickup */}
+            <div className="bg-white rounded-2xl shadow-sm mb-7 p-5">
+              <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
+                <Store size={18} /> Store Pickup
+              </h2>
+              <FancyButton
+                type="button"
+                className="w-full py-3 text-base mb-2"
+                onClick={() => setShowPickup(true)}
+                disabled={items.length === 0}
+              >
+                Place Store Pickup Order
+              </FancyButton>
+              <StorePickupModal
+                show={showPickup}
+                onClose={() => setShowPickup(false)}
+                onSubmit={handleStorePickup}
+              />
+            </div>
+          </div>
+          {/* Order summary */}
+          <div>
+            <div className="bg-white rounded-2xl shadow-sm mb-7 p-4">
+              <h2 className="font-bold text-lg mb-3">Order summary</h2>
+              {items.length === 0 ? (
+                <div className="text-gray-500">No items in cart.</div>
+              ) : (
+                <div className="flex flex-col space-y-5">
+                  {items.map(it => (
+                    <div key={it.id} className="flex items-center gap-4">
+                      <img src={getCover(it) || FALLBACK_IMG}
+                        alt={it.name || it.title}
+                        className="h-16 w-16 rounded object-cover border border-black"
+                        onError={handleImgError}
+                      />
+                      <div className="flex-1">
+                        <div className="font-semibold text-base">{it.name || it.title}</div>
+                        <div className="text-xs text-gray-600">{it.category} • Qty {Number(it.qty ?? it.quantity ?? 1)}</div>
+                      </div>
+                      <div className="font-bold text-black text-base min-w-[90px] text-right">
+                        {typeof it.salePrice === "number" && it.salePrice !== null && it.salePrice < it.price ? (
+                          <>
+                            <span className="line-through text-gray-400 mr-2">
+                              {fmtUSD.format(it.price * Number(it.qty ?? it.quantity ?? 1))}
+                            </span>
+                            <span>
+                              {fmtUSD.format(it.salePrice * Number(it.qty ?? it.quantity ?? 1))}
+                            </span>
+                          </>
+                        ) : (
+                          fmtUSD.format(it.price * Number(it.qty ?? it.quantity ?? 1))
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <hr />
+                  <div className="flex justify-between font-semibold text-base">
+                    <span>Subtotal</span>
+                    <span>{fmtUSD.format(subtotal)}</span>
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-base">
+                      <span>Discount {coupon.code ? `(${coupon.code})` : ''}</span>
+                      <span className="text-red-700">-{fmtUSD.format(discount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Total</span>
+                    <span>{fmtUSD.format(total)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="bg-white rounded-2xl shadow-sm mb-7 p-4">
+              <h4 className="font-semibold mb-1 flex items-center gap-1 text-gray-700">
+                <Tag size={17} /> Apply promo code
+              </h4>
+              <form onSubmit={applyPromo} className="flex gap-2 mt-1">
+                <input
+                  type="text"
+                  id="promo"
+                  name="promo"
+                  autoComplete="off"
+                  className="grow py-2 rounded border border-gray-300 px-3 text-base focus:ring-2 focus:ring-black outline-none"
+                  placeholder="Enter code"
+                  value={form.promo}
+                  onChange={(e) => setField('promo', e.target.value.toUpperCase())}
+                />
+                <button type="submit" className="flex gap-1 items-center px-4 rounded-lg bg-black text-white font-semibold hover:bg-gray-900 transition">
+                  <Percent size={16} />
+                  Apply
+                </button>
+              </form>
+              {promoMsg && <div className="text-sm text-black mt-1">{promoMsg}</div>}
             </div>
           </div>
         </div>
-        <style>{`
-          .form-control:focus, .form-select:focus { border-color: #000 !important; box-shadow: none !important; }
-          .form-check-input { accent-color: #000; }
-          .form-control.is-invalid,
-          .was-validated .form-control:invalid { border-color: #000 !important; background-image: none !important; }
-          .invalid-feedback { color: #000 !important; }
-          .mono-alert { border: 1px solid #000; background: #fff; color: #000; border-radius: 0.5rem; padding: 0.5rem 0.75rem; }
-        `}</style>
       </div>
     </div>
   );
-}
+};
+
+export default CheckoutPage;

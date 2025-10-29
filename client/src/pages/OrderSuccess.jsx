@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 
+// Modern query param hook (if using React Router v6+)
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }

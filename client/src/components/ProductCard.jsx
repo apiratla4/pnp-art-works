@@ -78,136 +78,97 @@ const ProductCard = ({ product }) => {
   };
 
   return (
-    <motion.article
-      className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden"
-      style={{ background: '#fff', color: '#000' }}
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+    <article
+      className="h-full rounded-3xl backdrop-blur-xl bg-white/70 border border-black/10 shadow-xl overflow-hidden flex flex-col transition-all"
     >
-      <div className="position-relative">
-        <div className="ratio ratio-1x1">
-          <img
-            src={cover}
-            alt={`${product.title} thumbnail`}
-            className="w-100 h-100"
-            style={{ objectFit: 'cover' }}
-            loading="lazy"
-            decoding="async"
-            onError={handleImgError}
-          />
-        </div>
-
-        <span className="mono-badge position-absolute top-0 start-0 m-2 rounded-pill">
+      {/* Image + Badges + Wishlist */}
+      <div className="relative aspect-square overflow-hidden">
+        <img
+          src={cover}
+          alt={`${product.title} thumbnail`}
+          className="object-cover w-full h-full"
+          loading="lazy"
+          decoding="async"
+          onError={handleImgError}
+        />
+        {/* Category Badge */}
+        <span className="absolute top-3 left-3 px-3 py-1 text-xs font-bold rounded-full border border-black bg-white text-black shadow-sm select-none">
           {product.category}
         </span>
+        {/* Featured / Sold Out Badge */}
         {product.inStock ? (
           product.featured && (
-            <span className="mono-badge position-absolute top-0 end-0 m-2 rounded-pill">
+            <span className="absolute top-3 right-3 px-3 py-1 text-xs font-bold rounded-full border border-black bg-white text-black shadow-sm select-none">
               Featured
             </span>
           )
         ) : (
-          <span className="mono-badge position-absolute top-0 end-0 m-2 rounded-pill">
+          <span className="absolute top-3 right-3 px-3 py-1 text-xs font-bold rounded-full border border-black bg-white text-black shadow-sm select-none">
             Sold Out
           </span>
         )}
-
+        {/* Wishlist Button */}
         <button
           type="button"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           onClick={toggleWishlist}
-          className={`wish-btn position-absolute ${isWishlisted ? 'active' : ''}`}
-          style={{ right: 8, bottom: 8 }}
+          className={`absolute right-3 bottom-3 w-10 h-10 rounded-full border border-black flex items-center justify-center shadow transition-colors
+            ${isWishlisted ? 'bg-black text-white' : 'bg-white text-black'}
+            hover:bg-black hover:text-white`}
         >
-          <Heart size={18} />
+          <Heart size={20} />
         </button>
       </div>
 
-      <div className="card-body d-flex flex-column" style={{ color: '#000' }}>
-        <h3 className="h6 fw-semibold mb-1 line-clamp-2" style={{ color: '#000' }}>
-          {product.title}
-        </h3>
-        <div className="small mb-2" style={{ color: '#000' }}>
+      {/* Content */}
+      <div className="p-5 flex flex-col flex-1">
+        <h3 className="font-extrabold text-lg mb-1 line-clamp-2 text-black tracking-tight">{product.title}</h3>
+        <div className="text-xs mb-2 text-black/60">
           {product.category}
           {product.subcategory && ` • ${product.subcategory}`}
           {product.subsubcategory && ` • ${product.subsubcategory}`}
         </div>
-        <p className="small mb-3 line-clamp-2" style={{ color: '#000' }}>
+        <p className="text-sm mb-4 line-clamp-2 text-black/80">
           {truncateWords(product.description, 10)}
         </p>
-        <div className="mt-auto d-flex align-items-center justify-content-between">
-          <div className="fw-bold" style={{ color: '#000' }}>
+
+        <div className="mt-auto flex items-center justify-between pt-1">
+          <div className="font-bold text-black flex flex-col text-base leading-tight">
             {typeof product.salePrice === "number" && product.salePrice !== null ? (
               <>
-                <span style={{ textDecoration: "line-through", color: "#888", marginRight: 8, fontWeight: 400 }}>
-                  {formatUSD(Number(product.price || 0))}
-                </span>
-                <span>{formatUSD(Number(product.salePrice))}</span>
+                <span className="text-xs line-through text-gray-400">{formatUSD(Number(product.price || 0))}</span>
+                <span className="text-[1.09em]">{formatUSD(Number(product.salePrice))}</span>
               </>
             ) : (
-              formatUSD(Number(product.price || 0))
+              <span className="text-[1.07em]">{formatUSD(Number(product.price || 0))}</span>
             )}
           </div>
-          <div className="d-flex gap-2">
-            <motion.button
-              whileHover={{ scale: product.inStock ? 1.03 : 1 }}
-              whileTap={{ scale: product.inStock ? 0.98 : 1 }}
+          <div className="flex gap-2">
+            <button
               type="button"
               onClick={addToCart}
               disabled={!product.inStock}
-              className="mono-btn mono-btn-sm rounded-pill d-inline-flex align-items-center gap-1"
+              className={`px-5 py-2 rounded-full border font-bold text-xs flex items-center gap-1 transition-colors
+                ${product.inStock
+                  ? 'bg-black text-white border-black hover:bg-white hover:text-black'
+                  : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
+                }`}
               title={product.inStock ? 'Add to cart' : 'Out of stock'}
             >
               <ShoppingCart size={16} />
               <span>Add</span>
-            </motion.button>
+            </button>
             <Link
               to={`/product-details?id=${product.id}`}
-              className="mono-btn mono-btn-sm rounded-pill text-decoration-none"
+              className="px-5 py-2 rounded-full border font-bold text-xs text-black bg-white border-black hover:bg-black hover:text-white transition-colors"
             >
               View
             </Link>
           </div>
         </div>
       </div>
-      <style>{`
-        .mono-badge {
-          display: inline-block;
-          padding: 6px 10px;
-          border: 1px solid #000;
-          border-radius: 999px;
-          background: #fff;
-          color: #000;
-          font-weight: 700;
-        }
-        .wish-btn {
-          width: 38px; height: 38px;
-          border-radius: 50%;
-          border: 1px solid #000;
-          background: #fff;
-          color: #000;
-          display: inline-flex; align-items: center; justify-content: center;
-          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
-        }
-        .wish-btn:hover { background: #000; color: #fff; }
-        .wish-btn.active { background: #000; color: #fff; }
-        .wish-btn:active { transform: scale(0.98); }
-        .wish-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
-        .wish-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-        .mono-btn {
-          border: 1px solid #000; background: #fff; color: #000; padding: 8px 12px; font-weight: 700; border-radius: 8px;
-          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
-          white-space: nowrap;
-        }
-        .mono-btn:hover { background: #000; color: #fff; }
-        .mono-btn:active { transform: scale(0.98); }
-        .mono-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
-        .mono-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-        .mono-btn-sm { padding: 6px 10px; border-radius: 999px; }
-      `}</style>
-    </motion.article>
+    </article>
   );
 };
 

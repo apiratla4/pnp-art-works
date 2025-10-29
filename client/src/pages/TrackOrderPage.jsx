@@ -11,20 +11,20 @@ const DEFAULT_STEPS = [
   { key: "out_for_delivery", label: "Out for delivery" },
   { key: "delivered", label: "Delivered" }
 ];
+
 const fmtUSD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
-export default function TrackOrderPage() {
+const TrackOrderPage = () => {
   const [orderId, setOrderId] = useState("");
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState(null);
   const cleanId = orderId.trim();
 
-  // determine step based on order.status
   const stepIndex = useMemo(() => {
     if (!order?.status) return -1;
     const normalizedStatus = (order.status || "").toLowerCase();
     const idx = DEFAULT_STEPS.findIndex(s => s.key === normalizedStatus);
-    return idx >= 0 ? idx : 0; // If unknown, show at "Placed"
+    return idx >= 0 ? idx : 0;
   }, [order]);
 
   const progressPct = useMemo(() => {
@@ -43,7 +43,6 @@ export default function TrackOrderPage() {
     setOrder(null);
     await toast.promise(
       (async () => {
-        // Use referenceId endpoint
         const url = `${API_BASE}/api/orders/ref/${encodeURIComponent(cleanId)}`;
         const { data } = await axios.get(url, { withCredentials: true });
         if (!data || !data.order) {
@@ -70,237 +69,148 @@ export default function TrackOrderPage() {
   };
 
   return (
-    <div className="order-track-wrap">
-      <div className="order-track-container">
-        <header className="order-track-head">
-          <h1>Track your order</h1>
-          <p>Enter the Order ID to see live status and details</p>
-        </header>
-        {/* Search form */}
-        <form className="order-track-form" onSubmit={onSubmit} noValidate>
+    <div className="min-h-screen bg-[#f1efef] flex items-start justify-center">
+      <div className="w-full max-w-2xl px-4 py-10 mx-auto">
+        {/* HEADER */}
+        <div className="text-center mb-7">
+          <h1 className="font-black text-3xl md:text-4xl text-black mb-2 tracking-tight">Track your order</h1>
+          <p className="text-gray-700 text-lg mb-2">Enter your Order ID to see live status and details.</p>
+        </div>
+        {/* SEARCH */}
+        <form
+          className="flex flex-col sm:flex-row items-center gap-3 justify-center mb-3"
+          onSubmit={onSubmit}
+          noValidate
+        >
           <input
             type="text"
-            className="mono-inpt"
             id="orderIdInput"
             placeholder="e.g. ORD-123456"
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
-            aria-describedby="orderIdHelp"
+            className="border border-black/70 rounded-lg bg-white text-black text-lg px-4 py-3 focus:outline-none focus:border-black font-semibold shadow-sm w-full max-w-xs min-w-0"
             inputMode="text"
             autoComplete="off"
             disabled={loading}
-            style={{ maxWidth: 280 }}
+            style={{ letterSpacing: 1 }}
           />
-          <button type="submit" className="mono-btn mono-btn-accent" disabled={loading}>
+          <button
+            type="submit"
+            className="bg-black text-white rounded-lg px-6 py-3 font-bold shrink-0 transition hover:bg-gray-900 text-lg shadow"
+            disabled={loading}
+          >
             {loading ? "Loading…" : "Track"}
           </button>
         </form>
-        <div id="orderIdHelp" className="order-track-help">
-          Example: ORD-123456 (as in the email confirmation)
+        <div className="text-center text-gray-500 mb-7 text-base">
+          Example: <span className="font-mono px-2 py-0.5 rounded bg-gray-100">ORD-123456</span>
         </div>
 
         {!order && !loading && (
-          <div className="mono-state-hint">Enter an Order ID above to see status and details</div>
+          <div className="text-center my-8 text-black font-medium text-lg opacity-60">
+            Enter an Order ID above to see status and details.
+          </div>
         )}
 
         {order && (
-          <section className="mono-card-wide order-detail-card">
-            {/* Progress header */}
-            <div className="order-progressbar-area">
-              <div className="mono-pill-title">
-                <span>Order <strong>#{order.referenceId}</strong></span>
-                <span className={`mono-pill-status st-${order.status || 'unknown'}`}>
+          <motion.section
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="rounded-2xl shadow-lg bg-white px-6 py-7 mb-9"
+          >
+            {/* PROGRESS HEADER */}
+            <div className="mb-8">
+              <div className="flex flex-col justify-between gap-2 sm:gap-0 sm:flex-row items-start sm:items-center">
+                <span className="text-black font-bold text-lg">
+                  Order <span className="font-mono font-black">#{order.referenceId}</span>
+                </span>
+                <span className={`inline-block rounded-full px-4 py-1.5 border text-base font-bold 
+                  ${order.status === "delivered"
+                    ? "bg-black text-white border-black"
+                    : "bg-gray-100 text-black border-black/30"}`}>
                   {DEFAULT_STEPS.find(s => s.key === order.status)?.label || "Unknown"}
                 </span>
               </div>
-              <div className="mono-progressbar-wrap" role="progressbar"
-                aria-label="Order progress" aria-valuemin={0} aria-valuemax={100}
-                aria-valuenow={progressPct} title={`Order progress: ${progressPct}%`}
-              >
-                <div className="mono-progressbar-bkg" />
-                <div className="mono-progressbar-bar" style={{ width: `${progressPct}%` }} />
-                <div className="mono-progressbar-steps">
+              {/* Progress bar */}
+              <div className="relative mt-4 mb-2 w-full">
+                <div className="h-3 rounded-full bg-gray-200 w-full" />
+                <div
+                  className="h-3 rounded-full bg-black absolute left-0 top-0 transition-all"
+                  style={{ width: `${progressPct}%` }}
+                />
+                <div className="flex justify-between absolute left-0 right-0 top-4 pointer-events-none select-none">
                   {DEFAULT_STEPS.map((s, i) => (
-                    <span
-                      key={s.key}
-                      className={`progress-step-label ${i <= stepIndex ? "progress-done" : ""}`}
-                      title={s.label}
-                    >
-                      {s.label}
-                    </span>
+                    <span key={s.key}
+                          className={`text-xs mt-2 whitespace-nowrap font-bold transition-colors duration-200 ${i <= stepIndex ? "text-black" : "text-gray-400"}`}>{s.label}</span>
                   ))}
                 </div>
               </div>
             </div>
-            {/* Status cards */}
-            <div className="mono-card-split">
-              <div className="mono-card-split-inner">
-                <h4>Timeline</h4>
-                <div className="mono-card-list">
-                  <span><b>Placed:</b> {order.createdAt ? new Date(order.createdAt).toLocaleString() : "—"}</span>
-                  <span><b>Status:</b> {order.status}</span>
+            {/* ORDER DETAIL CARDS */}
+            <div className="grid md:grid-cols-3 gap-5 mb-7">
+              <div className="bg-gray-50 rounded-xl p-5 shadow-sm overflow-auto">
+                <h4 className="text-lg font-bold mb-3 text-black">Timeline</h4>
+                <div className="space-y-2 text-gray-800 text-sm leading-relaxed">
+                  <div><b>Placed:</b> {order.createdAt ? new Date(order.createdAt).toLocaleString() : "—"}</div>
+                  <div><b>Status:</b> {order.status}</div>
                 </div>
               </div>
-              <div className="mono-card-split-inner">
-                <h4>Shipping</h4>
-                <div className="mono-card-list">
-                  <span><b>Recipient:</b> {order.customer?.firstName} {order.customer?.lastName}</span>
-                  <span><b>Phone:</b> {order.shippingAddress?.phone || "—"}</span>
-                  <span><b>Address:</b> {order.shippingAddress?.line1} {order.shippingAddress?.line2 || ""}, {order.shippingAddress?.city} {order.shippingAddress?.state} {order.shippingAddress?.postalCode}</span>
+              <div className="bg-gray-50 rounded-xl p-5 shadow-sm overflow-auto">
+                <h4 className="text-lg font-bold mb-3 text-black">Shipping</h4>
+                <div className="space-y-2 text-gray-800 text-sm leading-relaxed">
+                  <div><b>Recipient:</b> {order.customer?.firstName} {order.customer?.lastName}</div>
+                  <div><b>Phone:</b> {order.shippingAddress?.phone || "—"}</div>
+                  <div><b>Address:</b> {(order.shippingAddress?.line1 || "") + " " + (order.shippingAddress?.line2 || "")}, {order.shippingAddress?.city} {order.shippingAddress?.state} {order.shippingAddress?.postalCode}</div>
                 </div>
               </div>
-              <div className="mono-card-split-inner">
-                <h4>Payment & totals</h4>
-                <div className="mono-card-list">
-                  <span><b>Items:</b> {Array.isArray(order.items) ? order.items.length : 0}</span>
-                  <span><b>Subtotal:</b> {order?.subtotal != null ? fmtUSD.format(Number(order.subtotal)) : "—"}</span>
-                  <span><b>Shipping:</b> {order?.shipping != null ? fmtUSD.format(Number(order.shipping)) : "—"}</span>
-                  <div className="mono-total-row">
+              <div className="bg-gray-50 rounded-xl p-5 shadow-sm overflow-auto">
+                <h4 className="text-lg font-bold mb-3 text-black">Payment & Totals</h4>
+                <div className="space-y-2 text-gray-800 text-sm leading-relaxed">
+                  <div><b>Items:</b> {Array.isArray(order.items) ? order.items.length : 0}</div>
+                  <div><b>Subtotal:</b> {order?.subtotal != null ? fmtUSD.format(Number(order.subtotal)) : "—"}</div>
+                  <div><b>Shipping:</b> {order?.shipping != null ? fmtUSD.format(Number(order.shipping)) : "—"}</div>
+                  <div className="flex items-center gap-1">
                     <b>Total:</b>
-                    <span>{order?.total != null ? fmtUSD.format(Number(order.total)) : "—"}</span>
+                    <span className="text-lg font-black ml-1">{order?.total != null ? fmtUSD.format(Number(order.total)) : "—"}</span>
                   </div>
                 </div>
               </div>
             </div>
-            {/* Items */}
-            <div className="mono-order-items-area">
-              <h4>Items</h4>
-              <div className="mono-itemlist-row">
+            {/* ITEMS */}
+            <div>
+              <h4 className="text-lg font-bold mb-3 text-black">Items</h4>
+              <div className="flex flex-col gap-3">
                 {(order?.items || []).map((it, idx) => (
-                  <div key={idx} className="mono-itemlist-cell">
+                  <div key={idx} className="flex items-center gap-4 bg-gray-50 rounded-lg px-4 py-3">
                     <img
                       src={it.image}
                       alt=""
                       width={68}
                       height={68}
-                      style={{ objectFit: "cover", borderRadius: 14, border: "1.5px solid #c9c9c9" }}
-                      onError={(e) => (e.currentTarget.style.visibility = "hidden")}
+                      style={{ objectFit: "cover" }}
+                      className="rounded-xl border border-gray-300 bg-white shrink-0"
+                      onError={e => (e.currentTarget.style.visibility = "hidden")}
                     />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="mono-itemlist-title" title={it.title}>{it.title}</div>
-                      <div className="mono-itemlist-meta">Qty: {it.qty || it.quantity || it.qtyOrdered || 1}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold truncate text-black" title={it.title}>{it.title}</div>
+                      <div className="text-gray-600 text-sm">Qty: {it.qty || it.quantity || it.qtyOrdered || 1}</div>
                     </div>
-                    <div className="mono-itemlist-cost">
+                    <div className="font-black text-black text-lg pl-2 min-w-20 text-right">
                       {it.price != null ? fmtUSD.format(Number(it.price)) : "—"}
                     </div>
                   </div>
                 ))}
                 {(!order?.items || order.items.length === 0) && (
-                  <div style={{ color: "#8f8f8f" }}>No items found</div>
+                  <div className="text-gray-400 italic text-center">No items found</div>
                 )}
               </div>
             </div>
-          </section>
+          </motion.section>
         )}
       </div>
-      <style>{`
-      .order-track-wrap {
-        min-height: 100vh;
-        background: #f1efef;
-        display: flex; align-items: flex-start; justify-content: center;
-      }
-      .order-track-container {
-        max-width: 800px; width: 100%; margin: 0 auto; padding: 38px 0;
-      }
-      .order-track-head { text-align: center; margin-bottom: 24px; }
-      .order-track-head h1 { font-size: 2.15rem; font-weight: 800; color: #191919; }
-      .order-track-head p { color: #333; margin-top: 12px; font-size: 1.07rem; }
-      .order-track-form {
-        display: flex; gap: 12px; align-items: center; justify-content: center; margin-bottom: 8px;
-      }
-      .mono-inpt {
-        border: 1.4px solid #111;
-        border-radius: 14px;
-        background: #fff;
-        color: #181818;
-        font-size: 1.10rem;
-        min-width: 0; padding: 11px 15px;
-        transition: border 0.13s, box-shadow 0.18s;
-        outline: none;
-        font-weight: 500;
-      }
-      .mono-inpt:focus {
-        border-color: #333; box-shadow: 0 0 0 2.7px #e1e1e1;
-      }
-      .mono-btn {
-        background: #fff; color: #1a1a1a; font-weight: 700; border: 1.8px solid #191919;
-        border-radius: 12px; font-size: 1rem; padding: 10px 26px;
-        transition: background .17s, color .13s, border .15s;
-        cursor: pointer;
-      }
-      .mono-btn-accent { background: #191919; color: #fff; }
-      .mono-btn-accent:hover, .mono-btn-accent:focus { filter: brightness(1.065); color: #fff; border-color: #333;}
-      .order-track-help { text-align: center; color: #4e4e4e; margin-bottom: 26px; font-size: .97rem;}
-      .mono-state-hint { text-align: center; margin: 34px 0 0 0; color: #767676; font-size: 1.13rem; }
-      .mono-card-wide {
-        background: #fff;
-        border-radius: 24px;
-        box-shadow: 0 4px 32px -7px #1112, 0 1.5px 8px -2px #d3d3d3;
-        padding: 28px 28px 34px 28px;
-        margin-bottom: 28px;
-        max-width: 1020px;
-      }
-      .order-progressbar-area {
-        display: flex; flex-direction: column; gap: 15px; align-items: flex-start; margin-bottom: 18px;
-      }
-      .mono-pill-title {
-        display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 13px;
-        font-size: 1.02em; font-weight: 600; color: #181818;
-      }
-      .mono-pill-status {
-        display: inline-block;
-        border-radius: 60px; padding: 2.5px 17px;
-        font-size: 1.0em; font-weight: 700; letter-spacing: .04em; margin-left: 10px;
-        background: #efefef; color: #1a1a1a; border: 1.2px solid #141414;
-      }
-      .mono-pill-status.st-DELIVERED { background: #111; color: #fff; border-color: #000;}
-      .mono-progressbar-wrap { width: 100%; margin-top: 4px; position: relative; }
-      .mono-progressbar-bkg {
-        background: #ededed; border-radius: 88px; width: 100%; height: 11px; position: absolute; left: 0; top: 0;
-        border: 1.2px solid #b7b7b7; z-index: 0;
-      }
-      .mono-progressbar-bar {
-        background: #191919;
-        border-radius: 88px; height: 11px;
-        z-index: 1; position: relative;
-        transition: width 0.35s cubic-bezier(.68,.05,.63,.95);
-      }
-      .mono-progressbar-steps {
-        display: flex; justify-content: space-between; margin-top: 13px; position: relative; z-index: 2;
-      }
-      .progress-step-label {
-        font-size: .98em; color: #ababab; min-width: 64px; text-align: center; font-weight: 500; transition: color .12s;
-      }
-      .progress-done { color: #111; font-weight: 700; }
-      .mono-card-split {
-        display: flex; flex-wrap: wrap; gap: 22px; margin: 22px 0 5px 0;
-      }
-      .mono-card-split-inner {
-        flex: 1 1 250px;
-        background: #f6f6f6;
-        border-radius: 11px;
-        padding: 16px 21px; margin-bottom: 7px;
-        box-shadow: 0 2.5px 11px -7px #bbb3;
-      }
-      .mono-card-split-inner h4 { font-size: 1.09em; font-weight: 700; margin-bottom: 10px; color: #222; }
-      .mono-card-list span { display: block; font-size: .98em; color: #242424; margin-bottom: 4px;}
-      .mono-total-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.12em; color: #181818; margin-top: 11px;}
-      .mono-order-items-area { margin-top: 1.2em; }
-      .mono-itemlist-row { display: flex; flex-wrap: wrap; gap: 15px; }
-      .mono-itemlist-cell { display: flex; align-items: center; gap: 14px; background: #f8f8f8; border-radius: 11px; padding: 10px 13px; flex: 1 1 235px; min-width: 183px; }
-      .mono-itemlist-title { font-weight: 600; color: #121212; font-size: 1.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-      .mono-itemlist-meta { color: #595959; font-size: .98em; }
-      .mono-itemlist-cost { font-weight: 700; color: #222; font-size: 1.11em;}
-      @media (max-width: 899px) {
-        .order-track-container, .mono-card-wide { padding-left: 2vw; padding-right: 2vw; }
-        .mono-card-split { flex-direction: column; }
-      }
-      @media (max-width: 600px) {
-        .mono-card-wide, .order-track-container { padding: 6vw 1vw; }
-        .mono-card-split-inner { padding: 13px 7px; }
-        .mono-itemlist-row { flex-direction: column; gap:8px;}
-      }
-      `}</style>
     </div>
   );
-}
+};
+
+export default TrackOrderPage;

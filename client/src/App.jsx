@@ -30,6 +30,8 @@ import FallingCart from "./components/FallingCart";
 import WhatsAppButton from "./components/WhatsAppButton";
 import DiscountPopup from "./components/DiscountPopup";
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
+import StorePickupSuccessPage from "./pages/StorePickupSuccessPage";
+import BlogPage from "./pages/BlogPage";
 
 const RouteAwareFallingCart = () => {
   const location = useLocation();
@@ -64,9 +66,9 @@ const App = () => {
       <CartProvider>
         <Router>
           <ScrollToTop />
-          <div className="d-flex flex-column min-vh-100">
+          <div className="flex flex-col min-h-screen">
             <Header />
-            <main className="flex-grow-1 pt-nav">
+            <main className="grow pt-nav">
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/about" element={<AboutPage />} />
@@ -83,11 +85,13 @@ const App = () => {
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="/returns" element={<ReturnsPage />} />
+                <Route path="/blog" element={<BlogPage />} />
                 <Route path="/shipping" element={<ShippingPage />} />
                 <Route path="/order/success" element={<OrderSuccess />} />
                 <Route path="/order/confirmation" element={<OrderSuccess />} />
                 <Route path="/track-order" element={<TrackOrderPage />} />
                 <Route path="/order/success-alt" element={<OrderConfirmation />} />
+                <Route path="/store-pickup/success" element={<StorePickupSuccessPage />} />
                 <Route path="*" element={<PageNotFound />} />
               </Routes>
             </main>

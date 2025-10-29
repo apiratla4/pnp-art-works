@@ -1,19 +1,21 @@
-// admin/src/components/AdminSidebar.jsx
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Package, GraduationCap, Images, Receipt, LogOut, TicketPercent, Send } from "lucide-react";
+import {
+  Package, GraduationCap, Images, Receipt, LogOut, TicketPercent, Send, Star
+} from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
 axios.defaults.withCredentials = true;
 
-const linkBase = "admin-link d-flex align-items-center gap-2 px-3 py-2 rounded text-decoration-none";
-const getClass = ({ isActive }) => `${linkBase} ${isActive ? "active" : ""}`;
+const linkBase = "flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-base transition select-none border border-transparent";
+const getClass = ({ isActive }) =>
+  `${linkBase} ${isActive ? "bg-black text-white border-black" : "bg-transparent text-black hover:bg-white hover:border-black hover:text-black"}`;
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const LOGOUT_URL = `${API_BASE}/api/auth/logout`;
 
-export default function AdminSidebar() {
+const AdminSidebar = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -29,104 +31,73 @@ export default function AdminSidebar() {
   };
 
   return (
-    <div className="d-flex flex-column h-100" style={{ backgroundColor: "#f1efef" }}>
-      {/* Header with Admin + Logout */}
-      <div className="px-3 py-3 border-bottom" style={{ background: "#fff", color: "#000" }}>
-        <div className="d-flex align-items-center justify-content-between">
-          <div className="d-flex align-items-center gap-2">
-            <div
-              className="rounded-circle d-flex align-items-center justify-content-center"
-              style={{ width: 40, height: 40, background: "#fff", color: "#000", border: "1px solid #000" }}
-              aria-hidden="true"
-            >
-              <span className="fw-bold">A</span>
-            </div>
-            <div className="fw-bold">Admin</div>
-          </div>
-
-          <button
-            type="button"
-            className="mono-btn mono-btn-sm d-inline-flex align-items-center gap-2"
-            onClick={handleLogout}
-            aria-label="Logout"
-            title="Logout"
+    <div className="flex flex-col h-full min-h-screen bg-[#f4f4f4]">
+      {/* Admin header */}
+      <div className="px-5 py-4 border-b border-black/20 bg-white">
+        <div className="flex items-center gap-2">
+          <span
+            className="rounded-full flex items-center justify-center w-10 h-10 border border-black bg-white text-black font-extrabold text-lg shadow-sm"
+            aria-hidden="true"
           >
-            <LogOut size={16} />
-            Logout
-          </button>
+            A
+          </span>
+          <span className="text-lg font-black">Admin</span>
         </div>
       </div>
-
-      {/* Nav */}
-      <nav className="p-2 d-flex flex-column gap-1">
-        <div className="px-3 small mb-1" style={{ color: "#000" }}>Main</div>
-
-        <NavLink to="/admin/products" className={getClass}>
-          <Package size={18} /> <span>Products</span>
-        </NavLink>
-        <NavLink to="/admin/classes" className={getClass}>
-          <GraduationCap size={18} /> <span>Classes</span>
-        </NavLink>
-        <NavLink to="/admin/gallery" className={getClass}>
-          <Images size={18} /> <span>Gallery</span>
-        </NavLink>
-        <NavLink to="/admin/orders" className={getClass}>
-          <Receipt size={18} /> <span>Orders</span>
-        </NavLink>
-
-        <NavLink to="/admin/coupons" className={getClass}>
-          <TicketPercent size={18} /> <span>Coupons</span>
-        </NavLink>
-
-        <NavLink to="/admin/newsletters" className={getClass}>
-          <Send size={18} /> <span>Newsletters</span>
-        </NavLink>
+      <nav className="flex-1 flex flex-col p-3 gap-2 overflow-y-auto">
+        <div className="px-1.5 pt-1 pb-1 text-xs font-bold tracking-wide uppercase text-gray-500">Main</div>
+        <NavLink to="/admin/products" className={getClass}><Package size={18} /> Products</NavLink>
+        <NavLink to="/admin/classes" className={getClass}><GraduationCap size={18} /> Classes</NavLink>
+        <NavLink to="/admin/gallery" className={getClass}><Images size={18} /> Gallery</NavLink>
+        <NavLink to="/admin/orders" className={getClass}><Receipt size={18} /> Orders</NavLink>
+        <NavLink to="/admin/store-pickup-orders" className={getClass}><Receipt size={18} />Store Orders</NavLink>
+        <NavLink to="/admin/hero-sliders" className={getClass}><Images size={18} /> Hero Sliders</NavLink>
+        <NavLink to="/admin/testimonials" className={getClass}><Star size={18} /> Testimonials</NavLink>
+        <NavLink to="/admin/coupons" className={getClass}><TicketPercent size={18} /> Coupons</NavLink>
+        <NavLink to="/admin/newsletters" className={getClass}><Send size={18} /> Newsletters</NavLink>
       </nav>
-
-      {/* Footer */}
-      <div className="mt-auto p-3 d-flex align-items-center justify-content-end" style={{ color: "#000" }}>
-        <span className="small">© {new Date().getFullYear()} ArtistryStudio</span>
-      </div>
-
-      {/* Local monochrome + focus-visible */}
-      <style>{`
-        .admin-link {
-          color: #000;
-          border: 1px solid transparent;
-          background: transparent;
-          transition: background-color .16s ease, color .16s ease, border-color .16s ease, box-shadow .12s ease, transform .12s ease;
-        }
-        .admin-link:hover {
-          background: #fff;
-          border-color: #000;
-        }
-        .admin-link.active {
-          background: #000;
-          color: #fff !important;
-          border-color: #000;
-        }
-        .admin-link:focus-visible {
-          outline: none;
-          box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
-        }
-        .admin-link:focus { outline: 2px solid #000; outline-offset: 2px; }
-
-        .mono-btn {
-          border: 1px solid #000;
-          background: #fff;
-          color: #000;
-          border-radius: 10px;
-          padding: 8px 12px;
-          font-weight: 700;
-          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
-          white-space: nowrap;
-        }
-        .mono-btn:hover { background: #000; color: #fff; }
-        .mono-btn:active { transform: scale(0.98); }
-        .mono-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
-        .mono-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-        .mono-btn-sm { padding: 6px 10px; border-radius: 999px; }
-      `}</style>
+      <footer className="mt-auto w-full px-4 py-4 bg-[#f4f4f4] flex flex-col gap-3">
+        <button
+          type="button"
+          className="btn-logout flex items-center gap-2 w-full justify-center"
+          onClick={handleLogout}
+          aria-label="Logout"
+          title="Logout"
+        >
+          <LogOut size={18} />
+          <span>Logout</span>
+        </button>
+        <span className="block text-center w-full text-xs text-black/60 select-none">
+          © {new Date().getFullYear()} ArtistryStudio
+        </span>
+        <style>{`
+          .btn-logout {
+            border: 1.5px solid #991b1b;
+            background: #fff;
+            color: #991b1b;
+            border-radius: 9999px;
+            padding: 10px 0;
+            font-weight: 700;
+            font-size: 1.09em;
+            letter-spacing: .01em;
+            transition: all .17s cubic-bezier(.6,.1,.13,1.02);
+            width: 100%;
+            text-align: center;
+          }
+          .btn-logout:hover, .btn-logout:focus {
+            background: #991b1b;
+            color: #fff;
+            border-color: #991b1b;
+          }
+          .btn-logout:active { transform: scale(0.97); }
+          .btn-logout:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px #991b1b, 0 0 0 4px #fff;
+          }
+        `}</style>
+      </footer>
     </div>
   );
-}
+};
+
+export default AdminSidebar;

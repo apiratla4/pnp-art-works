@@ -3,7 +3,6 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { Send, RefreshCw, Users, CalendarClock, Mail, Download, Edit2 } from "lucide-react";
 import { motion } from "framer-motion";
-import "./NewslettersPage.css";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const SUBS_URL = `${API_BASE}/api/newsletters/subscribers`;
@@ -11,7 +10,7 @@ const CAMP_URL = `${API_BASE}/api/newsletters/campaigns`;
 
 axios.defaults.withCredentials = true;
 
-export default function NewslettersPage() {
+const NewslettersPage = () => {
   const [subs, setSubs] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -82,126 +81,119 @@ export default function NewslettersPage() {
   };
 
   return (
-    <div className="newsletters-page">
-      <header>
-        <h1><Send size={24} /> Email Newsletters</h1>
-        <div className="header-actions">
-          <button className="refresh-btn" onClick={load} disabled={loading}>
-            <RefreshCw size={18} className={loading ? "spinning" : ""} />
+    <div className="max-w-7xl mx-auto w-full p-2">
+      {/* Header */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-7">
+        <div className="flex items-center gap-3">
+          <Send size={28} className="text-black" />
+          <h1 className="text-2xl font-black text-black mb-0">Email Newsletters</h1>
+        </div>
+        <div className="flex gap-4 items-center">
+          <button className="btn-mono-sm flex items-center gap-1" onClick={load} disabled={loading}>
+            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
             Refresh
           </button>
-          <div className="subscriber-count">
+          <span className="flex gap-2 items-center text-gray-700 text-sm">
             <Users size={16} />
-            <span>{subs.length} subscribers</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Stats Cards */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <Mail size={24} className="stat-icon" />
-          <div className="stat-content">
-            <span className="stat-value">{subs.length}</span>
-            <span className="stat-label">Total Subscribers</span>
-          </div>
-        </div>
-        <div className="stat-card">
-          <Users size={24} className="stat-icon active" />
-          <div className="stat-content">
-            <span className="stat-value">{subs.filter(s => s.active !== false).length}</span>
-            <span className="stat-label">Active Subscribers</span>
-          </div>
-        </div>
-        <div className="stat-card">
-          <Send size={24} className="stat-icon ready" />
-          <div className="stat-content">
-            <span className="stat-value">{subject ? "1" : "0"}</span>
-            <span className="stat-label">Ready to Send</span>
-          </div>
-        </div>
-        <div className="stat-card">
-          <CalendarClock size={24} className="stat-icon scheduled" />
-          <div className="stat-content">
-            <span className="stat-value">{mode !== "now" ? "1" : "0"}</span>
-            <span className="stat-label">Scheduled</span>
-          </div>
+            {subs.length} subscribers
+          </span>
         </div>
       </div>
 
-      <div className="newsletter-layout">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 mb-8">
+        <div className="rounded-xl border border-black/10 shadow bg-white p-5 flex flex-col items-center">
+          <Mail size={24} className="mb-2" />
+          <span className="text-2xl font-extrabold">{subs.length}</span>
+          <span className="text-xs text-gray-500 font-medium">Total Subscribers</span>
+        </div>
+        <div className="rounded-xl border border-black/10 shadow bg-white p-5 flex flex-col items-center">
+          <Users size={24} className="mb-2" />
+          <span className="text-2xl font-extrabold">{subs.filter(s => s.active !== false).length}</span>
+          <span className="text-xs text-gray-500 font-medium">Active Subscribers</span>
+        </div>
+        <div className="rounded-xl border border-black/10 shadow bg-white p-5 flex flex-col items-center">
+          <Send size={24} className="mb-2" />
+          <span className="text-2xl font-extrabold">{subject ? "1" : "0"}</span>
+          <span className="text-xs text-gray-500 font-medium">Ready to Send</span>
+        </div>
+        <div className="rounded-xl border border-black/10 shadow bg-white p-5 flex flex-col items-center">
+          <CalendarClock size={24} className="mb-2" />
+          <span className="text-2xl font-extrabold">{mode !== "now" ? "1" : "0"}</span>
+          <span className="text-xs text-gray-500 font-medium">Scheduled</span>
+        </div>
+      </div>
+
+      {/* Layout: Editor + Sidebar */}
+      <div className="flex flex-col lg:flex-row gap-8">
         {/* Composer */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="composer-section"
+          className="flex-1 min-w-0 bg-white border border-black/10 shadow rounded-2xl p-6 mb-6 lg:mb-0"
         >
-          <div className="section-header">
+          <div className="flex gap-2 items-center mb-6">
             <Edit2 size={20} />
-            <h2>Compose Newsletter</h2>
+            <h2 className="font-bold text-xl mb-0">Compose Newsletter</h2>
           </div>
-          
-          <div className="form-group">
-            <label>Email Subject</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="Your amazing newsletter subject..."
-              value={subject} 
-              onChange={(e) => setSubject(e.target.value)} 
-            />
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="block font-semibold text-sm mb-1">Email Subject</label>
+              <input
+                type="text"
+                className="w-full rounded-lg border-black border px-3 py-2 focus:ring-2 focus:ring-black"
+                placeholder="Your amazing newsletter subject..."
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-sm mb-1">Header HTML</label>
+              <textarea
+                className="w-full rounded-lg border-black border px-3 py-2 font-mono focus:ring-2 focus:ring-black"
+                rows={3}
+                placeholder="<h1>Welcome!</h1>"
+                value={headerHtml}
+                onChange={(e) => setHeaderHtml(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-sm mb-1">Body HTML</label>
+              <textarea
+                className="w-full rounded-lg border-black border px-3 py-2 font-mono focus:ring-2 focus:ring-black"
+                rows={8}
+                placeholder="<p>Your newsletter content here...</p>"
+                value={bodyHtml}
+                onChange={(e) => setBodyHtml(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-sm mb-1">Footer HTML</label>
+              <textarea
+                className="w-full rounded-lg border-black border px-3 py-2 font-mono focus:ring-2 focus:ring-black"
+                rows={3}
+                placeholder="<p>© 2025 Your Company</p>"
+                value={footerHtml}
+                onChange={(e) => setFooterHtml(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-sm mb-1">Hero Image URL (Optional)</label>
+              <input
+                type="url"
+                className="w-full rounded-lg border-black border px-3 py-2 focus:ring-2 focus:ring-black"
+                placeholder="https://example.com/image.jpg"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+              />
+            </div>
           </div>
-
-          <div className="form-group">
-            <label>Header HTML</label>
-            <textarea 
-              className="form-textarea code-editor" 
-              rows={3}
-              placeholder="<h1>Welcome!</h1>"
-              value={headerHtml} 
-              onChange={(e) => setHeaderHtml(e.target.value)} 
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Body HTML</label>
-            <textarea 
-              className="form-textarea code-editor" 
-              rows={8}
-              placeholder="<p>Your newsletter content here...</p>"
-              value={bodyHtml} 
-              onChange={(e) => setBodyHtml(e.target.value)} 
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Footer HTML</label>
-            <textarea 
-              className="form-textarea code-editor" 
-              rows={3}
-              placeholder="<p>© 2025 Your Company</p>"
-              value={footerHtml} 
-              onChange={(e) => setFooterHtml(e.target.value)} 
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Hero Image URL (Optional)</label>
-            <input 
-              type="url" 
-              className="form-input"
-              placeholder="https://example.com/image.jpg"
-              value={imageUrl} 
-              onChange={(e) => setImageUrl(e.target.value)} 
-            />
-          </div>
-
-          <div className="action-buttons">
-            <button className="btn-primary" onClick={sendNow} disabled={!subject.trim()}>
+          <div className="flex flex-col sm:flex-row gap-2 mt-6">
+            <button className="btn-mono-sm flex-1" onClick={sendNow} disabled={!subject.trim()}>
               <Send size={18} />
               Send Now to All
             </button>
-            <button className="btn-secondary" onClick={schedule} disabled={!subject.trim()}>
+            <button className="btn-mono-sm flex-1" onClick={schedule} disabled={!subject.trim()}>
               <CalendarClock size={18} />
               Save & Schedule
             </button>
@@ -209,21 +201,23 @@ export default function NewslettersPage() {
         </motion.div>
 
         {/* Sidebar */}
-        <div className="sidebar">
+        <div className="flex flex-col gap-7 w-full lg:w-[320px] shrink-0">
           {/* Schedule Card */}
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }} 
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="schedule-card"
+            className="bg-white border border-black/10 shadow rounded-2xl p-5"
           >
-            <div className="section-header">
+            <div className="flex items-center gap-2 mb-3">
               <CalendarClock size={20} />
-              <h3>Schedule Campaign</h3>
+              <h3 className="font-bold text-lg">Schedule Campaign</h3>
             </div>
-
-            <div className="form-group">
-              <label>Delivery Mode</label>
-              <select className="form-select" value={mode} onChange={(e) => setMode(e.target.value)}>
+            <div className="mb-3">
+              <label className="block text-sm font-semibold mb-1">Delivery Mode</label>
+              <select className="w-full rounded-lg border border-black px-3 py-2 bg-white"
+                value={mode}
+                onChange={(e) => setMode(e.target.value)}
+              >
                 <option value="now">Send Immediately</option>
                 <option value="once">Schedule Once</option>
                 <option value="weekly">Weekly Recurring</option>
@@ -231,151 +225,113 @@ export default function NewslettersPage() {
                 <option value="cron">Advanced (Cron)</option>
               </select>
             </div>
-
             {mode === "once" && (
-              <div className="schedule-option">
-                <div className="option-info">
-                  <strong>One-Time Send:</strong> Schedule your newsletter for a specific date and time.
-                </div>
-                <div className="form-group">
-                  <label>Date & Time</label>
-                  <input 
-                    type="datetime-local" 
-                    className="form-input"
-                    value={onceAt} 
-                    onChange={(e) => setOnceAt(e.target.value)} 
-                  />
-                </div>
+              <div>
+                <div className="font-medium text-xs mb-2">One-Time Send</div>
+                <input
+                  type="datetime-local"
+                  className="w-full rounded-lg border-black border px-3 py-2 focus:ring-2 focus:ring-black"
+                  value={onceAt}
+                  onChange={(e) => setOnceAt(e.target.value)}
+                />
               </div>
             )}
-
             {mode === "weekly" && (
-              <div className="schedule-option">
-                <div className="option-info">
-                  <strong>Weekly Send:</strong> Your newsletter will be sent automatically every week.
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium mb-1">Day</label>
+                  <select className="w-full rounded-lg border-black border px-3 py-2"
+                    value={weeklyDow}
+                    onChange={(e) => setWeeklyDow(e.target.value)}
+                  >
+                    <option value="0">Sunday</option>
+                    <option value="1">Monday</option>
+                    <option value="2">Tuesday</option>
+                    <option value="3">Wednesday</option>
+                    <option value="4">Thursday</option>
+                    <option value="5">Friday</option>
+                    <option value="6">Saturday</option>
+                  </select>
                 </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Day</label>
-                    <select className="form-select" value={weeklyDow} onChange={(e) => setWeeklyDow(e.target.value)}>
-                      <option value="0">Sunday</option>
-                      <option value="1">Monday</option>
-                      <option value="2">Tuesday</option>
-                      <option value="3">Wednesday</option>
-                      <option value="4">Thursday</option>
-                      <option value="5">Friday</option>
-                      <option value="6">Saturday</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Time</label>
-                    <input 
-                      type="time" 
-                      className="form-input"
-                      value={weeklyTime} 
-                      onChange={(e) => setWeeklyTime(e.target.value)} 
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {mode === "monthly" && (
-              <div className="schedule-option">
-                <div className="option-info">
-                  <strong>Monthly Send:</strong> Your newsletter will be sent automatically every month.
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Day</label>
-                    <input 
-                      type="number" 
-                      min={1} 
-                      max={31} 
-                      className="form-input"
-                      value={monthlyDom} 
-                      onChange={(e) => setMonthlyDom(e.target.value)} 
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Time</label>
-                    <input 
-                      type="time" 
-                      className="form-input"
-                      value={monthlyTime} 
-                      onChange={(e) => setMonthlyTime(e.target.value)} 
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {mode === "cron" && (
-              <div className="schedule-option">
-                <div className="option-info warning">
-                  <strong>Advanced Mode:</strong> Use cron syntax for custom schedules.
-                </div>
-                <div className="form-group">
-                  <label>Cron Expression</label>
-                  <input 
-                    type="text" 
-                    className="form-input code-input"
-                    placeholder="0 9 * * 1"
-                    value={cronExpr} 
-                    onChange={(e) => setCronExpr(e.target.value)} 
+                <div className="flex-1">
+                  <label className="block text-xs font-medium mb-1">Time</label>
+                  <input
+                    type="time"
+                    className="w-full rounded-lg border-black border px-3 py-2"
+                    value={weeklyTime}
+                    onChange={(e) => setWeeklyTime(e.target.value)}
                   />
-                  <span className="form-hint">Format: minute hour day-of-month month day-of-week</span>
                 </div>
               </div>
             )}
-
-            {mode === "now" && (
-              <div className="schedule-option">
-                <div className="option-info success">
-                  <strong>Instant Send:</strong> Newsletter will be sent immediately to all subscribers.
+            {mode === "monthly" && (
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium mb-1">Day</label>
+                  <input
+                    type="number" min={1} max={31}
+                    className="w-full rounded-lg border-black border px-3 py-2"
+                    value={monthlyDom}
+                    onChange={(e) => setMonthlyDom(e.target.value)}
+                  />
                 </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-medium mb-1">Time</label>
+                  <input
+                    type="time"
+                    className="w-full rounded-lg border-black border px-3 py-2"
+                    value={monthlyTime}
+                    onChange={(e) => setMonthlyTime(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+            {mode === "cron" && (
+              <div>
+                <span className="block text-xs mb-1 text-gray-500">Cron Syntax</span>
+                <input
+                  type="text"
+                  className="w-full rounded-lg border-black border px-3 py-2 font-mono"
+                  placeholder="0 9 * * 1"
+                  value={cronExpr}
+                  onChange={(e) => setCronExpr(e.target.value)}
+                />
+                <span className="block text-xs mt-1 text-gray-400">Format: min hour dom mon dow</span>
               </div>
             )}
           </motion.div>
-
           {/* Subscribers Card */}
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }} 
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="subscribers-card"
+            className="bg-white border border-black/10 shadow rounded-2xl p-5 flex flex-col"
           >
-            <div className="section-header">
+            <div className="flex items-center gap-2 mb-3">
               <Users size={20} />
-              <h3>Subscribers</h3>
-              <span className="subscriber-badge">{subs.length}</span>
+              <h3 className="font-bold text-lg">Subscribers</h3>
+              <span className="ml-auto rounded-full px-2 bg-black text-white text-xs font-bold">{subs.length}</span>
             </div>
-
-            <div className="subscribers-list">
+            <div className="flex flex-col gap-1 max-h-56 overflow-y-auto mb-3">
               {subs.length === 0 ? (
-                <div className="empty-state">
-                  <Users size={48} />
-                  <p>No subscribers yet</p>
+                <div className="flex flex-col items-center text-gray-400 py-7">
+                  <Users size={40} className="mb-1" />
+                  <span className="text-sm">No subscribers yet</span>
                 </div>
               ) : (
                 subs.map((s) => (
-                  <div key={s._id} className="subscriber-item">
-                    <div className="subscriber-info">
-                      <div className="subscriber-email">{s.email}</div>
-                      <div className="subscriber-date">
-                        {s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "—"}
-                      </div>
-                    </div>
-                    <span className="status-badge active">Active</span>
+                  <div key={s._id} className="flex items-center gap-2 border-b last:border-0 border-black/10 py-1">
+                    <Mail size={14} className="opacity-70" />
+                    <span className="font-mono text-xs break-all">{s.email}</span>
+                    <span className="ml-auto text-xs text-gray-400">{s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "—"}</span>
                   </div>
                 ))
               )}
             </div>
-
-            <a 
-              className="download-btn" 
-              href={`${SUBS_URL}/export`} 
-              target="_blank" 
+            <a
+              className="btn-mono-sm mt-1 flex items-center gap-2 justify-center"
+              href={`${SUBS_URL}/export`}
+              target="_blank"
               rel="noreferrer"
             >
               <Download size={16} />
@@ -384,6 +340,32 @@ export default function NewslettersPage() {
           </motion.div>
         </div>
       </div>
+      <style>{`
+        .btn-mono-sm {
+          border: 1.5px solid #000;
+          background: #fff;
+          color: #000;
+          border-radius: 9999px;
+          padding: 7px 16px;
+          font-weight: 700;
+          font-size: 1.09em;
+          transition: all .16s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .btn-mono-sm:hover, .btn-mono-sm:focus {
+          background: #000;
+          color: #fff;
+        }
+        .btn-mono-sm:active { transform: scale(0.97); }
+        .btn-mono-sm:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
+        }
+      `}</style>
     </div>
   );
-}
+};
+
+export default NewslettersPage;

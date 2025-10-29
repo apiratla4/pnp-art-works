@@ -1,105 +1,89 @@
-// admin/src/layout/AdminLayout.jsx
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
-import AdminSidebar from "../components/Adminsidebar.jsx";
 import { ToastContainer } from "react-toastify";
+import AdminSidebar from "../components/Adminsidebar.jsx";
 import "react-toastify/dist/ReactToastify.css";
-import logo from "../assets/pnplogo.png"; // Replace with your logo path
+import logo from "../assets/pnplogo.png";
 
 const AdminLayout = () => {
-  const [open, setOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="d-flex" style={{ minHeight: "100vh", backgroundColor: "#f1efef" }}>
-      {/* Sidebar: visible on lg+, togglable drawer on < lg */}
-      <aside
-        id="admin-sidebar"
-        className="border-end d-none d-lg-block"
-        style={{ width: 260, position: "sticky", top: 0, height: "100vh", background: "#fff", color: "#000" }}
-        aria-label="Admin sidebar"
-      >
+    <div className="min-h-screen flex bg-[#f5f5f7] text-black font-sans">
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex flex-col w-60 h-screen sticky top-0 border-r border-black bg-white z-10">
         <AdminSidebar />
       </aside>
 
-      {/* Mobile overlay */}
-      {open && (
+      {/* Mobile: overlay + sidebar */}
+      {sidebarOpen && (
         <div
-          className="position-fixed top-0 start-0 h-100 w-100"
-          style={{ background: "rgba(0,0,0,.2)", zIndex: 1040 }}
-          onClick={() => setOpen(false)}
-          aria-label="Close sidebar overlay"
+          className="lg:hidden fixed inset-0 z-40 bg-black/30 transition"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden={!sidebarOpen}
         />
       )}
-
-      {/* Mobile drawer */}
       <aside
-        className={`position-fixed top-0 start-0 border-end d-lg-none ${open ? "" : "d-none"}`}
-        style={{ width: 260, height: "100vh", zIndex: 1041, background: "#fff", color: "#000" }}
-        aria-hidden={!open}
-        aria-label="Admin sidebar drawer"
+        className={`fixed top-0 left-0 h-screen w-60 bg-white border-r border-black z-50 transform transition-transform duration-200 lg:hidden
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+        aria-label="Admin sidebar mobile"
+        aria-hidden={!sidebarOpen}
       >
-        <div className="d-flex justify-content-end p-2">
-          <button className="mono-btn mono-btn-sm" onClick={() => setOpen(false)} aria-label="Close sidebar">
-            ×
-          </button>
+        <div className="flex justify-end p-2 border-b border-black/10">
+          <button
+            className="btn-mono-sm text-xl"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close sidebar"
+          >×</button>
         </div>
         <AdminSidebar />
       </aside>
 
-      {/* Main content */}
-      <main className="flex-grow-1">
-        {/* Top bar with hamburger (left) and logo (right) on mobile */}
-        <div className="d-flex align-items-center px-3 py-2" style={{ background: "#fff", color: "#000", borderBottom: "1px solid #000" }}>
+      {/* Main Content Panel */}
+      <div className="flex-1 flex flex-col min-w-0 w-0">
+        {/* Topbar */}
+        <div className="flex items-center px-4 py-3 bg-white border-b border-black w-full sticky top-0 z-20">
+          {/* Hamburger only on < lg */}
           <button
-            className="mono-btn mono-btn-sm d-lg-none me-2"
-            onClick={() => setOpen(true)}
+            className="btn-mono-sm mr-2 block lg:hidden"
+            onClick={() => setSidebarOpen(true)}
             aria-label="Open sidebar"
-            aria-controls="admin-sidebar"
-            aria-expanded={open}
             type="button"
           >
             ☰
           </button>
-
-          {/* Spacer pushes logo to the right on mobile */}
-          <div className="d-lg-none ms-auto">
-            <img
-              src={logo}
-              alt="ArtistryStudio"
-              height="28"
-              className="d-inline-block align-middle"
-            />
-          </div>
+          <div className="flex-1" />
+          <img src={logo} alt="Logo" className="h-8 w-auto block lg:hidden" />
         </div>
-
-        <div className="container py-4">
+        {/* Content */}
+        <main className="w-full flex-1 px-2 xs:px-2 sm:px-4 lg:px-8 py-6 transition-all">
           <Outlet />
-        </div>
-      </main>
-
-      {/* Toasts once at layout level */}
-      <ToastContainer position="top-right" autoClose={2000} newestOnTop />
-
-      {/* Local monochrome + focus-visible styles */}
+        </main>
+        <ToastContainer position="top-right" autoClose={2000} newestOnTop />
+      </div>
       <style>{`
-        /* Mono buttons (black/white) */
-        .mono-btn {
-          border: 1px solid #000; background: #fff; color: #000;
-          border-radius: 10px; padding: 8px 12px; font-weight: 700;
-          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
-          white-space: nowrap;
+        .btn-mono-sm {
+          border: 1.5px solid #000;
+          background: #fff;
+          color: #000;
+          border-radius: 9999px;
+          padding: 7px 16px;
+          font-weight: 700;
+          font-size: 1.12em;
+          transition: all .16s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
-        .mono-btn-sm { padding: 6px 10px; border-radius: 999px; }
-        .mono-btn:hover { background: #000; color: #fff; }
-        .mono-btn:active { transform: scale(0.98); }
-
-        /* Keyboard-only focus indicator */
-        .mono-btn:focus-visible {
+        .btn-mono-sm:hover, .btn-mono-sm:focus {
+          background: #000;
+          color: #fff;
+        }
+        .btn-mono-sm:active { transform: scale(0.97); }
+        .btn-mono-sm:focus-visible {
           outline: none;
           box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
         }
-        .mono-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-        .mono-btn:focus:not(:focus-visible) { outline: none; box-shadow: none; }
       `}</style>
     </div>
   );

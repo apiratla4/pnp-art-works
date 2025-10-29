@@ -1,4 +1,3 @@
-// src/pages/HomePage.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -17,10 +16,6 @@ function HomePage() {
   const [loadingProd, setLoadingProd] = useState(false);
   const [prodErr, setProdErr] = useState('');
 
-  // Newsletter State
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterStatus, setNewsletterStatus] = useState('idle'); // 'idle' | 'sending' | 'success' | 'error'
-
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
@@ -28,7 +23,7 @@ function HomePage() {
         setLoadingProd(true);
         setProdErr('');
         const { data } = await axios.get(`${API_BASE}/api/products`, {
-          params: { limit: 24 }, // load all so we can filter, but only show 6
+          params: { limit: 24 },
           withCredentials: true
         });
         const list = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
@@ -43,7 +38,6 @@ function HomePage() {
     return () => { isMounted = false; };
   }, []);
 
-  // Featured products, max 6
   const featuredProducts = useMemo(
     () =>
       (products || [])
@@ -57,7 +51,6 @@ function HomePage() {
     [products]
   );
 
-  // Testimonials
   const testimonials = [
     {
       id: 1,
@@ -85,46 +78,24 @@ function HomePage() {
     },
   ];
 
-  const handleNewsletterSubscribe = async () => {
-    if (!newsletterEmail || !/^\S+@\S+\.\S+$/.test(newsletterEmail)) {
-      setNewsletterStatus('error');
-      setTimeout(() => setNewsletterStatus('idle'), 3000);
-      return;
-    }
-    setNewsletterStatus('sending');
-    try {
-      await axios.post(`${API_BASE}/api/newsletters/subscribe`, { email: newsletterEmail });
-      setNewsletterStatus('success');
-      setNewsletterEmail('');
-      setTimeout(() => setNewsletterStatus('idle'), 5000);
-    } catch {
-      setNewsletterStatus('error');
-      setTimeout(() => setNewsletterStatus('idle'), 3000);
-    }
-  };
-
   return (
-    <div className="min-vh-100" style={{ backgroundColor: '#f1efef' }}>
-      {/* Local styles for icon borders and focus-visible */}
+    <div className="min-h-screen bg-[#f1efef]">
       <style>{`
         .icon-circle { width: 64px; height: 64px; background: #fff; color: #000; border: 1px solid #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .icon-circle-sm { width: 44px; height: 44px; background: #fff; color: #000; border: 1px solid #000; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
         .icon-circle-md { width: 56px; height: 56px; background: #fff; color: #000; border: 1px solid #000; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
         .icon-chip { display: inline-flex; align-items: center; justify-content: center; border: 1px solid #000; border-radius: 8px; padding: 2px; }
-        .form-control:focus { border-color: #000 !important; box-shadow: none !important; }
-        .form-control:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
-        .form-control:focus:not(:focus-visible) { outline: none; box-shadow: none; }
       `}</style>
 
       {/* HERO */}
-      <section className="position-relative vh-100 overflow-hidden" style={{ backgroundColor: '#f1efef' }}>
+      <section className="relative overflow-hidden px-4 sm:px-0" style={{ backgroundColor: '#f1efef', minHeight: '82vh' }}>
         <HeroCarousel autoPlay interval={4000} showArrows showIndicators />
       </section>
 
       {/* HIGHLIGHTS */}
-      <section className="py-5" style={{ backgroundColor: '#f1efef' }}>
-        <div className="container">
-          <div className="row g-3 g-lg-4">
+      <section className="py-10 px-4 sm:px-0" style={{ backgroundColor: '#f1efef' }}>
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { icon: Paintbrush, title: 'Handcrafted Originals', text: 'One-of-a-kind artworks made with archival materials.' },
               { icon: Gem, title: 'Limited Editions', text: 'Signed, numbered editions with certificates of authenticity.' },
@@ -132,15 +103,13 @@ function HomePage() {
               { icon: Shield, title: 'Art-Safe Packaging', text: 'Secure shipping worldwide with protective materials.' }
             ].map((item, i) => (
               <motion.div key={item.title} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }} className="col-12 col-md-6 col-lg-3">
-                <div className="card h-100 border-0 shadow-sm rounded-4" style={{ backgroundColor: '#ffffff', color: '#000' }}>
-                  <div className="card-body">
-                    <div className="icon-circle-sm mb-2">
-                      <item.icon size={20} color="#000000" />
-                    </div>
-                    <h6 className="fw-semibold mb-1" style={{ color: '#000' }}>{item.title}</h6>
-                    <p className="small mb-0" style={{ color: '#000' }}>{item.text}</p>
+                transition={{ delay: i * 0.05 }} className="w-full">
+                <div className="card h-full border-0 shadow-sm rounded-2xl p-6 bg-white text-black">
+                  <div className="icon-circle-sm mb-2">
+                    <item.icon size={20} color="#000000" />
                   </div>
+                  <h6 className="fw-semibold mb-1 text-black">{item.title}</h6>
+                  <p className="small mb-0 text-black">{item.text}</p>
                 </div>
               </motion.div>
             ))}
@@ -149,34 +118,32 @@ function HomePage() {
       </section>
 
       {/* ART CLASSES */}
-      <section className="py-5" style={{ backgroundColor: '#f1efef' }}>
-        <div className="container">
+      <section className="py-10 px-4 sm:px-0" style={{ backgroundColor: '#f1efef' }}>
+        <div className="max-w-7xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }}
-            className="text-center mb-4 mb-lg-5">
+            className="text-center mb-8">
             <div className="icon-circle-md mb-3">
               <GraduationCap size={26} color="#000000" />
             </div>
-            <h2 className="fw-bold mb-2" style={{ color: '#000' }}>Learn with Art Classes</h2>
-            <p className="lead mx-auto" style={{ maxWidth: 720, color: '#000' }}>
+            <h2 className="font-bold mb-2 text-black">Learn with Art Classes</h2>
+            <p className="mx-auto text-black" style={{ maxWidth: 720 }}>
               Live online sessions now, with offline studio classes coming soon build skills in drawing, acrylics, and watercolor
             </p>
           </motion.div>
-          <div className="row g-3 g-lg-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {[
               { icon: Users, title: 'Small Cohorts', text: 'Personalized feedback and focused attention in limited-size groups.' },
               { icon: Calendar, title: 'Flexible Schedule', text: 'Weekend and evening batches designed around busy calendars.' },
               { icon: Paintbrush, title: 'Guided Techniques', text: 'Step‑by‑step demos to master fundamentals and explore styles.' }
             ].map((f, i) => (
-              <motion.div key={f.title} className="col-12 col-md-4" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
+              <motion.div key={f.title} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ duration: 0.4, delay: i * 0.05 }}>
-                <div className="card h-100 border-0 shadow-sm rounded-4" style={{ backgroundColor: '#ffffff', color: '#000' }}>
-                  <div className="card-body">
-                    <div className="icon-circle-sm mb-2">
-                      <f.icon size={20} color="#000000" />
-                    </div>
-                    <h6 className="fw-semibold mb-1" style={{ color: '#000' }}>{f.title}</h6>
-                    <p className="small mb-0" style={{ color: '#000' }}>{f.text}</p>
+                <div className="card h-full border-0 shadow rounded-2xl p-6 bg-white text-black">
+                  <div className="icon-circle-sm mb-2">
+                    <f.icon size={20} color="#000000" />
                   </div>
+                  <h6 className="font-semibold mb-1 text-black">{f.title}</h6>
+                  <p className="small mb-0 text-black">{f.text}</p>
                 </div>
               </motion.div>
             ))}
@@ -189,26 +156,26 @@ function HomePage() {
         </div>
       </section>
 
-      {/* FEATURED PRODUCTS - limited to two rows */}
-      <section className="py-5" style={{ backgroundColor: '#f1efef' }}>
-        <div className="container">
+      {/* FEATURED PRODUCTS */}
+      <section className="py-10 px-4 sm:px-0" style={{ backgroundColor: '#f1efef' }}>
+        <div className="max-w-7xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}
-            className="text-center mb-4 mb-lg-5">
-            <h2 className="fw-bold mb-2" style={{ color: '#000' }}>Featured Artworks</h2>
-            <p className="lead mx-auto" style={{ maxWidth: 720, color: '#000' }}>
+            className="text-center mb-8">
+            <h2 className="font-bold mb-2 text-black">Featured Artworks</h2>
+            <p className="mx-auto text-black" style={{ maxWidth: 720 }}>
               Discover our most popular and recently created masterpieces
             </p>
           </motion.div>
           {prodErr && (
-            <div className="alert d-flex align-items-center" role="alert" style={{ background: '#fff', color: '#000', border: '1px solid #000' }}>
+            <div className="alert flex items-center" role="alert" style={{ background: '#fff', color: '#000', border: '1px solid #000' }}>
               {prodErr}
             </div>
           )}
-          <div className="row g-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7 mb-8">
             {loadingProd ? (
               Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="col-12 col-md-6 col-lg-4">
-                  <div className="card h-100 border-0 shadow-sm rounded-4 placeholder-wave" style={{ minHeight: 320, backgroundColor: '#ffffff' }}>
+                <div key={i} className="w-full">
+                  <div className="card h-96 border-0 shadow rounded-2xl p-2 bg-white">
                     <div className="card-body">
                       <div className="placeholder col-12 mb-3" style={{ height: 180 }} />
                       <div className="placeholder col-6" />
@@ -221,7 +188,6 @@ function HomePage() {
               featuredProducts.map((product, idx) => (
                 <motion.div
                   key={product.id}
-                  className="col-12 col-md-6 col-lg-4"
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: idx * 0.1 }}
@@ -233,7 +199,7 @@ function HomePage() {
             )}
           </div>
           {featuredProducts.length === 0 && !loadingProd && (
-            <div className="text-center text-muted py-3 fs-5">No featured products to show.</div>
+            <div className="text-center text-gray-400 py-3 text-lg">No featured products to show.</div>
           )}
           <div className="text-center">
             <FancyButton to="/shop" className="fancy-sm">
@@ -244,63 +210,59 @@ function HomePage() {
       </section>
 
       {/* STATS */}
-      <section className="py-5" style={{ backgroundColor: '#f1efef' }}>
-        <div className="container">
-          <div className="row row-cols-2 row-cols-md-4 g-4 text-center">
-            {[
-              { icon: Palette, number: '500+', label: 'Artworks Created' },
-              { icon: Users, number: '1000+', label: 'Happy Customers' },
-              { icon: Award, number: '50+', label: 'Awards Won' },
-              { icon: Star, number: '4.9', label: 'Average Rating' }
-            ].map((stat, idx) => (
-              <motion.div
-                key={idx}
-                className="col"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: idx * 0.1 }}
-                viewport={{ once: true }}
-              >
-                <div className="d-flex justify-content-center mb-3">
-                  <div className="icon-circle">
-                    <stat.icon size={30} color="#000000" />
-                  </div>
-                </div>
-                <div className="fs-3 fw-bold mb-1" style={{ color: '#000' }}>{stat.number}</div>
-                <div style={{ color: '#000' }}>{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
+      <section className="py-10 px-4 sm:px-0" style={{ backgroundColor: '#f1efef' }}>
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-7 text-center">
+          {[
+            { icon: Palette, number: '500+', label: 'Artworks Created' },
+            { icon: Users, number: '1000+', label: 'Happy Customers' },
+            { icon: Award, number: '50+', label: 'Awards Won' },
+            { icon: Star, number: '4.9', label: 'Average Rating' }
+          ].map((stat, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: idx * 0.1 }}
+              viewport={{ once: true }}
+              className="flex flex-col items-center"
+            >
+              <div className="icon-circle mb-2">
+                <stat.icon size={30} color="#000000" />
+              </div>
+              <div className="text-2xl font-bold text-black">{stat.number}</div>
+              <div className="text-black">{stat.label}</div>
+            </motion.div>
+          ))}
         </div>
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="py-5" style={{ backgroundColor: '#f1efef' }}>
-        <div className="container">
+      <section className="py-10 px-4 sm:px-0" style={{ backgroundColor: '#f1efef' }}>
+        <div className="max-w-7xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}
-            className="text-center mb-4 mb-lg-5">
-            <h2 className="fw-bold mb-2" style={{ color: '#000' }}>What Our Customers Say</h2>
-            <p className="" style={{ color: '#000' }}>Trusted by art lovers worldwide</p>
+            className="text-center mb-8">
+            <h2 className="font-bold mb-2 text-black">What Our Customers Say</h2>
+            <p className="text-black">Trusted by art lovers worldwide</p>
           </motion.div>
-          <div className="row g-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
             {testimonials.map((t, idx) => (
-              <motion.div key={t.id} className="col-12 col-md-4" initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
+              <motion.div key={t.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: idx * 0.1 }} viewport={{ once: true }}>
-                <div className="card h-100 border-0 shadow-sm rounded-4" style={{ backgroundColor: '#ffffff', color: '#000' }}>
-                  <div className="card-body p-4">
-                    <div className="d-flex mb-3">
+                <div className="card h-full border-0 shadow rounded-2xl p-6 bg-white text-black">
+                  <div className="card-body">
+                    <div className="flex mb-3">
                       {Array.from({ length: t.rating }).map((_, i) => (
-                        <span key={i} className="icon-chip me-1">
+                        <span key={i} className="icon-chip mr-1">
                           <Star size={18} color="#000000" fill="#000000" />
                         </span>
                       ))}
                     </div>
-                    <p className="fst-italic mb-4" style={{ color: '#000' }}>“{t.text}”</p>
-                    <div className="d-flex align-items-center gap-3">
-                      <img src={t.avatar} alt={t.name} className="rounded-circle object-fit-cover" style={{ width: 48, height: 48, border: '1px solid #000' }} />
+                    <p className="italic mb-4 text-black">“{t.text}”</p>
+                    <div className="flex items-center gap-3">
+                      <img src={t.avatar} alt={t.name} className="rounded-full object-cover border" style={{ width: 48, height: 48, border: '1px solid #000' }} />
                       <div>
-                        <div className="fw-semibold" style={{ color: '#000' }}>{t.name}</div>
-                        <div className="small" style={{ color: '#000' }}>Verified Customer</div>
+                        <div className="font-semibold text-black">{t.name}</div>
+                        <div className="text-sm text-black">Verified Customer</div>
                       </div>
                     </div>
                   </div>
@@ -311,44 +273,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* NEWSLETTER */}
-      <section className="py-5 on-dark" style={{ backgroundColor: '#000000' }}>
-        <div className="container text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}>
-            <h2 className="fw-bold mb-2" style={{ color: '#ffffff' }}>Stay Connected</h2>
-            <p className="lead mb-4" style={{ color: '#ffffff' }}>
-              Subscribe to get updates on new artworks, exhibitions, and exclusive offers
-            </p>
-            <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center mx-auto" style={{ maxWidth: 460 }}>
-              <input
-                type="email"
-                className="form-control form-control-lg rounded-pill"
-                placeholder="Enter your email"
-                style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ffffff' }}
-                aria-label="Email address"
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                disabled={newsletterStatus === 'sending'}
-              />
-              <FancyButton
-                as="button"
-                type="button"
-                className="fancy-sm"
-                onClick={handleNewsletterSubscribe}
-                disabled={newsletterStatus === 'sending'}
-              >
-                {newsletterStatus === 'sending' ? 'Subscribing...' : 'Subscribe'}
-              </FancyButton>
-            </div>
-            {newsletterStatus === 'success' && (
-              <p className="mt-3" style={{ color: '#a0ffa0' }}>Thank you for subscribing!</p>
-            )}
-            {newsletterStatus === 'error' && (
-              <p className="mt-3" style={{ color: '#ff9090' }}>Could not subscribe. Please enter a valid email and try again.</p>
-            )}
-          </motion.div>
-        </div>
-      </section>
+      {/* NEWSLETTER SECTION REMOVED */}
     </div>
   );
 }

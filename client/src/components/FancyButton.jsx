@@ -1,9 +1,9 @@
-// src/components/FancyButton.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import "../styles/fancy-button.css";
 
-export default function FancyButton({
+// Modern arrow function, inuitive prop order, clean disables + aria support
+const FancyButton = ({
   to,
   children,
   className = "",
@@ -12,8 +12,9 @@ export default function FancyButton({
   disabled = false,
   invert = false,
   ...rest
-}) {
-  const classes = `fancy ${invert ? "fancy--invert" : ""} ${className}`.trim();
+}) => {
+  const classes = `fancy${invert ? " fancy--invert" : ""} ${className}`.trim();
+
   const content = (
     <>
       <span className="top-key" />
@@ -25,7 +26,13 @@ export default function FancyButton({
 
   if (to) {
     return (
-      <Link to={to} className={classes} aria-disabled={disabled ? "true" : undefined} {...rest}>
+      <Link
+        to={to}
+        className={classes}
+        aria-disabled={disabled ? "true" : undefined}
+        tabIndex={disabled ? -1 : undefined}
+        {...rest}
+      >
         {content}
       </Link>
     );
@@ -38,9 +45,12 @@ export default function FancyButton({
       className={classes}
       disabled={Comp === "button" ? disabled : undefined}
       aria-disabled={disabled ? "true" : undefined}
+      tabIndex={disabled ? -1 : undefined}
       {...rest}
     >
       {content}
     </Comp>
   );
-}
+};
+
+export default FancyButton;

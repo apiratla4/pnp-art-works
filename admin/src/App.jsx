@@ -1,8 +1,5 @@
-// admin/src/App.jsx
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
-
-// Layout + pages (create these files as provided earlier)
 import AdminLayout from "./layout/AdminLayout.jsx";
 import AdminLogin from "./pages/AdminLogin.jsx";
 import ProductsPage from "./pages/ProductsPage.jsx";
@@ -12,8 +9,10 @@ import OrdersPage from "./pages/OrdersPage.jsx";
 import AdminRegister from "./pages/AdminRegister.jsx";
 import CouponsPage from "./pages/CouponsPage.jsx";
 import NewslettersPage from "./pages/NewslettersPage.jsx";
+import TestimonialsPage from "./pages/TestimonialsPage.jsx";
+import StorePickupOrdersPage from "./pages/StorePickupOrdersPage.jsx";
+import AdminHeroSliderPage from "./pages/AdminHeroSliderPage.jsx";
 
-// Simple guard using sessionStorage accessToken; replace with real auth as needed
 function RequireAdmin() {
   const location = useLocation();
   const token = typeof window !== "undefined" ? sessionStorage.getItem("accessToken") : null;
@@ -39,11 +38,13 @@ export default function App() {
             <Route path="classes" element={<ClassesPage />} />
             <Route path="gallery" element={<GalleryPage />} />
             <Route path="orders" element={<OrdersPage />} />
-            <Route path="/admin/coupons" element={<CouponsPage />} />
-            <Route path="/admin/newsletters" element={<NewslettersPage />} />
+            <Route path="testimonials" element={<TestimonialsPage />} />
+            <Route path="coupons" element={<CouponsPage />} />
+            <Route path="newsletters" element={<NewslettersPage />} />
+            <Route path="store-pickup-orders" element={<StorePickupOrdersPage />} />
+            <Route path="hero-sliders" element={<AdminHeroSliderPage />} />
           </Route>
         </Route>
-
         {/* Fallbacks */}
         <Route path="/" element={<Navigate to="/admin" replace />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />

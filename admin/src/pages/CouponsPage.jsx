@@ -17,7 +17,7 @@ export default function CouponsPage() {
   const [list, setList] = useState([]);
 
   // editor modal state
-  const [editing, setEditing] = useState(null); // coupon object or null
+  const [editing, setEditing] = useState(null);
   const [editData, setEditData] = useState({ code: "", percent: 10, maxUses: 0, expiresAt: "", active: true });
 
   const disabled = !code.trim() || percent <= 0 || percent > 100;
@@ -58,7 +58,6 @@ export default function CouponsPage() {
     }
   };
 
-  // Actions
   const toggleActive = async (id, next) => {
     try {
       await axios.patch(`${LIST_URL}/${id}/status`, { active: next }, { withCredentials: true });
@@ -110,326 +109,254 @@ export default function CouponsPage() {
   };
 
   return (
-    <div className="container py-4 theme-monochrome">
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <h2 className="h4 d-flex align-items-center gap-2 mb-0">
-          <TicketPercent size={20} /> Coupons
+    <div className="mx-auto max-w-6xl w-full p-4 text-black bg-[#f4f4f4] min-h-screen">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+        <h2 className="flex items-center gap-2 text-2xl font-extrabold mb-0 select-none tracking-tight">
+          <TicketPercent size={23} /> Coupons
         </h2>
         <button
-          className="mono-btn mono-btn-sm d-inline-flex align-items-center gap-2"
+          className="inline-flex gap-2 items-center border border-black rounded-full px-4 py-2 font-bold text-black bg-white hover:bg-black hover:text-white transition duration-150"
           onClick={load}
           disabled={loading}
           type="button"
-          aria-label="Refresh"
-          title="Refresh"
         >
-          <RefreshCw size={16} /> Refresh
+          <RefreshCw size={18} /> Refresh
         </button>
       </div>
 
-      <div className="row g-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Create form */}
-        <div className="col-12 col-lg-5">
-          <div className="card border-0 shadow-sm rounded-4">
-            <div className="card-body">
-              <h6 className="fw-semibold mb-3">Create coupon</h6>
-              <form onSubmit={onCreate} className="vstack gap-3">
-                <div>
-                  <label className="form-label">Code</label>
-                  <input
-                    className="form-control"
-                    placeholder="e.g. ART10"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    required
-                  />
-                </div>
-                <div className="row g-3">
-                  <div className="col-12 col-sm-6">
-                    <label className="form-label">Percent off</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={100}
-                      className="form-control"
-                      value={percent}
-                      onChange={(e) => setPercent(Number(e.target.value))}
-                      required
-                    />
-                  </div>
-                  <div className="col-12 col-sm-6">
-                    <label className="form-label">Max uses (0 = unlimited)</label>
-                    <input
-                      type="number"
-                      min={0}
-                      className="form-control"
-                      value={maxUses}
-                      onChange={(e) => setMaxUses(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label">Expires at (optional)</label>
-                  <input
-                    type="datetime-local"
-                    className="form-control"
-                    value={expiresAt}
-                    onChange={(e) => setExpiresAt(e.target.value)}
-                  />
-                </div>
-                <button className="mono-btn" disabled={disabled || loading} type="submit">
-                  {loading ? "Saving…" : "Save coupon"}
-                </button>
-              </form>
+        <div className="rounded-2xl bg-white shadow-lg p-6 border border-black/10">
+          <h6 className="font-black mb-4 text-lg">Create coupon</h6>
+          <form onSubmit={onCreate} className="flex flex-col gap-5">
+            <div>
+              <label className="block font-medium mb-1">Code</label>
+              <input
+                className="w-full rounded-lg border border-black px-3 py-2 focus:ring-2 focus:ring-black outline-none bg-white"
+                placeholder="e.g. ART10"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                required
+              />
             </div>
-          </div>
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <div className="flex-1">
+                <label className="block font-medium mb-1">Percent off</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  className="w-full rounded-lg border border-black px-3 py-2 focus:ring-2 focus:ring-black bg-white outline-none"
+                  value={percent}
+                  onChange={(e) => setPercent(Number(e.target.value))}
+                  required
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block font-medium mb-1">Max uses (0 = unlimited)</label>
+                <input
+                  type="number"
+                  min={0}
+                  className="w-full rounded-lg border border-black px-3 py-2 focus:ring-2 focus:ring-black bg-white outline-none"
+                  value={maxUses}
+                  onChange={(e) => setMaxUses(e.target.value)}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Expires at (optional)</label>
+              <input
+                type="datetime-local"
+                className="w-full rounded-lg border border-black px-3 py-2 focus:ring-2 focus:ring-black bg-white outline-none"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+              />
+            </div>
+            <button
+              className="w-full rounded-full border border-black bg-black text-white py-2 font-black text-base hover:bg-white hover:text-black transition-all duration-150"
+              disabled={disabled || loading}
+              type="submit"
+            >
+              {loading ? "Saving…" : "Save coupon"}
+            </button>
+          </form>
         </div>
-
         {/* List */}
-        <div className="col-12 col-lg-7">
-          <div className="card border-0 shadow-sm rounded-4">
-            <div className="card-body">
-              <h6 className="fw-semibold mb-3">All coupons</h6>
-
-              {list.length === 0 ? (
-                <div className="small">No coupons yet</div>
-              ) : (
-                <>
-                  {/* Mobile cards */}
-                  <div className="d-block d-md-none vstack gap-3">
-                    {list.map((c) => (
-                      <div key={c._id} className="coupon-card p-3 rounded-3 border">
-                        <div className="d-flex align-items-start justify-content-between gap-2">
-                          <div className="min-w-0">
-                            <div className="d-flex align-items-center gap-2 flex-wrap">
-                              <span className="fw-bold text-break">{c.code}</span>
-                              <span className={`mono-badge ${c.active ? "active" : ""}`}>
-                                {c.active ? "Active" : "Inactive"}
-                              </span>
-                            </div>
-                            <div className="small mt-1 text-muted">
-                              {c.percent}% off • Uses {c.uses || 0}
-                              {c.maxUses === 0 ? " / ∞" : ` / ${c.maxUses}`}
-                            </div>
-                            <div className="small mt-1">
-                              Expires: {c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "—"}
-                            </div>
-                          </div>
-                          <div className="d-flex flex-wrap gap-2 justify-content-end">
-                            <button className="mono-btn mono-btn-sm" title="Edit" type="button" onClick={() => openEdit(c)}>
-                              <span className="visually-hidden">Edit</span>
-                              <Pencil size={16} />
-                            </button>
-                            {c.active ? (
-                              <button className="mono-btn mono-btn-sm" title="Deactivate" type="button" onClick={() => toggleActive(c._id, false)}>
-                                <span className="visually-hidden">Deactivate</span>
-                                <PowerOff size={16} />
-                              </button>
-                            ) : (
-                              <button className="mono-btn mono-btn-sm" title="Activate" type="button" onClick={() => toggleActive(c._id, true)}>
-                                <span className="visually-hidden">Activate</span>
-                                <Power size={16} />
-                              </button>
-                            )}
-                            <button className="mono-btn mono-btn-sm" title="Delete" type="button" onClick={() => del(c._id)}>
-                              <span className="visually-hidden">Delete</span>
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
+        <div className="rounded-2xl bg-white shadow-lg p-6 border border-black/10">
+          <h6 className="font-black mb-4 text-lg">All coupons</h6>
+          <div className="flex flex-col md:hidden gap-5">
+            {list.length === 0 ? (
+              <div className="text-sm text-gray-400">No coupons yet</div>
+            ) : (
+              list.map((c) => (
+                <div key={c._id} className="bg-white rounded-xl border border-black/10 py-3 px-4 space-y-1 flex flex-col shadow-sm relative">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-black break-all uppercase">{c.code}</span>
+                        <span className={`px-2 py-1 rounded-full border font-bold text-xs ml-1 select-none ${c.active ? "bg-black text-white border-black" : "bg-white text-black border-black"}`}>
+                          {c.active ? "Active" : "Inactive"}
+                        </span>
                       </div>
-                    ))}
+                      <div className="text-sm text-gray-500 mt-1 font-mono">
+                        {c.percent}% off • Uses {c.uses || 0}{c.maxUses === 0 ? " / ∞" : ` / ${c.maxUses}`}
+                      </div>
+                      <div className="text-xs mt-1 font-mono">Expires: {c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "—"}</div>
+                    </div>
+                    <div className="flex flex-col gap-2 items-end ml-2">
+                      <button className="btn-mono" title="Edit" onClick={() => openEdit(c)}>
+                        <Pencil size={16} />
+                      </button>
+                      {c.active ? (
+                        <button className="btn-mono" title="Deactivate" onClick={() => toggleActive(c._id, false)}>
+                          <PowerOff size={16} />
+                        </button>
+                      ) : (
+                        <button className="btn-mono" title="Activate" onClick={() => toggleActive(c._id, true)}>
+                          <Power size={16} />
+                        </button>
+                      )}
+                      <button className="btn-mono" title="Delete" onClick={() => del(c._id)}>
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
-
-                  {/* Desktop table */}
-                  <div className="d-none d-md-block table-responsive mono-scroll">
-                    <table className="table align-middle">
-                      <thead>
-                        <tr>
-                          <th className="text-nowrap">Code</th>
-                          <th className="text-nowrap">Percent</th>
-                          <th className="text-nowrap">Uses</th>
-                          <th className="text-nowrap">Max</th>
-                          <th className="text-nowrap">Status</th>
-                          <th className="text-nowrap">Expires</th>
-                          <th className="text-nowrap">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {list.map((c) => (
-                          <tr key={c._id}>
-                            <td className="fw-semibold text-break">{c.code}</td>
-                            <td>{c.percent}%</td>
-                            <td>{c.uses || 0}</td>
-                            <td>{c.maxUses === 0 ? "∞" : c.maxUses}</td>
-                            <td>
-                              <span className={`mono-badge ${c.active ? "active" : ""}`}>
-                                {c.active ? "Active" : "Inactive"}
-                              </span>
-                            </td>
-                            <td>{c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "—"}</td>
-                            <td className="text-nowrap">
-                              <div className="d-flex flex-wrap gap-2">
-                                <button className="mono-btn mono-btn-sm" title="Edit" type="button" onClick={() => openEdit(c)}>
-                                  <Pencil size={16} />
-                                </button>
-                                {c.active ? (
-                                  <button className="mono-btn mono-btn-sm" title="Deactivate" type="button" onClick={() => toggleActive(c._id, false)}>
-                                    <PowerOff size={16} />
-                                  </button>
-                                ) : (
-                                  <button className="mono-btn mono-btn-sm" title="Activate" type="button" onClick={() => toggleActive(c._id, true)}>
-                                    <Power size={16} />
-                                  </button>
-                                )}
-                                <button className="mono-btn mono-btn-sm" title="Delete" type="button" onClick={() => del(c._id)}>
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
-            </div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="hidden md:block overflow-x-auto rounded-xl border border-black/10">
+            {list.length === 0 ? (
+              <div className="text-sm text-gray-400 px-3 py-3">No coupons yet</div>
+            ) : (
+              <table className="min-w-full text-base">
+                <thead>
+                  <tr className="border-b border-black text-sm bg-white">
+                    <th className="p-2 font-black text-left">Code</th>
+                    <th className="p-2 font-black text-left">Percent</th>
+                    <th className="p-2 font-black text-left">Uses</th>
+                    <th className="p-2 font-black text-left">Max</th>
+                    <th className="p-2 font-black text-left">Status</th>
+                    <th className="p-2 font-black text-left">Expires</th>
+                    <th className="p-2 font-black text-left">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((c) => (
+                    <tr key={c._id} className="border-b border-gray-200 last:border-0">
+                      <td className="p-2 font-extrabold wrap-break-word uppercase">{c.code}</td>
+                      <td className="p-2">{c.percent}%</td>
+                      <td className="p-2">{c.uses || 0}</td>
+                      <td className="p-2">{c.maxUses === 0 ? "∞" : c.maxUses}</td>
+                      <td className="p-2">
+                        <span className={`px-2 py-1 rounded-full border font-bold text-xs select-none ${c.active ? "bg-black text-white border-black" : "bg-white text-black border-black"}`}>
+                          {c.active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="p-2">{c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "—"}</td>
+                      <td className="p-2 space-x-2">
+                        <button className="btn-mono" title="Edit" onClick={() => openEdit(c)}>
+                          <Pencil size={16} />
+                        </button>
+                        {c.active ? (
+                          <button className="btn-mono" title="Deactivate" onClick={() => toggleActive(c._id, false)}>
+                            <PowerOff size={16} />
+                          </button>
+                        ) : (
+                          <button className="btn-mono" title="Activate" onClick={() => toggleActive(c._id, true)}>
+                            <Power size={16} />
+                          </button>
+                        )}
+                        <button className="btn-mono" title="Delete" onClick={() => del(c._id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
 
       {/* Edit modal */}
       {editing && (
-        <div className="modal fade show" style={{ display: "block", background: "rgba(0,0,0,.4)" }} onClick={() => setEditing(null)}>
-          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Edit coupon</h5>
-                <button type="button" className="mono-btn mono-btn-sm" onClick={() => setEditing(null)} aria-label="Close">
-                  <X size={16} />
-                </button>
+        <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50 px-2 py-2">
+          <div className="bg-white shadow-lg rounded-2xl w-full max-w-md flex flex-col relative p-7">
+            <button className="absolute top-4 right-5 text-zinc-400 hover:text-black text-xl font-bold transition focus:outline-none" onClick={() => setEditing(null)} aria-label="Close">
+              <X size={26} />
+            </button>
+            <h3 className="text-lg sm:text-2xl font-black mb-6">Edit coupon</h3>
+            <form onSubmit={saveEdit} className="flex flex-col gap-4">
+              <div>
+                <label className="block font-medium mb-1">Code</label>
+                <input className="w-full rounded-lg border border-black px-3 py-2 focus:ring-2 focus:ring-black bg-white outline-none"
+                  value={editData.code}
+                  onChange={(e) => setEditData({ ...editData, code: e.target.value.toUpperCase() })}
+                  required
+                />
               </div>
-              <form onSubmit={saveEdit}>
-                <div className="modal-body vstack gap-3">
-                  <div>
-                    <label className="form-label">Code</label>
-                    <input
-                      className="form-control"
-                      value={editData.code}
-                      onChange={(e) => setEditData({ ...editData, code: e.target.value.toUpperCase() })}
-                      required
-                    />
-                  </div>
-                  <div className="row g-3">
-                    <div className="col-12 col-sm-6">
-                      <label className="form-label">Percent</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={100}
-                        className="form-control"
-                        value={editData.percent}
-                        onChange={(e) => setEditData({ ...editData, percent: Number(e.target.value) })}
-                        required
-                      />
-                    </div>
-                    <div className="col-12 col-sm-6">
-                      <label className="form-label">Max uses</label>
-                      <input
-                        type="number"
-                        min={0}
-                        className="form-control"
-                        value={editData.maxUses}
-                        onChange={(e) => setEditData({ ...editData, maxUses: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="form-label">Expires at</label>
-                    <input
-                      type="datetime-local"
-                      className="form-control"
-                      value={editData.expiresAt}
-                      onChange={(e) => setEditData({ ...editData, expiresAt: e.target.value })}
-                    />
-                  </div>
-                  <div className="form-check">
-                    <input
-                      id="editActive"
-                      className="form-check-input"
-                      type="checkbox"
-                      checked={editData.active}
-                      onChange={(e) => setEditData({ ...editData, active: e.target.checked })}
-                    />
-                    <label htmlFor="editActive" className="form-check-label">Active</label>
-                  </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex-1">
+                  <label className="block font-medium mb-1">Percent</label>
+                  <input type="number" min={1} max={100}
+                    className="w-full rounded-lg border border-black px-3 py-2 focus:ring-2 focus:ring-black bg-white outline-none"
+                    value={editData.percent}
+                    onChange={(e) => setEditData({ ...editData, percent: Number(e.target.value) })}
+                    required
+                  />
                 </div>
-                <div className="modal-footer">
-                  <button type="button" className="mono-btn mono-btn-sm" onClick={() => setEditing(null)}>Cancel</button>
-                  <button type="submit" className="mono-btn mono-btn-sm">Save</button>
+                <div className="flex-1">
+                  <label className="block font-medium mb-1">Max uses</label>
+                  <input type="number" min={0}
+                    className="w-full rounded-lg border border-black px-3 py-2 focus:ring-2 focus:ring-black bg-white outline-none"
+                    value={editData.maxUses}
+                    onChange={(e) => setEditData({ ...editData, maxUses: e.target.value })}
+                  />
                 </div>
-              </form>
-            </div>
+              </div>
+              <div>
+                <label className="block font-medium mb-1">Expires at</label>
+                <input type="datetime-local"
+                  className="w-full rounded-lg border border-black px-3 py-2 focus:ring-2 focus:ring-black bg-white outline-none"
+                  value={editData.expiresAt}
+                  onChange={(e) => setEditData({ ...editData, expiresAt: e.target.value })}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="editActive"
+                  className="rounded border border-black focus:ring-2 focus:ring-black"
+                  type="checkbox"
+                  checked={editData.active}
+                  onChange={(e) => setEditData({ ...editData, active: e.target.checked })}
+                />
+                <label htmlFor="editActive" className="font-medium">Active</label>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="button" className="w-1/2 rounded-full border border-black bg-white text-black py-2 font-bold hover:bg-black hover:text-white transition" onClick={() => setEditing(null)}>Cancel</button>
+                <button type="submit" className="w-1/2 rounded-full border border-black bg-black text-white py-2 font-bold hover:bg-white hover:text-black transition">Save</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Local monochrome + responsive helpers */}
+      {/* BUTTON STYLE - apply globally or pull to tailwind config */}
       <style>{`
-        .theme-monochrome { background-color: #f1efef; color: #000; }
-        .theme-monochrome .card, .theme-monochrome .modal-content { background: #fff; color: #000; }
-        .theme-monochrome .form-control, .theme-monochrome .form-select { background-color: #fff; color: #000; border-color: #ccc; }
-        .theme-monochrome .form-check-input { accent-color: #000; }
-
-        /* Inputs/selects focus in black */
-        .form-control:focus, .form-select:focus { border-color: #000 !important; box-shadow: none !important; }
-
-        /* Buttons */
-        .mono-btn {
-          border: 1px solid #000; background: #fff; color: #000;
-          border-radius: 10px; padding: 8px 12px; font-weight: 700;
-          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
-          white-space: nowrap;
+        .btn-mono {
+          background: #fff;
+          color: #000;
+          border: 1.5px solid #000;
+          border-radius: 9999px;
+          padding: 5px 10px;
+          font-weight: 600;
+          transition: all 0.14s;
         }
-        .mono-btn-sm { padding: 6px 10px; border-radius: 999px; }
-        .mono-btn:hover { background: #000; color: #fff; }
-        .mono-btn:active { transform: scale(0.98); }
-
-        /* Badges */
-        .mono-badge {
-          display: inline-block; padding: 4px 10px; border-radius: 999px;
-          border: 1px solid #000; background: #fff; color: #000; font-weight: 700;
-          font-size: 0.8em; white-space: nowrap;
-        }
-        .mono-badge.active { background: #000; color: #fff; }
-
-        /* Keyboard focus */
-        .mono-btn:focus-visible,
-        a:focus-visible,
-        .form-control:focus-visible,
-        .form-select:focus-visible,
-        .form-check-input:focus-visible + .form-check-label {
-          outline: none;
-          box-shadow: 0 0 0 2px #000, 0 0 0 4px #fff;
-        }
-        .mono-btn:focus, a:focus, .form-control:focus, .form-select:focus { outline: 2px solid #000; outline-offset: 2px; }
-        .mono-btn:focus:not(:focus-visible),
-        a:focus:not(:focus-visible),
-        .form-control:focus:not(:focus-visible),
-        .form-select:focus:not(:focus-visible) { outline: none; box-shadow: none; }
-
-        /* Table responsiveness helpers */
-        .mono-scroll { -webkit-overflow-scrolling: touch; }
-        .table td, .table th { vertical-align: middle; }
-
-        /* Mobile coupon card */
-        .coupon-card { background: #fff; }
-        .coupon-card .mono-badge { font-size: 0.72rem; }
-
-        /* Modal sizing on very small screens */
-        @media (max-width: 575.98px) {
-          .modal-dialog { max-width: 95vw; margin: 1rem auto; }
+        .btn-mono:hover, .btn-mono:focus {
+          background: #000;
+          color: #fff;
         }
       `}</style>
     </div>

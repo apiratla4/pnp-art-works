@@ -1,254 +1,178 @@
-// src/components/Footer.jsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  Mail, MapPin, Phone, Instagram, Facebook, Youtube, ArrowRight
+  Mail, MapPin, Phone, Instagram, Facebook, Youtube
 } from 'lucide-react';
-import axios from 'axios';
-import './Footer.css';
 import logo from '../assets/pnplogowhite.png';
-import FancyButton from './FancyButton';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const mint = "rgb(159,227,117)";
 const year = new Date().getFullYear();
 
-const Footer = () => {
-  // Newsletter state
-  const [subEmail, setSubEmail] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState({ show: false, type: 'ok', text: '' });
+const socialLinks = [
+  { Icon: Instagram, href: 'https://www.instagram.com/pnp.artstudio?igsh=MThxbzJsZHg1d29rYw==', label: 'Instagram' },
+  { Icon: Facebook, href: 'https://www.facebook.com/profile.php?id=100064142585253', label: 'Facebook' },
+  { Icon: Youtube, href: 'https://youtube.com/@pnpartstudio?si=XtS7itrq6cyrgOdw', label: 'YouTube' },
+];
 
-  const showToast = (type, text) => {
-    setToast({ show: true, type, text });
-    setTimeout(() => setToast((t) => ({ ...t, show: false })), 3000);
-  };
+const quickLinks = [
+  { to: '/', label: 'Home' },
+  { to: '/about', label: 'About' },
+  { to: '/gallery', label: 'Gallery' },
+  { to: '/blog', label: 'Blog' },
+  { to: '/contact', label: 'Contact' },
+];
 
-  const onSubscribe = async (e) => {
-    e.preventDefault();
-    if (!subEmail.trim()) return;
-    setSubmitting(true);
-    try {
-      await axios.post(
-        `${API_BASE}/api/newsletters/subscribe`,
-        { email: subEmail.trim() },
-        { withCredentials: true }
-      );
-      setSubEmail('');
-      showToast('ok', 'Subscribed. Check inbox for future updates.');
-    } catch (err) {
-      const msg = err?.response?.data?.message || 'Subscription failed. Try again.';
-      showToast('err', msg);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+const shopLinks = [
+  { to: '/shop', label: 'All Products' },
+  { to: '/shop/category/paintings', label: 'Paintings' },
+  { to: '/shop/category/handcrafted-items', label: 'Handcrafted' },
+  { to: '/shop/category/digital-prints', label: 'Digital Prints' },
+  { to: '/custom-order', label: 'Custom Orders' },
+];
 
-  return (
-    <footer className="pt-5 footer-root on-dark" style={{ backgroundColor: '#000' }}>
-      {/* Top divider (monochrome) */}
-      <div className="w-100" style={{ height: 4, background: '#fff' }} />
+const legalLinks = [
+  { to: '/terms', label: 'Terms' },
+  { to: '/privacy', label: 'Privacy' },
+  { to: '/returns', label: 'Returns' },
+  { to: '/shipping', label: 'Shipping' },
+];
 
-      <div className="container py-5">
-        <div className="row g-4 g-lg-5">
-          {/* Brand + About */}
-          <div className="col-12 col-md-6 col-lg-4">
-            <div className="d-flex align-items-center gap-2 mb-3">
-              <img
-                src={logo}
-                alt="PnpArtStudio — by Priyanka Vasishta"
-                className="footer-logo"
-                height={44}
-                width={44}
-                loading="eager"
-                decoding="async"
-              />
-              <div className="lh-2">
-                <div className=" brand-title fw-bold fs-3" style={{ color: '#fff' }}>
-                  PnpArtStudio
-                </div>
-                <small className=" brand-subline text-muted-contrast " style={{ color: '#fff' }}>
-                  Original Paintings &amp; Art <br /> by Priyanka Vasista
-                </small>
+const Footer = () => (
+  <footer className="bg-black pt-5 text-white">
+    {/* Top divider */}
+    <div className="w-full h-1 bg-white" />
+    <div className="max-w-7xl mx-auto px-3 md:px-6 py-10">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-y-10 gap-x-9">
+        {/* Brand/About */}
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-3 items-center mb-2">
+            <img
+              src={logo}
+              alt="PnPArtStudio — by Priyanka Vasishta"
+              className="block rounded-lg"
+              style={{ height: 92, width: 92 }}
+              loading="eager"
+              decoding="async"
+            />
+            <div>
+              <div className="font-extrabold text-white" style={{ fontSize: "1.5rem", lineHeight: 1 }}>
+                PnpArtStudio
+              </div>
+              <div className="text-white opacity-90 text-xs font-medium lowercase">
+                Original Paintings & Art<br />by Priyanka Vasista
               </div>
             </div>
-
-            <p className="mb-3" style={{ color: '#fff' }}>
-              Handcrafted originals, limited editions, and custom commissions made with archival materials and a collector‑first approach.
-            </p>
-
-            <div className="d-flex gap-2">
-              {[{ Icon: Instagram, href: 'https://www.instagram.com/pnp.artstudio?igsh=MThxbzJsZHg1d29rYw==', label: 'Instagram' },
-                { Icon: Facebook,  href: 'https://www.facebook.com/profile.php?id=100064142585253', label: 'Facebook' },
-                { Icon: Youtube,   href: 'https://youtube.com/@pnpartstudio?si=XtS7itrq6cyrgOdw', label: 'YouTube' },
-                ].map(({ Icon, href, label }) => (
-                <motion.a
-                  key={label}
-                  whileHover={{ scale: 1.06 }}
-                  whileTap={{ scale: 0.95 }}
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={label}
-                  className="social-btn-invert"
+          </div>
+          <p className="text-sm mb-4 text-white">
+            Handcrafted originals, limited editions, and custom commissions made with archival materials and a collector‑first approach.
+          </p>
+          <div className="flex gap-2 mt-2">
+            {socialLinks.map(({ Icon, href, label }) => (
+              <motion.a
+                key={label}
+                whileHover={{ scale: 1.10 }}
+                whileTap={{ scale: 0.93 }}
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={label}
+                className="rounded-full w-10 h-10 flex items-center justify-center border-2 border-white bg-white text-black hover:bg-black hover:text-white transition-shadow focus:outline-none focus:ring-2 focus:ring-white"
+              >
+                <Icon size={18}/>
+              </motion.a>
+            ))}
+          </div>
+        </div>
+        {/* Quick Links */}
+        <div>
+          <h6 className="font-semibold mb-4 text-lg">Quick Links</h6>
+          <ul className="flex flex-col gap-2 text-base">
+            {quickLinks.map(({ to, label }) => (
+              <li key={label}>
+                <Link
+                  to={to}
+                  className="transition rounded"
+                  style={{ color: mint }}
+                  onMouseOver={e => { e.currentTarget.style.color = "#fff"; }}
+                  onMouseOut={e => { e.currentTarget.style.color = mint; }}
                 >
-                  <Icon size={18} />
-                </motion.a>
-              ))}
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+        {/* Shop */}
+        <div>
+          <h6 className="font-semibold mb-4 text-lg">Shop</h6>
+          <ul className="flex flex-col gap-2 text-base">
+            {shopLinks.map(({ to, label }) => (
+              <li key={label}>
+                <Link
+                  to={to}
+                  className="transition rounded"
+                  style={{ color: mint }}
+                  onMouseOver={e => { e.currentTarget.style.color = "#fff"; }}
+                  onMouseOut={e => { e.currentTarget.style.color = mint; }}
+                >
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+        {/* Contact */}
+        <div className="flex flex-col gap-4">
+          <h6 className="font-semibold mb-3 text-lg">Contact</h6>
+          <div className="flex flex-col gap-2 mb-2 text-base">
+            <div className="flex items-start gap-2">
+              <MapPin size={16} className="mt-1"/>
+              <span>579 Brook Meadow Dr Ballwin, MO 63021</span>
             </div>
-          </div>
-
-          {/* Quick Links */}
-          <div className="col-6 col-md-3 col-lg-2">
-            <h6 className="fw-semibold mb-3" style={{ color: '#fff' }}>Quick Links</h6>
-            <ul className="list-unstyled vstack gap-2 mb-0">
-              <li><Link className="footer-link" to="/">Home</Link></li>
-              <li><Link className="footer-link" to="/about">About</Link></li>
-              <li><Link className="footer-link" to="/gallery">Gallery</Link></li>
-              <li><Link className="footer-link" to="/blog">Blog</Link></li>
-              <li><Link className="footer-link" to="/contact">Contact</Link></li>
-            </ul>
-          </div>
-
-          {/* Shop */}
-          <div className="col-6 col-md-3 col-lg-2">
-            <h6 className="fw-semibold mb-3" style={{ color: '#fff' }}>Shop</h6>
-            <ul className="list-unstyled vstack gap-2 mb-0">
-              <li><Link className="footer-link" to="/shop">All Products</Link></li>
-              <li><Link className="footer-link" to="/shop/category/paintings">Paintings</Link></li>
-              <li><Link className="footer-link" to="/shop/category/handcrafted-items">Handcrafted</Link></li>
-              <li><Link className="footer-link" to="/shop/category/digital-prints">Digital Prints</Link></li>
-              <li><Link className="footer-link" to="/custom-order">Custom Orders</Link></li>
-            </ul>
-          </div>
-
-          {/* Contact + Newsletter */}
-          <div className="col-12 col-md-6 col-lg-4">
-            <h6 className="fw-semibold mb-3" style={{ color: '#fff' }}>Contact</h6>
-            <div className="vstack gap-2 small mb-3" style={{ color: '#fff' }}>
-              <div className="d-flex align-items-start gap-2">
-                <MapPin size={16} className="mt-1" />
-                <span>579 Brook Meadow Dr Ballwin, MO 63021</span>
-              </div>
-              <div className="d-flex align-items-center gap-2">
-                <Phone size={16} />
-                <a className="footer-link" href="tel:+17135769741">+1 (713) 576‑9741</a>
-              </div>
-              <div className="d-flex align-items-center gap-2">
-                <Mail size={16} />
-                <a className="footer-link" href="mailto:pnp.artstudio7@gmail.com">pnp.artstudio7@gmail.com</a>
-              </div>
+            <div className="flex items-center gap-2">
+              <Phone size={16} />
+              <a
+                className="transition rounded"
+                href="tel:+17135769741"
+                style={{ color: mint }}
+                onMouseOver={e => { e.currentTarget.style.color = "#fff"; }}
+                onMouseOut={e => { e.currentTarget.style.color = mint; }}
+              >+1 (713) 576‑9741</a>
             </div>
-
-            {/* Newsletter */}
-            <div className="newsletter-box position-relative overflow-visible">
-              <div className="fw-semibold mb-2" style={{ color: '#fff' }}>Stay in the loop</div>
-              <form className="d-flex gap-2" onSubmit={onSubscribe}>
-                <input
-                  type="email"
-                  required
-                  className="form-control rounded-pill"
-                  placeholder="Email address"
-                  aria-label="Email address"
-                  value={subEmail}
-                  onChange={(e) => setSubEmail(e.target.value)}
-                  disabled={submitting}
-                  style={{ background: '#fff', color: '#000' }}
-                />
-                <FancyButton as="button" type="submit" className="fancy-sm" disabled={submitting}>
-                  {submitting ? 'Subscribing…' : <>Subscribe <ArrowRight size={16} /></>}
-                </FancyButton>
-              </form>
-
-              {/* Animated toast (monochrome) */}
-              <AnimatePresence>
-                {toast.show && (
-                  <motion.div
-                    key="footer-toast"
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 12 }}
-                    transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-                    className="mono-toast-invert mt-2"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    {toast.text}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <small className="d-block mt-1" style={{ color: '#fff' }}>No spam. Unsubscribe anytime.</small>
+            <div className="flex items-center gap-2">
+              <Mail size={16} />
+              <a
+                className="transition rounded"
+                href="mailto:pnp.artstudio7@gmail.com"
+                style={{ color: mint }}
+                onMouseOver={e => { e.currentTarget.style.color = "#fff"; }}
+                onMouseOut={e => { e.currentTarget.style.color = mint; }}
+              >pnp.artstudio7@gmail.com</a>
             </div>
           </div>
         </div>
       </div>
-
       {/* Bottom bar */}
-      <div className="border-top" style={{ borderColor: 'rgba(255,255,255,0.25)' }}>
-        <div className="container py-3">
-          <div className="d-flex flex-column flex-md-row align-items-center justify-content-between gap-2">
-            <small className="mb-0" style={{ color: '#fff' }}>© {year} PnpArtStudio. All rights reserved.</small>
-            <div className="d-flex align-items-center gap-3 small">
-              <Link to="/terms" className="footer-link">Terms</Link>
-              <Link to="/privacy" className="footer-link">Privacy</Link>
-              <Link to="/returns" className="footer-link">Returns</Link>
-              <Link to="/shipping" className="footer-link">Shipping</Link>
-            </div>
-          </div>
+      <div className="border-t border-white/25 mt-10 pt-5 flex flex-col md:flex-row md:justify-between items-center gap-2 text-sm">
+        <small className="text-white">&copy; {year} PnpArtStudio. All rights reserved.</small>
+        <div className="flex gap-5">
+          {legalLinks.map(({ to, label }) => (
+            <Link
+              key={label}
+              to={to}
+              className="transition rounded"
+              style={{ color: mint }}
+              onMouseOver={e => { e.currentTarget.style.color = "#fff"; }}
+              onMouseOut={e => { e.currentTarget.style.color = mint; }}
+            >
+              {label}
+            </Link>
+          ))}
         </div>
       </div>
-
-      {/* Local styles for dark footer + focus-visible */}
-      <style>{`
-        .footer-link {
-          color: #fff;
-          text-decoration: none;
-          position: relative;
-        }
-        .footer-link:hover { text-decoration: underline; }
-        .footer-link:focus-visible {
-          outline: none;
-          box-shadow: 0 0 0 2px #fff, 0 0 0 5px #000;
-        }
-        .footer-link:focus { outline: 2px solid #fff; outline-offset: 2px; }
-
-        .social-btn-invert {
-          width: 40px; height: 40px; border-radius: 50%;
-          background: #fff; color: #000; border: 2px solid #fff;
-          display: inline-flex; align-items: center; justify-content: center;
-          transition: background-color 160ms ease, color 160ms ease, transform 120ms ease, box-shadow 120ms ease, border-color 160ms ease;
-        }
-        .social-btn-invert:hover { background: #000; color: #fff; border-color: #fff; }
-        .social-btn-invert:focus-visible {
-          outline: none;
-          box-shadow: 0 0 0 2px #fff, 0 0 0 5px #000;
-        }
-        .social-btn-invert:focus { outline: 2px solid #fff; outline-offset: 2px; }
-
-        .newsletter-box {
-          background: transparent;
-          border: 1px solid rgba(255,255,255,0.35);
-          border-radius: 16px;
-          padding: 12px;
-        }
-
-        .mono-toast-invert {
-          border: 1px solid #fff;
-          background: #000;
-          color: #fff;
-          border-radius: 8px;
-          padding: 8px 12px;
-          display: inline-block;
-        }
-
-        /* Inputs focus on dark */
-        .form-control:focus {
-          border-color: #000 !important; /* input is white; the UA ring is removed */
-          box-shadow: none !important;
-        }
-      `}</style>
-    </footer>
-  );
-};
+    </div>
+  </footer>
+);
 
 export default Footer;

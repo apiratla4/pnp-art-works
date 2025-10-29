@@ -56,52 +56,60 @@ const CartPage = () => {
 
   if (state.items.length === 0) {
     return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f1efef' }}>
-        <div className="text-center container" style={{ maxWidth: 520 }}>
+      <div className="min-h-screen flex items-center justify-center bg-[#f1efef]">
+        <div className="text-center w-full max-w-md mx-auto">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4"
-            style={{ width: 128, height: 128, background: '#ffffff', border: '2px solid #000', color: '#000' }}
+            className="rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-black bg-white text-black"
+            style={{ width: 128, height: 128 }}
           >
             <ShoppingBag size={64} />
           </motion.div>
-          <h2 className="fw-bold mb-3" style={{ color: '#000' }}>Your cart is empty</h2>
-          <p className="mb-4" style={{ color: '#000' }}>
+          <h2 className="font-black text-2xl mb-2 text-black">Your cart is empty</h2>
+          <p className="mb-6 text-black text-base">
             Looks like no beautiful artworks have been added yet. Explore the collection and find a favorite.
           </p>
-          <FancyButton to="/shop" className="fancy-sm">Start Shopping</FancyButton>
+          <FancyButton to="/shop" className="fancy-sm py-2 px-7 rounded-full font-bold text-lg">
+            Start Shopping
+          </FancyButton>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-vh-100" style={{ backgroundColor: '#f1efef' }}>
-      <div className="container py-4 py-lg-5">
+    <div className="min-h-screen bg-[#f1efef]">
+      <div className="w-full max-w-6xl mx-auto px-2 md:px-5 py-8">
         {/* Header */}
-        <div className="d-flex align-items-center justify-content-between mb-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-7 gap-4">
           <div>
-            <h1 className="display-6 fw-bold mb-1" style={{ color: '#000' }}>Shopping Cart</h1>
-            <p className="mb-0" style={{ color: '#000' }}>
-              {totalItems} item{totalItems !== 1 ? 's' : ''} in the cart
+            <h1 className="font-black text-3xl md:text-4xl text-black mb-1">Shopping Cart</h1>
+            <p className="text-black text-base">
+              {totalItems} item{totalItems !== 1 ? 's' : ''} in your cart
             </p>
           </div>
-          <Link to="/shop" className="d-inline-flex align-items-center gap-2 text-decoration-none" style={{ color: '#000' }}>
-            <ArrowLeft size={18} />
-            <span className="fw-medium">Continue Shopping</span>
+          <Link to="/shop" className="flex items-center gap-2 text-black text-lg font-semibold hover:underline transition">
+            <ArrowLeft size={20} />
+            Continue Shopping
           </Link>
         </div>
-        <div className="row g-4">
+        <div className="flex flex-col lg:flex-row gap-7">
           {/* Cart Items + Benefits */}
-          <div className="col-lg-8">
+          <div className="flex-1 min-w-0 flex flex-col gap-8">
             {/* Items card */}
-            <div className="card shadow-sm border-0 rounded-4 mb-4" style={{ color: '#000', background: '#fff' }}>
-              <div className="card-header bg-white border-0 p-4 d-flex align-items-center justify-content-between" style={{ color: '#000' }}>
-                <h2 className="h5 fw-semibold mb-0">Your Items</h2>
-                <button onClick={clearCart} className="cart-link-btn" type="button">Clear Cart</button>
+            <div className="bg-white shadow-lg rounded-2xl mb-2">
+              <div className="flex justify-between items-center border-b border-black/10 px-7 py-4">
+                <h2 className="font-bold text-lg text-black mb-0">Your Items</h2>
+                <button
+                  onClick={clearCart}
+                  className="font-semibold px-3 py-1 rounded-full border border-black text-black bg-white hover:bg-black hover:text-white transition text-base"
+                  type="button"
+                >
+                  Clear Cart
+                </button>
               </div>
-              <div className="list-group list-group-flush">
+              <div>
                 {state.items.map((item, index) => {
                   const desc = item.description || '';
                   const isLong = desc.trim().split(/\s+/).length > 30;
@@ -110,111 +118,84 @@ const CartPage = () => {
                       key={item.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="list-group-item p-4"
-                      style={{ color: '#000', background: '#fff', position: 'relative', minHeight: 100 }}
+                      transition={{ delay: index * 0.09 }}
+                      className="relative px-7 py-6 flex flex-col sm:flex-row gap-4 border-b border-black/10 items-center sm:items-start"
                     >
-                      {/* Remove button, absolutely positioned */}
+                      {/* Remove btn */}
                       <button
                         onClick={() => removeItem(item.id)}
-                        className="cart-icon-btn"
+                        className="absolute top-6 right-7 w-8 h-8 rounded-full border-2 border-black text-black bg-white flex items-center justify-center hover:bg-black hover:text-white transition"
                         title="Remove item"
                         type="button"
-                        style={{
-                          position: 'absolute',
-                          top: 12,
-                          right: 12,
-                          zIndex: 2,
-                        }}
                         aria-label={`Remove ${item.title}`}
                       >
                         <X size={18} />
                       </button>
-                      <div className="d-flex gap-3">
-                        {/* Image */}
-                        <div className="shrink-0">
-                          <img
-                            src={getCover(item) || FALLBACK_IMG}
-                            alt={item.title}
-                            className="rounded-3 object-fit-cover"
-                            style={{ width: 96, height: 96, border: '1px solid #000' }}
-                            loading="lazy"
-                            onError={handleImgError}
-                          />
-                        </div>
-                        {/* Details */}
-                        <div className="grow">
-                          <div className="d-flex justify-content-between align-items-start">
-                            <div>
-                              <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>{item.title}</h3>
-                              <div className="small mb-2" style={{ color: '#000' }}>{item.category}</div>
-                              {/* Price (SALE logic) */}
-                              <div className="fs-5 fw-bold" style={{ color: '#000' }}>
-                                {typeof item.salePrice === "number" && item.salePrice !== null && item.salePrice < item.price ? (
-                                  <>
-                                    <span style={{
-                                      textDecoration: "line-through",
-                                      color: "#888",
-                                      marginRight: 7,
-                                      fontWeight: 400,
-                                      fontSize: "0.97em"
-                                    }}>
-                                      ${(item.price).toFixed(2)}
-                                    </span>
-                                    <span>
-                                      ${(item.salePrice).toFixed(2)}
-                                    </span>
-                                  </>
-                                ) : (
-                                  `$${item.price.toFixed(2)}`
-                                )}
-                              </div>
-                              {desc && (
-                                <div className="small mt-2" style={{ color: "#000" }}>
-                                  {descExpanded[item.id]
-                                    ? desc
-                                    : wordLimitDesc(desc, 30)}
-                                  {isLong && (
-                                    <button
-                                      className="cart-link-btn ms-1"
-                                      onClick={() => toggleDesc(item.id)}
-                                      style={{
-                                        background: "none", border: "none", color: "#007bff",
-                                        cursor: "pointer", padding: 0, fontSize: "0.95em"
-                                      }}>
-                                      {descExpanded[item.id] ? "Show less" : "Show more"}
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="d-flex justify-content-between align-items-center mt-3">
-                            {/* Quantity controls */}
-                            <div className="d-inline-flex align-items-center gap-2">
-                              <button
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                className="cart-icon-btn"
-                                title="Decrease"
-                                type="button"
-                                aria-label={`Decrease quantity of ${item.title}`}
-                              >
-                                <Minus size={16} />
-                              </button>
-                              <span className="fw-medium" style={{ minWidth: 32, textAlign: 'center', color: '#000' }}>
-                                {item.quantity}
+                      {/* Image */}
+                      <img
+                        src={getCover(item) || FALLBACK_IMG}
+                        alt={item.title}
+                        className="rounded-md border border-black/10 bg-white object-cover shrink-0"
+                        style={{ width: 96, height: 96, minWidth: 96, minHeight: 96 }}
+                        loading="lazy"
+                        onError={handleImgError}
+                      />
+                      {/* Details */}
+                      <div className="flex-1 min-w-0 w-full flex flex-col gap-1">
+                        <h3 className="font-bold text-black text-lg leading-tight">{item.title}</h3>
+                        <div className="text-sm text-gray-700 mb-1">{item.category}</div>
+                        {/* Price (SALE logic) */}
+                        <div className="font-black text-lg text-black mb-1">
+                          {typeof item.salePrice === "number" && item.salePrice !== null && item.salePrice < item.price ? (
+                            <>
+                              <span className="line-through text-gray-400 mr-2 text-base">
+                                ${item.price.toFixed(2)}
                               </span>
+                              <span>${item.salePrice.toFixed(2)}</span>
+                            </>
+                          ) : (
+                            `$${item.price.toFixed(2)}`
+                          )}
+                        </div>
+                        {desc && (
+                          <div className="text-gray-800 text-sm mt-1">
+                            {descExpanded[item.id]
+                              ? desc
+                              : wordLimitDesc(desc, 30)}
+                            {isLong && (
                               <button
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                className="cart-icon-btn"
-                                title="Increase"
+                                className="ml-2 text-blue-600 hover:underline font-medium"
+                                onClick={() => toggleDesc(item.id)}
                                 type="button"
-                                aria-label={`Increase quantity of ${item.title}`}
                               >
-                                <Plus size={16} />
+                                {descExpanded[item.id] ? "Show less" : "Show more"}
                               </button>
-                            </div>
+                            )}
                           </div>
+                        )}
+                        {/* Quantity controls */}
+                        <div className="flex items-center gap-3 mt-3">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="w-8 h-8 rounded-full border-2 border-black text-black flex items-center justify-center transition hover:bg-black hover:text-white"
+                            title="Decrease"
+                            aria-label={`Decrease quantity of ${item.title}`}
+                            type="button"
+                          >
+                            <Minus size={16} />
+                          </button>
+                          <span className="font-bold text-black text-lg w-10 text-center select-none">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="w-8 h-8 rounded-full border-2 border-black text-black flex items-center justify-center transition hover:bg-black hover:text-white"
+                            title="Increase"
+                            aria-label={`Increase quantity of ${item.title}`}
+                            type="button"
+                          >
+                            <Plus size={16} />
+                          </button>
                         </div>
                       </div>
                     </motion.div>
@@ -223,117 +204,66 @@ const CartPage = () => {
               </div>
             </div>
             {/* Benefits */}
-            <div className="row g-3">
-              {/* Free Shipping */}
-              <div className="col-12 col-md-4">
-                <div className="card h-100 text-center shadow-sm border-0 rounded-4" style={{ background: '#fff', color: '#000' }}>
-                  <div className="card-body">
-                    <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                      style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}>
-                      <Truck size={22} />
-                    </div>
-                    <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>Free Shipping</h3>
-                    <p className="small mb-0" style={{ color: '#000' }}>On orders over $100</p>
-                  </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div className="bg-white shadow rounded-xl text-center px-5 py-6 flex flex-col items-center">
+                <div className="w-12 h-12 flex items-center justify-center border border-black rounded-full mb-3 bg-white text-black">
+                  <Truck size={22} />
                 </div>
+                <div className="font-bold">Free Shipping</div>
+                <div className="text-sm text-gray-700">On orders over $100</div>
               </div>
-              {/* Secure Packaging */}
-              <div className="col-12 col-md-4">
-                <div className="card h-100 text-center shadow-sm border-0 rounded-4" style={{ background: '#fff', color: '#000' }}>
-                  <div className="card-body">
-                    <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                      style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}>
-                      <Shield size={22} />
-                    </div>
-                    <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>Secure Packaging</h3>
-                    <p className="small mb-0" style={{ color: '#000' }}>Art-safe materials</p>
-                  </div>
+              <div className="bg-white shadow rounded-xl text-center px-5 py-6 flex flex-col items-center">
+                <div className="w-12 h-12 flex items-center justify-center border border-black rounded-full mb-3 bg-white text-black">
+                  <Shield size={22} />
                 </div>
+                <div className="font-bold">Secure Packaging</div>
+                <div className="text-sm text-gray-700">Art-safe materials</div>
               </div>
-              {/* Free Pickup in Studio */}
-              <div className="col-12 col-md-4">
-                <div className="card h-100 text-center shadow-sm border-0 rounded-4" style={{ background: '#fff', color: '#000' }}>
-                  <div className="card-body">
-                    <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                      style={{ width: 48, height: 48, background: '#ffffff', color: '#000', border: '1px solid #000' }}>
-                      <Award size={22} />
-                    </div>
-                    <h3 className="h6 fw-semibold mb-1" style={{ color: '#000' }}>Free Pickup in Studio</h3>
-                    <p className="small mb-0" style={{ color: '#000' }}>No shipping needed</p>
-                  </div>
+              <div className="bg-white shadow rounded-xl text-center px-5 py-6 flex flex-col items-center">
+                <div className="w-12 h-12 flex items-center justify-center border border-black rounded-full mb-3 bg-white text-black">
+                  <Award size={22} />
                 </div>
+                <div className="font-bold">Free Pickup in Studio</div>
+                <div className="text-sm text-gray-700">No Minimum Purchase Required</div>
               </div>
             </div>
           </div>
-          {/* Summary */}
-          <div className="col-lg-4">
-            <div className="card shadow-sm border-0 rounded-4 p-4 sticky-top" style={{ top: '2rem', background: '#fff', color: '#000' }}>
-              <h2 className="h5 fw-semibold mb-4" style={{ color: '#000' }}>Order Summary</h2>
-              <div className="mb-4">
-                <div className="d-flex justify-content-between mb-2" style={{ color: '#000' }}>
-                  <span>Subtotal ({totalItems} items)</span>
-                  <span>${totalPrice.toFixed(2)}</span>
-                </div>
-                <div className="d-flex justify-content-between mb-2" style={{ color: '#000' }}>
-                  <span>Shipping</span>
-                  <span>{shippingCost === 0 ? 'Free' : `$${shippingCost.toFixed(2)}`}</span>
-                </div>
-                {totalPrice < 100 && (
-                  <div className="mono-alert mb-3">
-                    💡 Add ${(100 - totalPrice).toFixed(2)} more for free shipping!
-                  </div>
-                )}
-                <div className="pt-3" style={{ borderTop: '1px solid #000' }}>
-                  <div className="d-flex justify-content-between align-items-center" style={{ color: '#000' }}>
-                    <span className="fw-bold fs-5">Total</span>
-                    <span className="fw-bold fs-5">${finalTotal.toFixed(2)}</span>
-                  </div>
-                </div>
+          {/* Summary Panel */}
+          <div className="w-full max-w-sm shrink-0">
+            <div className="bg-white shadow-xl rounded-2xl p-7 sticky top-8">
+              <div className="font-black text-2xl text-black mb-2">Order Summary</div>
+              <div className="flex justify-between mb-2 text-black font-medium">
+                <span>Subtotal ({totalItems} items)</span>
+                <span>${totalPrice.toFixed(2)}</span>
               </div>
-              <div className="d-grid gap-2">
-                <FancyButton to="/checkout" className="fancy-sm">Proceed to Checkout</FancyButton>
+              <div className="flex justify-between mb-2 text-black font-medium">
+                <span>Shipping</span>
+                <span>{shippingCost === 0 ? 'Free' : `$${shippingCost.toFixed(2)}`}</span>
               </div>
-              <div className="mt-4 pt-3" style={{ borderTop: '1px solid #000' }}>
-                <h3 className="h6 fw-semibold mb-3" style={{ color: '#000' }}>Accepted Payment Methods</h3>
-                <div className="d-flex flex-wrap gap-2">
-                  <span className="mono-badge">VISA</span>
-                  <span className="mono-badge">MASTERCARD</span>
-                  <span className="mono-badge">PAYPAL</span>
+              {totalPrice < 100 && (
+                <div className="border border-black bg-white rounded-xl px-3 py-2 text-base my-3 text-black">
+                  💡 Add ${(100 - totalPrice).toFixed(2)} more for free shipping!
+                </div>
+              )}
+              <div className="border-t border-black my-3" />
+              <div className="flex justify-between text-black items-center font-bold text-lg mb-4">
+                <span>Total</span>
+                <span>${finalTotal.toFixed(2)}</span>
+              </div>
+              <FancyButton to="/checkout" className="w-full fancy-sm py-3 rounded-full text-base font-bold mb-2">
+                Proceed to Checkout
+              </FancyButton>
+              <div className="pt-4 border-t border-black mt-3">
+                <div className="font-bold mb-2 text-black">Accepted Payment</div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 border border-black rounded-full text-sm font-semibold bg-white text-black">VISA</span>
+                  <span className="px-3 py-1 border border-black rounded-full text-sm font-semibold bg-white text-black">MASTERCARD</span>
+                  <span className="px-3 py-1 border border-black rounded-full text-sm font-semibold bg-white text-black">PAYPAL</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        {/* Local styles for monochrome controls and focus visibility */}
-        <style>{`
-          .cart-icon-btn {
-            width: 32px; height: 32px; border-radius: 50%;
-            background: transparent; color: #000; border: 2px solid #000;
-            display: inline-flex; align-items: center; justify-content: center;
-            transition: background-color 160ms ease, color 160ms ease, transform 120ms ease;
-          }
-          .cart-icon-btn:hover { background: #000; color: #fff; }
-          .cart-icon-btn:active { transform: scale(0.96); }
-          .cart-icon-btn:focus-visible {
-            outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
-          }
-          .cart-icon-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-          .cart-link-btn {
-            background: transparent; border: none; color: #000; padding: 0; font-weight: 600; cursor: pointer;
-          }
-          .cart-link-btn:hover { text-decoration: underline; }
-          .cart-link-btn:focus-visible {
-            outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
-          }
-          .cart-link-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-          .mono-badge {
-            padding: 0.5rem 0.75rem; border: 1px solid #000; border-radius: 999px;
-            background: #fff; color: #000; font-weight: 600; line-height: 1;
-          }
-          .mono-alert {
-            border: 1px solid #000; background: #fff; color: #000; border-radius: 0.5rem; padding: 0.5rem 0.75rem;
-          }
-        `}</style>
       </div>
     </div>
   );

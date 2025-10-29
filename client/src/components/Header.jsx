@@ -1,20 +1,13 @@
-// src/components/Header.jsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ShoppingCart, Heart, X } from "lucide-react";
+import { ShoppingCart, Heart, Menu, X, ChevronRight, ChevronDown } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import CartDropdown from "./CartDropdown";
-import "./Header.css";
 import logo from "../assets/pnplogoblack1.png";
 import FancyButton from "./FancyButton";
 
-// Utility to encode values for URLs
-function qp(val) {
-  return encodeURIComponent(val);
-}
-
-// Define ALL navigation using ShopPage query params
+// Multi-level shop links
 const allProducts = [
   { label: "Paintings", to: `/shop?category=All Products&subcategory=Paintings` },
   { label: "Holiday gifts", to: `/shop?category=All Products&subcategory=Holiday gifts` },
@@ -25,281 +18,295 @@ const allProducts = [
   { label: "Pencil sketches", to: `/shop?category=All Products&subcategory=Pencil sketches` },
   { label: "Digital prints", to: `/shop?category=All Products&subcategory=Digital prints`, disabled: true }
 ];
-
 const indianProductsMain = [
   { label: "Indian god paintings", to: `/shop?category=Indian Products&subcategory=Indian god paintings` },
   { label: "Musical Art paintings", to: `/shop?category=Indian Products&subcategory=Musical Art paintings` }
 ];
-
 const returnGifts = [
-  {
-    label: "Kolam coasters",
-    to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Kolam coasters`
-  },
-  {
-    label: "Kolam peetham",
-    to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Kolam peetham`
-  },
-  {
-    label: "Traditional magnets",
-    to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Traditional magnets`
-  },
-  {
-    label: "Trays",
-    to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Trays`
-  },
-  {
-    label: "Diya holders",
-    to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Diya holders`
-  }
+  { label: "Kolam coasters", to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Kolam coasters` },
+  { label: "Kolam peetham", to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Kolam peetham` },
+  { label: "Traditional magnets", to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Traditional magnets` },
+  { label: "Trays", to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Trays` },
+  { label: "Diya holders", to: `/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Diya holders` }
+];
+const navLinks = [
+  { label: "Home", to: "/" },
+  { label: "About Us", to: "/about" },
+  { label: "Shop", to: "/shop" },
+  { label: "Art Classes", to: "/art-classes" },
+  { label: "Custom Art", to: "/custom-order" },
+  { label: "Gallery", to: "/gallery" },
+  { label: "Contact", to: "/contact" }
 ];
 
 const Header = () => {
-  const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [canHover, setCanHover] = useState(false);
-  const dropdownRef = useRef(null);
-  const { totalItems, dispatch } = useCart();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false); // desktop shop menu
+  const [shopSubPage, setShopSubPage] = useState(""); // '', 'all', 'indian', 'return'
+  const [mobileShopStep, setMobileShopStep] = useState(""); // '', 'all', 'indian', 'return'
+  const { totalItems, state, dispatch } = useCart();
   const location = useLocation();
 
+  useEffect(() => { setMenuOpen(false); setShopOpen(false); setShopSubPage(""); setMobileShopStep(""); }, [location.pathname]);
+  const wishlistCount = (state?.wishlist || []).length || 0;
+
+  // Detect desktop/mobile for UI consistency
+  const [isDesktop, setIsDesktop] = useState(typeof window !== "undefined" ? window.innerWidth >= 1024 : false);
   useEffect(() => {
-    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const update = () => setCanHover(mq.matches);
-    update();
-    if (mq.addEventListener) mq.addEventListener("change", update);
-    else mq.addListener(update);
-    return () => {
-      if (mq.removeEventListener) mq.removeEventListener("change", update);
-      else mq.removeListener(update);
-    };
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
-
   useEffect(() => {
-    const onDocClick = (e) => {
-      if (!dropdownRef.current) return;
-      if (!dropdownRef.current.contains(e.target)) setIsShopDropdownOpen(false);
-    };
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
+    const handleEsc = (e) => { if (e.key === "Escape") { setMenuOpen(false); setShopOpen(false); setShopSubPage(""); setMobileShopStep(""); } };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
   }, []);
-
-  useEffect(() => {
-    setIsShopDropdownOpen(false);
-    setIsOpen(false);
-  }, [location.pathname]);
-
-  const handleCartClick = () => {
-    if (dispatch) dispatch({ type: "TOGGLE_CART" });
-  };
-
-  const handleNavClick = () => {
-    setIsOpen(false);
-    setIsShopDropdownOpen(false);
-  };
-
-  const toggleNavbar = () => setIsOpen((v) => !v);
-  const isShopActive = location.pathname.startsWith("/shop");
+  const handleCartClick = () => { dispatch?.({ type: "TOGGLE_CART" }); };
 
   return (
-    <header className="shadow-sm fixed-top header-bg header-text-black">
-      <nav className="navbar navbar-expand-lg navbar-light header-bg">
-        <div className="container">
-          <Link
-            className="navbar-brand d-flex align-items-center brand-link"
-            to="/"
-            onClick={handleNavClick}
-            aria-label="PnP art studio — Home"
-          >
-            <div className="brand-wrap d-flex align-items-center gap-2">
-              <motion.img
-                src={logo}
-                alt="PnP art studio logo"
-                className="brand-logo me-2"
-                height={80}
-                width={100}
-                loading="eager"
-                decoding="async"
-                fetchPriority="high"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              />
-              <div className="brand-text">
-                <span className="header-logo-title">PnPArtStudio</span>
-                <span className="header-logo-subline">by priyanka vasista</span>
-              </div>
-            </div>
-          </Link>
-          {/* Toggler */}
-          <button
-            className="navbar-toggler d-lg-none d-flex align-items-center justify-content-center"
-            type="button"
-            aria-label="Toggle navigation"
-            aria-expanded={isOpen ? "true" : "false"}
-            aria-controls="navbarNav"
-            onClick={toggleNavbar}
-          >
-            {isOpen ? <X size={24} /> : <span className="navbar-toggler-icon" />}
-          </button>
-          <div id="navbarNav" className={`collapse navbar-collapse ${isOpen ? "show" : ""}`}>
-            <div className="grow d-lg-flex justify-content-center">
-              <ul className="navbar-nav mb-2 mb-lg-0 gap-lg-1">
-                <li className="nav-item">
-                  <NavLink end to="/" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
-                    Home
-                  </NavLink>
-                </li>
-                <li className="nav-item">
-                  <NavLink to="/about" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
-                    About Us
-                  </NavLink>
-                </li>
-                {/* SHOP DROPDOWN */}
-                <li
-                  ref={dropdownRef}
-                  className={`nav-item dropdown ${canHover ? "" : "dropdown-center"}`}
-                  onMouseEnter={canHover ? () => setIsShopDropdownOpen(true) : undefined}
-                  onMouseLeave={canHover ? () => setIsShopDropdownOpen(false) : undefined}
-                >
-                  <Link
-                    id="shopDropdown"
-                    className={`nav-link dropdown-toggle nav-hover ${isShopActive ? "active" : ""}`}
-                    to="#"
-                    role="button"
-                    aria-expanded={isShopDropdownOpen ? "true" : "false"}
-                    data-bs-toggle="dropdown"
-                    data-bs-auto-close="outside"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsShopDropdownOpen((open) => !open);
-                    }}
-                  >
-                    <span className="shop-label">
-                      Shop <span className={`caret-inline ${canHover ? "" : "caret-mobile"}`}>▾</span>
-                    </span>
-                  </Link>
-                  <ul className={`dropdown-menu ${isShopDropdownOpen ? "show" : ""}`} aria-labelledby="shopDropdown" data-bs-display="static" style={{ minWidth: 260 }}>
-                    {/* All Products */}
-                    <li className="dropend">
-                      <Link className="dropdown-item dropdown-toggle nav-hover" to="#" role="button" data-bs-toggle="dropdown"
-                        onClick={e => { e.preventDefault(); }}>
-                        All Products
-                      </Link>
-                      <ul className="dropdown-menu">
-                        {allProducts.map((c) => (
-                          <li key={c.label}>
-                            {c.disabled ? (
-                              <span className="dropdown-item nav-hover disabled" style={{ opacity: 0.55, pointerEvents: 'none' }}>
-                                {c.label} (Coming soon)
-                              </span>
-                            ) : (
-                              <NavLink
-                                to={c.to}
-                                onClick={handleNavClick}
-                                className={({ isActive }) => `dropdown-item nav-hover ${isActive ? "active" : ""}`}
-                              >
-                                {c.label}
-                              </NavLink>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                    {/* Indian Products */}
-                    <li className="dropend">
-                      <Link className="dropdown-item dropdown-toggle nav-hover" to="#" role="button" data-bs-toggle="dropdown"
-                        onClick={e => { e.preventDefault(); }}>
-                        Indian Products
-                      </Link>
-                      <ul className="dropdown-menu">
-                        {indianProductsMain.map((c) => (
-                          <li key={c.label}>
-                            <NavLink
-                              to={c.to}
-                              onClick={handleNavClick}
-                              className={({ isActive }) => `dropdown-item nav-hover ${isActive ? "active" : ""}`}
-                            >
-                              {c.label}
-                            </NavLink>
-                          </li>
-                        ))}
-                        <li><hr className="dropdown-divider" /></li>
-                        <li className="dropdown-header px-3 small text-muted">Return gifts</li>
-                        {returnGifts.map((c) => (
-                          <li key={c.label}>
-                            <NavLink
-                              to={c.to}
-                              onClick={handleNavClick}
-                              className={({ isActive }) => `dropdown-item nav-hover ${isActive ? "active" : ""}`}
-                            >
-                              {c.label}
-                            </NavLink>
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  </ul>
-                </li>
-                <li className="nav-item">
-                  <NavLink to="/art-classes" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
-                    Art Classes
-                  </NavLink>
-                </li>
-                <li className="nav-item">
-                  <NavLink to="/custom-order" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
-                    Custom Art
-                  </NavLink>
-                </li>
-                <li className="nav-item">
-                  <NavLink to="/gallery" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
-                    Gallery
-                  </NavLink>
-                </li>
-                <li className="nav-item">
-                  <NavLink to="/contact" onClick={handleNavClick} className={({ isActive }) => `nav-link nav-hover ${isActive ? "active" : ""}`}>
-                    Contact
-                  </NavLink>
-                </li>
-              </ul>
-            </div>
-            {/* Right actions */}
-            <ul className="navbar-nav ms-lg-3 d-flex align-items-center flex-row gap-2 gap-mobile-icons mt-2 mt-lg-0">
-              <li className="nav-item">
+    <header className="w-full bg-white border-b border-gray-200 fixed z-40 top-0 left-0" style={{ minHeight: 80 }}>
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-2 md:px-6 py-2" style={{ minHeight: 80 }}>
+        {/* Logo */}
+        <Link to="/" aria-label="Home" className="flex items-center gap-3 min-w-8">
+          <motion.img
+            src={logo}
+            alt="PnPArtStudio"
+            className="h-20 md:h-24 w-auto"
+            height={88}
+            width={140}
+            whileHover={{ scale: 1.02 }}
+            style={{ maxHeight: 88 }}
+          />
+          {isDesktop && (
+            <span>
+              <span className="font-bold text-[1.7rem] ml-1 tracking-tight text-gray-900 leading-tight block">PnPArtStudio</span>
+              <span className="block text-sm text-gray-500 font-medium ml-1 leading-none">by priyanka vasista</span>
+            </span>
+          )}
+        </Link>
+        {/* Desktop Nav */}
+        <ul className="hidden lg:flex items-center gap-4 py-1 relative">
+          {navLinks.map(({ label, to }) =>
+            label !== "Shop" ? (
+              <li key={to}>
                 <NavLink
-                  to="/wishlist"
-                  className={({ isActive }) => `nav-link d-flex align-items-center nav-hover ${isActive ? "active" : ""}`}
-                  onClick={handleNavClick}
-                  aria-label="Wishlist"
-                  title="Wishlist"
+                  to={to}
+                  className={({ isActive }) =>
+                    `font-semibold text-base px-2 transition-all border-b-2 ${
+                      isActive
+                        ? "text-black border-black"
+                        : "text-gray-900 border-transparent hover:border-black hover:text-black"
+                    } pb-0.5`
+                  }
+                  style={{ fontWeight: 600, letterSpacing: -0.5 }}
                 >
-                  <Heart size={20} />
+                  {label}
                 </NavLink>
               </li>
-              <li className="nav-item position-relative">
+            ) : (
+              <li key="Shop" className="relative">
                 <button
-                  className="btn nav-link position-relative d-flex align-items-center nav-hover"
-                  onClick={handleCartClick}
-                  aria-label="Cart"
-                  title="Cart"
-                  type="button"
+                  className="font-semibold text-base px-2 pb-0.5 border-b-2 border-transparent hover:border-black focus:border-black text-gray-900 hover:text-black flex items-center gap-1"
+                  onClick={() => { setShopOpen(v => !v); setShopSubPage(""); }}
+                  style={{ fontWeight: 600, letterSpacing: -0.5 }}
+                  aria-expanded={shopOpen}
+                  aria-controls="desktop-shop-menu"
                 >
-                  <ShoppingCart size={20} />
-                  {totalItems > 0 && (
-                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill badge-count">
-                      {totalItems}
-                    </span>
-                  )}
+                  Shop
+                  <ChevronDown size={16} className={`transition-transform ${shopOpen ? "rotate-180" : ""}`} />
                 </button>
-                <CartDropdown />
+                {/* Click-based Step Navigation */}
+                {shopOpen && (
+                  <div id="desktop-shop-menu" className="absolute left-0 top-8 bg-white border border-gray-300 rounded-lg shadow min-w-[220px] text-base py-2 z-40">
+                    {shopSubPage === "" && (
+                      <>
+                        <button
+                          className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 w-full text-left rounded"
+                          onClick={() => setShopSubPage("all")}
+                        >
+                          All Products <ChevronRight size={18} />
+                        </button>
+                        <button
+                          className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 w-full text-left rounded"
+                          onClick={() => setShopSubPage("indian")}
+                        >
+                          Indian Products <ChevronRight size={18} />
+                        </button>
+                      </>
+                    )}
+                    {shopSubPage === "all" && (
+                      <>
+                        <button className="px-3 py-2 text-black mb-1" onClick={() => setShopSubPage("")}>← Back</button>
+                        {allProducts.map(({ label, to, disabled }) =>
+                          disabled
+                            ? <span key={to} className="block px-4 py-2 opacity-60 cursor-not-allowed">{label} (soon)</span>
+                            : <NavLink key={to} to={to} className="block px-4 py-2 rounded hover:bg-gray-100" onClick={() => setShopOpen(false)}>{label}</NavLink>
+                        )}
+                      </>
+                    )}
+                    {shopSubPage === "indian" && (
+                      <>
+                        <button className="px-3 py-2 text-black mb-1" onClick={() => setShopSubPage("")}>← Back</button>
+                        {indianProductsMain.map(({ label, to }) => (
+                          <NavLink key={to} to={to} className="block px-4 py-2 rounded hover:bg-gray-100" onClick={() => setShopOpen(false)}>{label}</NavLink>
+                        ))}
+                        <button className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 w-full text-left rounded font-semibold mt-1" onClick={() => setShopSubPage("return")}>
+                          Return gifts <ChevronRight size={15} />
+                        </button>
+                      </>
+                    )}
+                    {shopSubPage === "return" && (
+                      <>
+                        <button className="px-3 py-2 text-black mb-1" onClick={() => setShopSubPage("indian")}>← Back</button>
+                        {returnGifts.map(({ label, to }) => (
+                          <NavLink key={to} to={to} className="block px-4 py-2 rounded hover:bg-gray-100" onClick={() => setShopOpen(false)}>{label}</NavLink>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
               </li>
-              <li className="nav-item">
-                <FancyButton to="/track-order" className="ms-lg-2 fancy-sm" aria-label="Track Order">
-                  Track Order
-                </FancyButton>
-              </li>
-            </ul>
-          </div>
+            )
+          )}
+        </ul>
+        {/* Right actions: wishlist always, tracker only desktop, cart always */}
+        <div className="flex items-center gap-2 md:gap-3 min-w-28">
+          <NavLink to="/wishlist" className="p-2 rounded-full hover:bg-gray-100 relative" title="Wishlist">
+            <Heart size={25} className="text-gray-700" />
+            {wishlistCount > 0 && (
+              <span className="absolute -top-1.5 -right-2 bg-pink-700 text-white rounded-full text-xs font-bold w-5 h-5 flex items-center justify-center">
+                {wishlistCount}
+              </span>
+            )}
+          </NavLink>
+          {isDesktop && (
+            <FancyButton
+              to="/track-order"
+              className="rounded-xl font-bold bg-black text-white px-6 py-2 text-base tracking-tight hover:bg-gray-900 shadow-none transition"
+              style={{ minWidth: 140 }}
+            >
+              Track Order
+            </FancyButton>
+          )}
+          <button
+            className="relative p-2 rounded-full hover:bg-gray-100"
+            aria-label="Cart"
+            title="Cart"
+            onClick={handleCartClick}
+          >
+            <ShoppingCart size={26} className="text-gray-900" />
+            {totalItems > 0 && (
+              <span className="absolute -top-1.5 -right-2 bg-pink-600 text-white rounded-full text-xs font-bold w-5 h-5 flex items-center justify-center">
+                {totalItems}
+              </span>
+            )}
+          </button>
+          <CartDropdown />
+          <button
+            className="block lg:hidden p-2 rounded hover:bg-gray-200 ml-1"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+          >
+            <Menu size={28} />
+          </button>
         </div>
-      </nav>
+      </div>
+      {/* Mobile drawer - unchanged, already click-based step-by-step */}
+      {menuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div className="bg-black/30 absolute inset-0" onClick={() => setMenuOpen(false)} />
+          <nav className="absolute right-0 top-0 h-full w-5/6 max-w-xs bg-white shadow-2xl flex flex-col px-6 pt-7 pb-5">
+            <button className="self-end mb-6 text-gray-500" onClick={() => setMenuOpen(false)} aria-label="Close menu"><X size={28} /></button>
+            <div className="flex flex-col gap-2 mt-2">
+              {/* Step-based mobile shop nav */}
+              {mobileShopStep === "" && (
+                <>
+                  {navLinks.map(link =>
+                    link.label === "Shop" ? (
+                      <button
+                        key="Shop"
+                        className="text-lg font-semibold px-2 py-2 text-gray-900 rounded hover:bg-gray-100 flex items-center"
+                        onClick={() => setMobileShopStep("shop")}
+                      >
+                        Shop
+                        <ChevronRight size={18} className="ml-auto" />
+                      </button>
+                    ) : (
+                      <NavLink
+                        key={link.to}
+                        to={link.to}
+                        className="text-lg font-semibold px-2 py-2 text-gray-900 rounded hover:bg-gray-100"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        {link.label}
+                      </NavLink>
+                    )
+                  )}
+                  <NavLink
+                    to="/wishlist"
+                    className="flex items-center gap-2 text-lg font-semibold px-2 py-2 text-gray-900 rounded hover:bg-gray-100"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Heart size={22} className="text-gray-700" />
+                    Wishlist
+                    {wishlistCount > 0 && (
+                      <span className="inline-flex items-center justify-center bg-pink-700 text-white rounded-full text-xs font-bold w-5 h-5 ml-1">{wishlistCount}</span>
+                    )}
+                  </NavLink>
+                </>
+              )}
+              {mobileShopStep === "shop" && (
+                <>
+                  <button className="text-lg font-semibold px-2 py-2 text-black rounded hover:bg-gray-100 flex items-center" onClick={() => setMobileShopStep("")}>← Back</button>
+                  <button className="font-semibold px-3 py-2 text-gray-900 rounded hover:bg-gray-100 flex items-center" onClick={() => setMobileShopStep("all")}>
+                    All Products <ChevronRight size={15} className="ml-auto" />
+                  </button>
+                  <button className="font-semibold px-3 py-2 text-gray-900 rounded hover:bg-gray-100 flex items-center" onClick={() => setMobileShopStep("indian")}>
+                    Indian Products <ChevronRight size={15} className="ml-auto" />
+                  </button>
+                </>
+              )}
+              {mobileShopStep === "all" && (
+                <>
+                  <button className="text-lg font-semibold px-2 py-2 text-black rounded hover:bg-gray-100 flex items-center" onClick={() => setMobileShopStep("shop")}>← Back</button>
+                  {allProducts.map(({ label, to, disabled }) =>
+                    disabled ? (
+                      <span key={to} className="block px-4 py-2 opacity-60 cursor-not-allowed">{label} (soon)</span>
+                    ) : (
+                      <NavLink key={to} to={to} className="block px-4 py-2 rounded hover:bg-gray-100 text-base text-black" onClick={() => setMenuOpen(false)}>{label}</NavLink>
+                    )
+                  )}
+                </>
+              )}
+              {mobileShopStep === "indian" && (
+                <>
+                  <button className="text-lg font-semibold px-2 py-2 text-black rounded hover:bg-gray-100 flex items-center" onClick={() => setMobileShopStep("shop")}>← Back</button>
+                  {indianProductsMain.map(({ label, to }) => (
+                    <NavLink key={to} to={to} className="block px-4 py-2 rounded hover:bg-gray-100 text-base text-black" onClick={() => setMenuOpen(false)}>{label}</NavLink>
+                  ))}
+                  <button className="font-semibold px-3 py-2 text-gray-900 rounded hover:bg-gray-100 flex items-center" onClick={() => setMobileShopStep("return")} >Return gifts <ChevronRight size={15} className="ml-auto" /></button>
+                </>
+              )}
+              {mobileShopStep === "return" && (
+                <>
+                  <button className="text-lg font-semibold px-2 py-2 text-black rounded hover:bg-gray-100 flex items-center" onClick={() => setMobileShopStep("indian")}>← Back</button>
+                  {returnGifts.map(({ label, to }) => (
+                    <NavLink key={to} to={to} className="block px-4 py-2 rounded hover:bg-gray-100 text-base text-black" onClick={() => setMenuOpen(false)}>{label}</NavLink>
+                  ))}
+                </>
+              )}
+            </div>
+            <div className="mt-auto pt-7">
+              <FancyButton
+                to="/track-order"
+                className="w-full rounded-xl font-bold bg-black text-white px-0 py-3 text-lg shadow-none hover:bg-gray-900"
+                onClick={() => setMenuOpen(false)}
+              >Track Order</FancyButton>
+            </div>
+          </nav>
+        </div>
+      )}
     </header>
   );
 };

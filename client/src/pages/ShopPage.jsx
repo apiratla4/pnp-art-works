@@ -1,23 +1,16 @@
-// src/pages/ShopPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Filter, Grid, List, Search } from "lucide-react";
+import { Filter, Grid, List, Search, XCircle } from "lucide-react";
 import ProductCard from "../components/ProductCard";
-import { useProducts } from "../hooks/useProducts";
 import FancyButton from "../components/FancyButton";
+import { useProducts } from "../hooks/useProducts";
 
 // --- Canonical filters ---
 const PRODUCT_FILTERS = {
   "All Products": [
-    "Paintings",
-    "Holiday gifts",
-    "Landscapes",
-    "Modern art",
-    "Name sign",
-    "Limited editions",
-    "Pencil sketches",
-    { label: "Digital prints", disabled: true },
+    "Paintings", "Holiday gifts", "Landscapes", "Modern art", "Name sign",
+    "Limited editions", "Pencil sketches", { label: "Digital prints", disabled: true }
   ],
   "Indian Products": [
     "Indian god paintings",
@@ -25,30 +18,20 @@ const PRODUCT_FILTERS = {
     {
       label: "Return gifts",
       children: [
-        "Kolam coasters",
-        "Kolam peetham",
-        "Traditional magnets",
-        "Trays",
-        "Diya holders"
+        "Kolam coasters", "Kolam peetham", "Traditional magnets",
+        "Trays", "Diya holders"
       ]
     }
   ]
 };
 const MAIN_CATEGORIES = Object.keys(PRODUCT_FILTERS);
 
-// USD formatter
 const fmtUSD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
-
-// fallback SVG thumbnail
 const FALLBACK_SVG =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 600 600">
-       <rect width="100%" height="100%" fill="white"/>
-       <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="black" font-size="20">No Image</text>
-     </svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 600 600"><rect width="100%" height="100%" fill="white"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="black" font-size="20">No Image</text></svg>`
   );
-
 const getCover = (item) => {
   if (typeof item?.image === "string" && item.image.trim()) return item.image.trim();
   if (Array.isArray(item?.images) && item.images.length > 0) {
@@ -72,352 +55,309 @@ const handleImgError = (e) => {
   e.currentTarget.src = FALLBACK_SVG;
 };
 
-export default function ShopPage() {
+const ShopPage = () => {
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { items, total, loading, error, params, updateParam } = useProducts();
+  const navigate = useNavigate();
+  const params = new URLSearchParams(location.search);
 
+  // Product REST hook
+  const { items: allItems = [], loading, error } = useProducts();
+
+  // URL-driven filter state
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
-  const [searchTerm, setSearchTerm] = useState(params.q || "");
-  const [min, setMin] = useState(params.minPrice || "");
-  const [max, setMax] = useState(params.maxPrice || "");
-  const [sortUI, setSortUI] = useState(() => {
-    if (params.sort === "price_asc") return "price-low";
-    if (params.sort === "price_desc") return "price-high";
-    if (params.sort === "name") return "name";
-    if (params.sort === "featured") return "featured";
-    return "newest";
-  });
+  const [searchTerm, setSearchTerm] = useState(params.get("q") || "");
+  const [sortUI, setSortUI] = useState(params.get("sort") || "newest");
+  const [currentCat, setCurrentCat] = useState(params.get("category") || MAIN_CATEGORIES[0]);
+  const [subcat, setSubcat] = useState(params.get("subcategory") || "");
+  const [subsubcat, setSubsubcat] = useState(params.get("subsubcategory") || "");
+  const [minPrice, setMinPrice] = useState(params.get("min") || "");
+  const [maxPrice, setMaxPrice] = useState(params.get("max") || "");
 
-  // Canonical state for all filter levels
-  const [currentCat, setCurrentCat] = useState(params.category || MAIN_CATEGORIES[0]);
-  const [subcat, setSubcat] = useState(params.subcategory || "");
-  const [subsubcat, setSubsubcat] = useState(params.subsubcategory || "");
-
-  // --- Deep links/query param support for every filter ---
+  // Keep state in sync with URL for deep links
   useEffect(() => {
-    // Always set from query, not from URL slug/path
-    const cat = searchParams.get("category") || MAIN_CATEGORIES[0];
-    const sub = searchParams.get("subcategory") || "";
-    const subsub = searchParams.get("subsubcategory") || "";
-    setCurrentCat(cat);
-    setSubcat(sub);
-    setSubsubcat(subsub);
-
-    updateParam("category", cat === MAIN_CATEGORIES[0] ? "" : cat);
-    updateParam("subcategory", sub);
-    updateParam("subsubcategory", subsub);
-    // eslint-disable-next-line
+    const ps = new URLSearchParams(location.search);
+    setCurrentCat(ps.get("category") || MAIN_CATEGORIES[0]);
+    setSubcat(ps.get("subcategory") || "");
+    setSubsubcat(ps.get("subsubcategory") || "");
+    setSearchTerm(ps.get("q") || "");
+    setSortUI(ps.get("sort") || "newest");
+    setMinPrice(ps.get("min") || "");
+    setMaxPrice(ps.get("max") || "");
   }, [location.search]);
 
-  useEffect(() => { setSearchTerm(params.q || ""); }, [params.q]);
-  useEffect(() => { setMin(params.minPrice || ""); setMax(params.maxPrice || ""); }, [params.minPrice, params.maxPrice]);
-  useEffect(() => {
-    if (params.sort === "price_asc") setSortUI("price-low");
-    else if (params.sort === "price_desc") setSortUI("price-high");
-    else if (params.sort === "name") setSortUI("name");
-    else if (params.sort === "featured") setSortUI("featured");
-    else setSortUI("newest");
-  }, [params.sort]);
-
-  const viewItems = useMemo(() => {
-    let out = items.slice();
-    if (sortUI === "featured") out.sort((a, b) => Number(b.featured) - Number(a.featured));
-    else if (sortUI === "name") out.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
-    return out;
-  }, [items, sortUI]);
-
-  const applySearch = () => updateParam("q", searchTerm.trim());
-  const applyPrice = (e) => { e?.preventDefault?.(); updateParam("minPrice", min.trim()); updateParam("maxPrice", max.trim()); };
-  const handleSort = (val) => {
-    setSortUI(val);
-    if (val === "price-low") updateParam("sort", "price_asc");
-    else if (val === "price-high") updateParam("sort", "price_desc");
-    else if (val === "name") updateParam("sort", "name");
-    else if (val === "featured") updateParam("sort", "featured");
-    else updateParam("sort", "newest");
+  // Write to URL on filter state change via handy handlers
+  const updateUrl = (options = {}) => {
+    const ps = new URLSearchParams();
+    if (options.category) ps.set("category", options.category);
+    if (options.subcategory) ps.set("subcategory", options.subcategory);
+    if (options.subsubcategory) ps.set("subsubcategory", options.subsubcategory);
+    if (searchTerm) ps.set("q", searchTerm);
+    if (sortUI && sortUI !== "newest") ps.set("sort", sortUI);
+    if (minPrice) ps.set("min", minPrice);
+    if (maxPrice) ps.set("max", maxPrice);
+    navigate(`/shop?${ps.toString()}`);
   };
 
-  // Filter logic all levels
-  const handleCategoryChange = (label) => {
-    setCurrentCat(label);
-    updateParam("category", label === MAIN_CATEGORIES[0] ? "" : label);
+  // Handlers for UI →
+  const handleCategory = (cat) => {
+    setCurrentCat(cat);
     setSubcat(""); setSubsubcat("");
-    updateParam("subcategory", "");
-    updateParam("subsubcategory", "");
+    updateUrl({ category: cat });
   };
-  const handleSubcatChange = (label) => {
-    setSubcat(label);
-    updateParam("subcategory", label);
+  const handleSubcat = (c) => {
+    setSubcat(c);
     setSubsubcat("");
-    updateParam("subsubcategory", "");
+    updateUrl({ category: currentCat, subcategory: c });
   };
-  const handleSubsubcatChange = (label) => {
-    setSubsubcat(label);
-    updateParam("subsubcategory", label);
-  };
-
-  const clearAll = () => {
-    ["q", "category", "subcategory", "subsubcategory", "minPrice", "maxPrice", "inStock", "sort", "page", "limit"].forEach((k) => updateParam(k, ""));
-    setSearchTerm(""); setMin(""); setMax(""); setSortUI("newest"); setCurrentCat(MAIN_CATEGORIES[0]); setSubcat(""); setSubsubcat("");
+  const handleSubsubcat = (name) => {
+    setSubsubcat(name);
+    updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: name });
   };
 
-  const niceCategory = useMemo(() => (currentCat || "All Artworks"), [currentCat]);
-  const canLoadMore = viewItems.length < total;
-  const loadMore = () => {
-    const next = Number(params.limit || 12) + 12;
-    updateParam("limit", next);
-  };
-
-  const subcategories = (PRODUCT_FILTERS[currentCat] || []);
+  const subcategories = PRODUCT_FILTERS[currentCat] || [];
   const selectedSubcatObj = subcategories.find(
     sc => typeof sc === "object" && sc.label === subcat
   );
   const subsubcatOptions = selectedSubcatObj ? selectedSubcatObj.children : [];
 
-  // Nav menu/Sidebar generator - using query params only for deep links
-  // You can render this for your site nav/sidebar:
-  // <Link to={`/shop?category=Indian Products&subcategory=Return gifts&subsubcategory=Kolam coasters`}>Kolam Coasters</Link>
-  // ...repeat for every subcat/subsubcategory...
+  const viewItems = useMemo(() => {
+    let out = allItems.slice();
+
+    // Categories
+    if (currentCat && currentCat !== MAIN_CATEGORIES[0]) out = out.filter(p => (p.category || "") === currentCat);
+    if (subcat) out = out.filter(p => (p.subcategory || "") === subcat);
+    if (subsubcat) out = out.filter(p => (p.subsubcategory || "") === subsubcat);
+
+    // Search
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      out = out.filter(i =>
+        [i.title, i.medium, i.description, i.category, i.year, i.subcategory, i.subsubcategory]
+          .some(val => (val ? String(val).toLowerCase().includes(q) : false))
+      );
+    }
+
+    // Price
+    const min = minPrice.trim() ? parseFloat(minPrice) : undefined;
+    const max = maxPrice.trim() ? parseFloat(maxPrice) : undefined;
+    if (min !== undefined && !isNaN(min)) out = out.filter(p =>
+      typeof p.price === "number" && p.price >= min
+    );
+    if (max !== undefined && !isNaN(max)) out = out.filter(p =>
+      typeof p.price === "number" && p.price <= max
+    );
+
+    // Sorting
+    if (sortUI === "price-low") out.sort((a, b) => (a.salePrice || a.price || 0) - (b.salePrice || b.price || 0));
+    if (sortUI === "price-high") out.sort((a, b) => (b.salePrice || b.price || 0) - (a.salePrice || a.price || 0));
+    if (sortUI === "name") out.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+
+    return out;
+  }, [allItems, currentCat, subcat, subsubcat, searchTerm, minPrice, maxPrice, sortUI]);
+
+  const niceCategory = currentCat || "All Artworks";
+  const clearAll = () => {
+    setSearchTerm(""); setMinPrice(""); setMaxPrice("");
+    setSortUI("newest"); 
+    handleCategory(MAIN_CATEGORIES[0]);
+  };
 
   return (
-    <div className="min-vh-100" style={{ backgroundColor: "#f1efef" }}>
-      <div className="container py-4 py-lg-5">
-        <div className="mb-4">
-          <h1 className="fw-bold display-6 mb-2" style={{ color: "#000" }}>{niceCategory}</h1>
-          <p className="mb-0" style={{ color: "#000" }}>Discover unique, handcrafted artworks that bring beauty to your space</p>
+    <div className="min-h-screen bg-[#f1efef] pb-12">
+      {/* HERO */}
+      <div className="w-full max-w-[1240px] mx-auto px-4 pt-10 pb-5">
+        <h1 className="font-black text-3xl md:text-5xl mb-1">{niceCategory}</h1>
+        <div className="mb-8 text-gray-700 text-lg md:text-xl font-medium">
+          Discover unique, handcrafted artworks that bring beauty to your space.
         </div>
-        <div className="card border-0 shadow-sm rounded-4 mb-4" style={{ background: "#fff", color: "#000" }}>
-          <div className="card-body">
-            <div className="d-flex flex-column flex-lg-row gap-3 align-items-stretch align-items-lg-center justify-content-between">
-              <div className="w-100" style={{ maxWidth: 480 }}>
-                <div className="input-group">
-                  <span className="input-group-text" style={{ background: "#fff", color: "#000", borderColor: "#000" }}>
-                    <Search size={18} />
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Search artworks..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") applySearch(); }}
-                    onBlur={applySearch}
-                    className="form-control"
-                    aria-label="Search artworks"
-                    style={{ color: "#000", borderColor: "#000" }}
-                  />
-                </div>
-              </div>
-              <div className="d-flex align-items-center gap-3 flex-wrap">
-                <select
-                  value={sortUI}
-                  onChange={(e) => handleSort(e.target.value)}
-                  className="form-select"
-                  style={{ minWidth: 200, color: "#000", borderColor: "#000" }}
-                  aria-label="Sort products"
-                >
-                  <option value="featured">Featured</option>
-                  <option value="newest">Newest</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="name">Name A-Z</option>
-                </select>
-                <div className="d-inline-flex gap-1" role="group" aria-label="View mode">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("grid")}
-                    className={`icon-toggle ${viewMode === "grid" ? "active" : ""}`}
-                    title="Grid"
-                  >
-                    <Grid size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("list")}
-                    className={`icon-toggle ${viewMode === "list" ? "active" : ""}`}
-                    title="List"
-                  >
-                    <List size={16} />
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="mono-btn d-inline-flex align-items-center gap-2"
-                >
-                  <Filter size={16} />
-                  <span>Filters</span>
-                </button>
-              </div>
-            </div>
-            {/* Advanced Filters */}
-            {showFilters && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-4 pt-4" style={{ borderTop: "1px solid #000" }}>
-                <div className="row g-4">
-                  {/* Main category */}
-                  <div className="col-12 col-md-4">
-                    <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>Main Category</h6>
-                    <div className="vstack gap-2">
-                      {MAIN_CATEGORIES.map((cat) => (
-                        <label key={cat} className="d-flex align-items-center gap-2" style={{ color: "#000" }}>
-                          <input
-                            type="radio"
-                            name="maincat"
-                            className="form-check-input"
-                            checked={currentCat === cat}
-                            onChange={() => handleCategoryChange(cat)}
-                          />
-                          <span className="small">{cat}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Subcategories */}
-                  {subcategories.length > 0 && (
-                    <div className="col-12 col-md-4">
-                      <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>Subcategory</h6>
-                      <div className="vstack gap-2">
-                        {subcategories.map((sc) =>
-                          typeof sc === "string" ? (
-                            <label key={sc} className="d-flex align-items-center gap-2" style={{ color: "#000" }}>
-                              <input
-                                type="radio"
-                                name="subcat"
-                                className="form-check-input"
-                                checked={subcat === sc}
-                                onChange={() => handleSubcatChange(sc)}
-                              />
-                              <span className="small">{sc}</span>
-                            </label>
-                          ) : (
-                            <label key={sc.label} className="d-flex align-items-center gap-2" style={{ color: "#888" }}>
-                              <input
-                                type="radio"
-                                name="subcat"
-                                className="form-check-input"
-                                checked={subcat === sc.label}
-                                disabled={!!sc.disabled}
-                                onChange={() => handleSubcatChange(sc.label)}
-                              />
-                              <span className="small">{sc.label}{sc.disabled ? " (Coming soon)" : ""}</span>
-                            </label>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {/* Subsubcategory */}
-                  {subsubcatOptions.length > 0 && subcat === selectedSubcatObj?.label && (
-                    <div className="col-12 col-md-4">
-                      <h6 className="fw-semibold mb-3" style={{ color: "#000" }}>{selectedSubcatObj.label} Items</h6>
-                      <div className="vstack gap-2">
-                        {subsubcatOptions.map((ssc) => (
-                          <label key={ssc} className="d-flex align-items-center gap-2" style={{ color: "#000" }}>
-                            <input
-                              type="radio"
-                              name="subsubcat"
-                              className="form-check-input"
-                              checked={subsubcat === ssc}
-                              onChange={() => handleSubsubcatChange(ssc)}
-                            />
-                            <span className="small">{ssc}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {/* Price/Stock filter can be added here as shown in previous examples */}
-                </div>
-              </motion.div>
+      </div>
+      {/* CONTROLS */}
+      <div className="w-full max-w-[1240px] mx-auto px-2">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-5 items-stretch md:items-end bg-white shadow rounded-2xl px-6 py-4 mb-6">
+          {/* SEARCH */}
+          <div className="flex items-center flex-1 bg-white border border-black/15 rounded-xl pr-2 max-w-[420px]">
+            <Search size={22} className="text-black/80 mx-3" />
+            <input
+              value={searchTerm}
+              onChange={e => { setSearchTerm(e.target.value); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }}
+              placeholder="Search artworks…"
+              className="flex-1 py-2.5 px-2 text-black font-normal focus:outline-none text-base bg-transparent"
+            />
+            {searchTerm && (
+              <button type="button" className="ml-2 text-black/40 hover:text-black" onClick={() => { setSearchTerm(""); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }} aria-label="Clear search">
+                <XCircle size={18} />
+              </button>
             )}
           </div>
+          {/* SORT + VIEW MODE TOGGLES */}
+          <div className="flex flex-wrap md:justify-end gap-2 items-center">
+            <select value={sortUI}
+              onChange={e => { setSortUI(e.target.value); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }}
+              className="border font-semibold text-black border-black/20 rounded-lg py-2 px-3 bg-white focus:border-black outline-none min-w-[150px]">
+              <option value="featured">Featured</option>
+              <option value="newest">Newest</option>
+              <option value="price-low">Price: Low - High</option>
+              <option value="price-high">Price: High - Low</option>
+              <option value="name">Name A-Z</option>
+            </select>
+            <button
+              className={`p-2 rounded-xl border border-black/25 mr-1 font-bold ${viewMode === "grid" ? "bg-black text-white border-black" : "bg-white text-black"} hover:bg-black hover:text-white`}
+              aria-label="Grid" onClick={() => setViewMode("grid")}
+            >
+              <Grid size={18} />
+            </button>
+            <button
+              className={`p-2 rounded-xl border border-black/25 font-bold ${viewMode === "list" ? "bg-black text-white border-black" : "bg-white text-black"} hover:bg-black hover:text-white`}
+              aria-label="List" onClick={() => setViewMode("list")}
+            >
+              <List size={18} />
+            </button>
+            <button
+              className="border border-black/20 rounded-lg px-3 py-2 bg-white font-bold flex items-center gap-2 hover:bg-black hover:text-white transition"
+              onClick={() => setShowFilters(v => !v)}
+            >
+              <Filter size={18} /> Filters
+            </button>
+          </div>
         </div>
-
-        {/* Results count and errors */}
-        <div className="d-flex align-items-center justify-content-between mb-3">
-          <p className="mb-0" style={{ color: "#000" }}>Showing {viewItems.length} of {total} result{total !== 1 ? "s" : ""}</p>
-          {error && <div className="mono-alert mb-0 py-1 px-2">Failed to load products: {error}</div>}
-        </div>
-
-        {/* Loading / Empty / Grid / List */}
-        {loading ? (
-          <div className="row g-3 g-lg-4">
-            {Array.from({ length: Number(params.limit || 12) }).map((_, i) => (
-              <div key={i} className="col-12 col-md-6 col-lg-4 col-xl-3">
-                <div className="card border-0 shadow-sm rounded-4" style={{ height: 320, background: "#fff" }}>
-                  <div className="w-100 h-100 rounded-4" style={{ background: "#f6f6f6" }} />
-                </div>
+        {/* FILTER PANEL */}
+        {showFilters && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="w-full bg-white rounded-2xl shadow px-6 py-6 mb-6">
+              <div className="flex flex-wrap gap-3 mb-5">
+                {MAIN_CATEGORIES.map(cat => (
+                  <button key={cat}
+                    onClick={() => handleCategory(cat)}
+                    className={`px-5 py-2 rounded-full border transition text-base font-bold uppercase tracking-wide shrink-0 
+                      ${currentCat === cat ? "bg-black text-white border-black" : "bg-white text-black border-black/30 hover:bg-black hover:text-white"}`}
+                  >{cat}</button>
+                ))}
               </div>
-            ))}
+              {subcategories.length > 0 && (
+                <div className="flex flex-wrap gap-3 mb-5">
+                  {subcategories.map(sc =>
+                    typeof sc === "string" ? (
+                      <button key={sc}
+                        onClick={() => handleSubcat(sc)}
+                        className={`py-2 px-4 rounded-lg border font-medium text-base ${subcat === sc ? "bg-black text-white border-black" : "bg-white text-black border-black/30 hover:bg-black hover:text-white"}`}
+                      >{sc}</button>
+                    ) : (
+                      <button key={sc.label}
+                        onClick={() => handleSubcat(sc.label)}
+                        className={`py-2 px-4 rounded-lg border font-medium text-base ${subcat === sc.label ? "bg-black text-white border-black" : "bg-white text-black border-black/30 hover:bg-black hover:text-white"} ${sc.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                        disabled={!!sc.disabled}
+                      >{sc.label}</button>
+                    )
+                  )}
+                </div>
+              )}
+              {subsubcatOptions.length > 0 && subcat === selectedSubcatObj?.label && (
+                <div className="flex flex-wrap gap-3 mb-5">
+                  {subsubcatOptions.map(ssc => (
+                    <button key={ssc}
+                      onClick={() => handleSubsubcat(ssc)}
+                      className={`py-2 px-4 rounded-lg border font-medium text-base ${subsubcat === ssc ? "bg-black text-white border-black" : "bg-white text-black border-black/30 hover:bg-black hover:text-white"}`}
+                    >{ssc}</button>
+                  ))}
+                </div>
+              )}
+              {/* Price range filter */}
+              <div className="flex flex-wrap gap-4 items-end mb-3 max-w-lg">
+                <div>
+                  <label className="block mb-1 text-black font-bold">Min Price</label>
+                  <input
+                    type="number"
+                    value={minPrice}
+                    onChange={e => { setMinPrice(e.target.value); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }}
+                    placeholder="Min"
+                    className="border border-black/30 rounded-lg py-2 px-3 w-28 text-black bg-white focus:border-black outline-none"
+                    min={0}
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-black font-bold">Max Price</label>
+                  <input
+                    type="number"
+                    value={maxPrice}
+                    onChange={e => { setMaxPrice(e.target.value); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }}
+                    placeholder="Max"
+                    className="border border-black/30 rounded-lg py-2 px-3 w-28 text-black bg-white focus:border-black outline-none"
+                    min={0}
+                  />
+                </div>
+                <button
+                  onClick={() => { setMinPrice(""); setMaxPrice(""); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }}
+                  className="text-black border border-black/30 rounded-lg px-4 py-2 font-semibold hover:bg-black hover:text-white"
+                >Clear Price</button>
+              </div>
+              <button
+                onClick={clearAll}
+                className="border border-black/25 rounded-full px-6 py-2 font-semibold bg-gray-100 text-black hover:bg-black hover:text-white mr-3"
+              >Reset Filters</button>
+            </motion.div>
+        )}
+      </div>
+      {/* PRODUCT GRIDS/LIST - show all filtered, never paginated */}
+      <div className="w-full max-w-[1240px] mx-auto px-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-black text-base mb-5">
+          <span>
+            Showing {viewItems.length} of {allItems.length} result{allItems.length !== 1 ? "s" : ""}
+          </span>
+          {error && <span className="bg-red-200 text-red-700 px-3 py-1 rounded-lg">{error}</span>}
+        </div>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 mb-16">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="h-[310px] rounded-2xl bg-gray-200/40 animate-pulse" />
+              ))}
           </div>
         ) : viewItems.length === 0 ? (
-          <div className="text-center py-5">
-            <div className="display-3 mb-2">🎨</div>
-            <h3 className="h5 fw-semibold mb-2" style={{ color: "#000" }}>No artworks found</h3>
-            <p className="mb-0" style={{ color: "#000" }}>Try adjusting filters or search terms</p>
+          <div className="text-center py-10 text-gray-500">
+            <div className="text-5xl mb-4">🎨</div>
+            <div className="text-xl font-bold mb-2">No artworks found</div>
+            <div className="text-base">Try adjusting filters or search terms</div>
           </div>
         ) : viewMode === "grid" ? (
-          <div className="row g-3 g-lg-4 mb-4">
-            {viewItems.map((product, index) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-7 mb-16">
+            {viewItems.map((product, idx) => (
               <motion.div
-                key={product.id}
+                key={product.id || idx}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.06 }}
+                transition={{ duration: 0.6, delay: idx * 0.05 }}
                 viewport={{ once: true }}
-                className="col-12 col-md-6 col-lg-4 col-xl-3"
               >
                 <ProductCard product={product} />
               </motion.div>
             ))}
           </div>
         ) : (
-          <div className="vstack gap-3 mb-4">
-            {viewItems.map((p, index) => {
+          <div className="flex flex-col gap-5 mb-16">
+            {viewItems.map((p, idx) => {
               const safeSrc = getCover(p) || FALLBACK_SVG;
               return (
                 <motion.div
-                  key={p.id}
+                  key={p.id || idx}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.06 }}
+                  transition={{ duration: 0.6, delay: idx * 0.05 }}
                   viewport={{ once: true }}
-                  className="card border-0 shadow-sm rounded-4"
-                  style={{ background: "#fff", color: "#000" }}
+                  className="rounded-2xl border border-black/10 bg-white flex items-center gap-5 p-4 shadow-sm"
                 >
-                  <Link to={`/product-details?id=${p.id}`} className="text-decoration-none">
-                    <div className="card-body d-flex align-items-center gap-3">
-                      <div className="shrink-0 rounded-3 overflow-hidden" style={{ width: 96, height: 96, border: "1px solid #000" }}>
-                        <img
-                          src={safeSrc}
-                          alt={`${p.title} thumbnail`}
-                          className="w-100 h-100"
-                          style={{ objectFit: "cover" }}
-                          onError={handleImgError}
-                          loading="lazy"
-                        />
-                      </div>
-                      <div className="grow">
-                        <div className="fw-semibold mb-1" style={{ color: "#000" }}>{p.title}</div>
-                        <div className="small mb-1" style={{ color: "#000" }}>
-                          {p.category}
-                          {p.subcategory && ` • ${p.subcategory}`}
-                          {p.subsubcategory && ` • ${p.subsubcategory}`}
-                        </div>
-                        <div className="fw-bold" style={{ color: "#000" }}>
-                          {typeof p.salePrice === "number" && p.salePrice !== null ? (
-                            <>
-                              <span style={{ textDecoration: "line-through", color: "#888", marginRight: 8 }}>
-                                {fmtUSD.format(Number(p.price || 0))}
-                              </span>
-                              <span>{fmtUSD.format(Number(p.salePrice))}</span>
-                            </>
-                          ) : (
-                            fmtUSD.format(Number(p.price || 0))
-                          )}
-                        </div>
-                      </div>
+                  <Link to={`/product-details?id=${p.id}`} className="block w-20 h-20 rounded-xl overflow-hidden border border-gray-300 shrink-0">
+                    <img src={safeSrc} alt={p.title} className="w-full h-full object-cover" onError={handleImgError} loading="lazy" />
+                  </Link>
+                  <Link to={`/product-details?id=${p.id}`} className="flex-1 ml-2 min-w-0">
+                    <div className="font-bold text-lg truncate">{p.title}</div>
+                    <div className="text-sm text-gray-500 truncate">{[p.category, p.subcategory, p.subsubcategory].filter(Boolean).join(' • ')}</div>
+                    <div className="font-black mt-1 text-black">
+                      {typeof p.salePrice === "number" && p.salePrice !== null ?
+                        <>
+                          <span className="line-through text-gray-400 mr-2">{fmtUSD.format(Number(p.price || 0))}</span>
+                          <span>{fmtUSD.format(Number(p.salePrice))}</span>
+                        </> :
+                        fmtUSD.format(Number(p.price || 0))
+                      }
                     </div>
                   </Link>
                 </motion.div>
@@ -425,61 +365,9 @@ export default function ShopPage() {
             })}
           </div>
         )}
-
-        {!loading && viewItems.length > 0 && (
-          <div className="text-center">
-            <FancyButton
-              as="button"
-              type="button"
-              className="fancy-sm"
-              onClick={loadMore}
-              disabled={!canLoadMore}
-              aria-disabled={!canLoadMore}
-              title={canLoadMore ? "Load more artworks" : "All results loaded"}
-            >
-              {canLoadMore ? "Load More Artworks" : "All results loaded"}
-            </FancyButton>
-          </div>
-        )}
       </div>
-
-       <style>{`
-        .mono-badge {
-          display: inline-block;
-          padding: 6px 10px;
-          border: 1px solid #000;
-          border-radius: 999px;
-          background: #fff;
-          color: #000;
-          font-weight: 700;
-        }
-
-        .wish-btn {
-          width: 38px; height: 38px;
-          border-radius: 50%;
-          border: 1px solid #000;
-          background: #fff;
-          color: #000;
-          display: inline-flex; align-items: center; justify-content: center;
-          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
-        }
-        .wish-btn:hover { background: #000; color: #fff; }
-        .wish-btn.active { background: #000; color: #fff; }
-        .wish-btn:active { transform: scale(0.98); }
-        .wish-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
-        .wish-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-
-        .mono-btn {
-          border: 1px solid #000; background: #fff; color: #000; padding: 8px 12px; font-weight: 700; border-radius: 8px;
-          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
-          white-space: nowrap;
-        }
-        .mono-btn:hover { background: #000; color: #fff; }
-        .mono-btn:active { transform: scale(0.98); }
-        .mono-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
-        .mono-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-        .mono-btn-sm { padding: 6px 10px; border-radius: 999px; }
-      `}</style>
     </div>
   );
-}
+};
+
+export default ShopPage;

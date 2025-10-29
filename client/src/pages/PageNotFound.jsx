@@ -1,4 +1,3 @@
-// src/pages/PageNotFound.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -9,58 +8,53 @@ const PageNotFound = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-vh-100 d-flex align-items-center" style={{ backgroundColor: '#f1efef' }}>
-      <div className="container py-5">
-        <div className="row justify-content-center">
-          <div className="col-12 col-lg-8">
-            <motion.div
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="card border-0 shadow-sm rounded-4 overflow-hidden"
-              style={{ background: '#fff', color: '#000' }}
-            >
-              <div className="card-body p-4 p-lg-5 text-center">
-                <div className="d-flex justify-content-center mb-3">
-                  <div
-                    className="rounded-circle d-flex align-items-center justify-content-center"
-                    style={{ width: 72, height: 72, background: '#fff', color: '#000', border: '2px solid #000' }}
-                  >
-                    <AlertTriangle size={30} />
-                  </div>
-                </div>
+    <div className="min-h-screen flex items-center justify-center bg-[#f1efef] py-8">
+      <div className="w-full max-w-2xl px-2">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white shadow-lg rounded-3xl overflow-hidden"
+        >
+          <div className="p-7 md:p-12 text-center">
+            <div className="flex justify-center mb-4">
+              <span className="rounded-full border-2 border-black flex items-center justify-center"
+                    style={{ width: 72, height: 72, background: "#fff", color: "#000" }}>
+                <AlertTriangle size={32} />
+              </span>
+            </div>
 
-                <h1 className="fw-bold display-6 mb-2" style={{ color: '#000' }}>Page not found</h1>
-                <p className="mb-4" style={{ color: '#000' }}>
-                  The page being requested doesn’t exist or may have been moved. Check the URL or use the options below.
-                </p>
+            <h1 className="font-black text-3xl md:text-4xl mb-3 text-black tracking-tight">Page not found</h1>
+            <p className="text-black mb-6 text-base md:text-lg">
+              The page being requested doesn’t exist or may have been moved. Check the URL or use the options below.
+            </p>
 
-                <div className="d-flex flex-wrap gap-2 justify-content-center">
-                  <FancyButton to="/" className="fancy-sm">
-                    <Home size={18} />
-                    Go Home
-                  </FancyButton>
+            {/* Actions Row */}
+            <div className="flex flex-col md:flex-row gap-3 justify-center mb-6">
+              <FancyButton to="/" className="fancy-sm flex items-center justify-center w-full md:w-60 text-lg font-bold gap-3">
+               
+                GO HOME
+              </FancyButton>
+              <FancyButton to="/shop" className="fancy-sm flex items-center justify-center w-full md:w-60 text-lg font-bold gap-3">
+               
+                BROWSE SHOP
+              </FancyButton>
+              <FancyButton as="button" type="button"
+                className="fancy-sm flex items-center justify-center w-full md:w-60 text-lg font-bold gap-3"
+                onClick={() => navigate(-1)}
+              >
+            
+                GO BACK
+              </FancyButton>
+            </div>
 
-                  <FancyButton to="/shop" className="fancy-sm">
-                    <ShoppingBag size={18} />
-                    Browse Shop
-                  </FancyButton>
+            <hr className="my-5 border-black/10" />
 
-                  <FancyButton as="button" type="button" className="fancy-sm" onClick={() => navigate(-1)}>
-                    <ArrowLeft size={18} />
-                    Go Back
-                  </FancyButton>
-                </div>
-
-                <hr className="my-4" />
-
-                <div className="small" style={{ color: '#000' }}>
-                  Need help? Reach out from the Contact page or use the navigation links above.
-                </div>
-              </div>
-            </motion.div>
+            <div className="text-sm text-black">
+              Need help? Reach out from the Contact page or use the navigation links above.
+            </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

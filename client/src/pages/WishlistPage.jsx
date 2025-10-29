@@ -1,17 +1,17 @@
-// src/pages/WishlistPage.jsx
 import React, { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Heart, ShoppingCart, Trash2 } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import FancyButton from "../components/FancyButton";
 
-// USD formatter
 const fmtUSD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
 const WishlistPage = () => {
   const { state, dispatch } = useCart();
+  const navigate = useNavigate();
 
-  const wishlist = state?.wishlist || []; // [{ id, title, price, image, category }]
+  const wishlist = state?.wishlist || [];
   const hasItems = wishlist.length > 0;
 
   const total = useMemo(
@@ -37,168 +37,142 @@ const WishlistPage = () => {
     dispatch?.({ type: "WISHLIST_REMOVE", payload: { id: item.id } });
   };
 
+  // Move all wishlist items to the cart and then go to /cart
+  const addAllToCartAndGo = () => {
+    if (!wishlist.length) return;
+    wishlist.forEach(item => {
+      dispatch?.({
+        type: "ADD_ITEM",
+        payload: {
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          image: item.image,
+          category: item.category,
+        },
+      });
+      dispatch?.({ type: "WISHLIST_REMOVE", payload: { id: item.id } });
+    });
+    navigate("/cart");
+  };
+
   return (
-    <div className="min-vh-100" style={{ backgroundColor: "#f1efef" }}>
-      <div className="container py-4 py-lg-5">
-        <div className="d-flex align-items-center justify-content-between mb-3">
-          <h1 className="fw-bold h3 mb-0 d-flex align-items-center gap-2" style={{ color: "#000" }}>
-            <Heart size={22} />
+    <div className="min-h-screen bg-[#f1efef]">
+      <div className="w-full max-w-5xl mx-auto px-3 py-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
+          <h1 className="font-black text-3xl flex items-center gap-3 text-black">
+            <Heart size={26} strokeWidth={2.3} />
             Wishlist
           </h1>
           {hasItems && (
-            <div className="small" style={{ color: "#000" }}>
+            <div className="text-black text-base font-semibold">
               {wishlist.length} item{wishlist.length !== 1 ? "s" : ""} • {fmtUSD.format(total)}
             </div>
           )}
         </div>
 
         {!hasItems ? (
-          <div className="text-center py-5">
-            <div className="display-3 mb-2">💖</div>
-            <h2 className="h5 fw-semibold mb-2" style={{ color: "#000" }}>No favorites yet</h2>
-            <p className="mb-4" style={{ color: "#000" }}>
-              Save artworks to the wishlist and return any time to complete the collection.
-            </p>
-            <Link to="/shop" className="mono-btn rounded-pill">
+          <div className="w-full flex flex-col items-center justify-center py-16">
+            <div className="text-6xl mb-3">💖</div>
+            <div className="text-xl font-bold mb-2 text-black">No favorites yet</div>
+            <div className="mb-6 text-black text-base max-w-md">
+              Save artworks to your wishlist and return anytime to complete your collection.
+            </div>
+            <FancyButton to="/shop" className="fancy-sm py-3 px-8 rounded-full text-lg font-bold">
               Browse Artworks
-            </Link>
+            </FancyButton>
           </div>
         ) : (
-          <div className="row g-4">
-            {/* List */}
-            <div className="col-12 col-lg-8">
-              <div className="card border-0 shadow-sm rounded-4" style={{ background: "#fff", color: "#000" }}>
-                <div className="card-body">
-                  <div className="list-group list-group-flush">
-                    {wishlist.map((item, idx) => (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: idx * 0.03 }}
-                        className="list-group-item py-3"
-                        style={{ background: "#fff", color: "#000", borderColor: "#000" }}
-                      >
-                        <div className="d-flex align-items-center">
-                          <Link to={`/product-details?id=${item.id}`} className="text-decoration-none">
-                            <img
-                              src={item.image}
-                              alt={item.title}
-                              className="rounded object-fit-cover"
-                              style={{ width: 72, height: 72, border: "1px solid #000" }}
-                            />
+          <div className="flex flex-col-reverse lg:flex-row gap-8">
+            {/* Wishlist Items */}
+            <div className="flex-1 min-w-0">
+              <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
+                <div>
+                  {wishlist.map((item, idx) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: idx * 0.03 }}
+                      className={`flex flex-col sm:flex-row items-center gap-4 px-6 py-5 border-b last:border-0 border-black/10 hover:bg-gray-50 transition`}
+                    >
+                      <Link to={`/product-details?id=${item.id}`}>
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="rounded-lg object-cover border border-black/10 bg-white"
+                          style={{ width: 72, height: 72, minWidth: 72, minHeight: 72 }}
+                        />
+                      </Link>
+                      <div className="flex-1 w-full min-w-0 flex flex-col sm:flex-row items-center gap-0 sm:gap-5">
+                        <div className="flex-1 min-w-0 w-full">
+                          <Link
+                            to={`/product-details?id=${item.id}`}
+                            className="block text-lg font-bold text-black truncate hover:underline"
+                          >
+                            {item.title}
                           </Link>
-
-                          <div className="ms-3 grow">
-                            <Link
-                              to={`/product-details?id=${item.id}`}
-                              className="text-decoration-none"
-                              style={{ color: "#000" }}
-                            >
-                              <div className="fw-semibold">{item.title}</div>
-                            </Link>
-                            <div className="small" style={{ color: "#000" }}>
-                              {item.category} • {fmtUSD.format(Number(item.price || 0))}
-                            </div>
-                          </div>
-
-                          <div className="d-flex align-items-center gap-2">
-                            <motion.button
-                              whileHover={{ scale: 1.03 }}
-                              whileTap={{ scale: 0.97 }}
-                              className="mono-btn mono-btn-sm rounded-pill d-inline-flex align-items-center gap-1"
-                              onClick={() => moveToCart(item)}
-                              type="button"
-                            >
-                              <ShoppingCart size={16} />
-                              <span>Add to cart</span>
-                            </motion.button>
-
-                            <button
-                              className="mono-btn mono-btn-sm rounded-pill d-inline-flex align-items-center gap-1"
-                              onClick={() => removeFromWishlist(item.id)}
-                              aria-label="Remove from wishlist"
-                              type="button"
-                            >
-                              <Trash2 size={16} />
-                              <span>Remove</span>
-                            </button>
+                          <div className="text-sm text-gray-700">
+                            {item.category} • {fmtUSD.format(Number(item.price || 0))}
                           </div>
                         </div>
-                      </motion.div>
-                    ))}
-                  </div>
+                        <div className="flex gap-2 mt-3 sm:mt-0 shrink-0">
+                          <motion.button
+                            whileHover={{ scale: 1.04 }}
+                            whileTap={{ scale: 0.96 }}
+                            className="fancy-sm px-4 py-2 rounded-full font-bold flex items-center gap-1 transition whitespace-nowrap"
+                            onClick={() => moveToCart(item)}
+                            type="button"
+                          >
+                            <ShoppingCart size={17} /> <span>Add to cart</span>
+                          </motion.button>
+                          <button
+                            className="fancy-sm px-4 py-2 rounded-full font-bold flex items-center gap-1 transition whitespace-nowrap bg-white text-black border border-black/60 hover:bg-black hover:text-white"
+                            onClick={() => removeFromWishlist(item.id)}
+                            aria-label="Remove from wishlist"
+                            type="button"
+                          >
+                            <Trash2 size={17} /> <span>Remove</span>
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
             </div>
-
-            {/* Summary */}
-            <div className="col-12 col-lg-4">
-              <div className="card border-0 shadow-sm rounded-4" style={{ background: "#fff", color: "#000" }}>
-                <div className="card-body">
-                  <h5 className="fw-semibold mb-3" style={{ color: "#000" }}>Summary</h5>
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="small" style={{ color: "#000" }}>Items</span>
-                    <span style={{ color: "#000" }}>{wishlist.length}</span>
+            {/* Summary Panel */}
+            <div className="w-full max-w-sm shrink-0">
+              <div className="bg-white shadow-lg rounded-2xl mb-4">
+                <div className="p-6">
+                  <div className="font-extrabold mb-3 text-xl text-black">Summary</div>
+                  <div className="flex justify-between mb-2 text-black font-medium">
+                    <span>Items</span>
+                    <span>{wishlist.length}</span>
                   </div>
-                  <div className="d-flex justify-content-between mb-3">
-                    <span className="small" style={{ color: "#000" }}>Estimated total</span>
-                    <span className="fw-semibold" style={{ color: "#000" }}>{fmtUSD.format(total)}</span>
+                  <div className="flex justify-between mb-7 text-black font-bold">
+                    <span>Estimated total</span>
+                    <span>{fmtUSD.format(total)}</span>
                   </div>
-
-                  <Link to="/shop" className="mono-btn w-100 rounded-pill text-center">
+                  <FancyButton
+                    as="button"
+                    onClick={addAllToCartAndGo}
+                    className="fancy-sm w-full py-3 px-6 rounded-full font-bold text-base mt-1"
+                  >
                     Continue shopping
-                  </Link>
-
-                  <div className="small mt-3 mb-0" style={{ color: "#000" }}>
-                    Moving items from wishlist adds them to the cart for checkout.
+                  </FancyButton>
+                  <div className="text-sm mt-4 text-gray-600">
+                    All items will be moved to your cart for checkout.
                   </div>
                 </div>
               </div>
-
-              <div className="mono-alert mt-3 mb-0">
-                Tip: Use list groups for clean, actionable rows and badges for quick status labels.
+              <div className="border border-black bg-white text-black rounded-xl px-4 py-3 text-base shadow mt-2">
+                Tip: Use your wishlist as a “save for later” — items can be added to your cart anytime.
               </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* Local monochrome + focus-visible */}
-      <style>{`
-        /* Monochrome button */
-        .mono-btn {
-          border: 1px solid #000;
-          background: #fff;
-          color: #000;
-          padding: 8px 14px;
-          font-weight: 700;
-          border-radius: 10px;
-          transition: background-color .16s ease, color .16s ease, transform .12s ease, box-shadow .12s ease;
-          white-space: nowrap;
-        }
-        .mono-btn:hover { background: #000; color: #fff; }
-        .mono-btn:active { transform: scale(0.98); }
-        .mono-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
-        .mono-btn:focus { outline: 2px solid #000; outline-offset: 2px; }
-        .mono-btn-sm { padding: 6px 10px; border-radius: 999px; }
-
-        /* Alert */
-        .mono-alert {
-          border: 1px solid #000;
-          background: #fff;
-          color: #000;
-          border-radius: 12px;
-          padding: 10px 12px;
-        }
-
-        /* Links focus ring */
-        a:focus-visible {
-          outline: none;
-          box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
-        }
-        a:focus { outline: 2px solid #000; outline-offset: 2px; }
-      `}</style>
     </div>
   );
 };
