@@ -16,7 +16,7 @@ const AdminLayout = () => {
         {/* Topbar */}
         <header className="sticky top-0 z-20 w-full h-16 bg-white border-b border-black flex items-center px-4">
           <button
-            className="mr-3 p-2  lg:hidden"
+            className="mr-3 p-2 rounded border border-black lg:hidden"
             onClick={() => setSidebarOpen(true)}
             aria-label="Open sidebar"
             style={{ fontSize: 23, fontWeight: "bold", background: "#fff", minWidth: 42, minHeight: 42 }}
