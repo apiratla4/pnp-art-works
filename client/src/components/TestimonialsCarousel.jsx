@@ -38,9 +38,10 @@ const useFetchedTestimonials = () => {
       })));
     }).catch(() => setTestimonials([]));
   }, []);
-  return testimonials.length > 0
-    ? [...testimonials, ...testimonials] // duplicate for smooth infinite
-    : [];
+  // Only duplicate if 2 or more testimonials
+  return testimonials.length > 1
+    ? [...testimonials, ...testimonials]
+    : testimonials;
 };
 
 const TestimonialsMarquee = () => {
@@ -48,7 +49,7 @@ const TestimonialsMarquee = () => {
   const trackRef = useRef();
   const [paused, setPaused] = useState(false);
 
-  // Animation: move left infintely
+  // Animation: move left infinitly
   useEffect(() => {
     if (!trackRef.current || testimonials.length === 0) return;
     let rafId, startTime, scrollWidth = trackRef.current.scrollWidth / 2;

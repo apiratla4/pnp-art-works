@@ -18,11 +18,9 @@ const CouponSchema = new Schema(
   { timestamps: true }
 );
 
-
 export function normalizeCouponCode(input = "") {
   return String(input).trim().toUpperCase();
 }
-
 
 const Coupon = mongoose.model("Coupon", CouponSchema);
 export default Coupon;

@@ -15,7 +15,7 @@ const isProd = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 4000;
 
 const corsOptions = {
-  origin: ['https://pnpartstudio.com', 'https://admin.pnpartstudio.com'],
+  origin: ['https://pnpartstudio.com', 'https://admin.pnpartstudio.com', 'http://localhost:5173', 'http://localhost:5175'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -53,6 +53,9 @@ async function start() {
   try {
     configureCloudinary();
     await connectDB(process.env.MONGODB_URI);
+
+
+
     app.listen(PORT, () => console.log(`API listening on http://localhost:${PORT}`));
   } catch (err) {
     console.error('Startup failed', err);

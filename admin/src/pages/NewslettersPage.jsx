@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { Send, RefreshCw, Users, CalendarClock, Mail, Download, Edit2 } from "lucide-react";
+import { Send, RefreshCw, Users, CalendarClock, Mail, Download, Edit2, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
@@ -10,9 +10,14 @@ const CAMP_URL = `${API_BASE}/api/newsletters/campaigns`;
 
 axios.defaults.withCredentials = true;
 
+const PAGE_SIZE = 10;
+
 const NewslettersPage = () => {
   const [subs, setSubs] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Pagination
+  const [page, setPage] = useState(1);
 
   // Composer
   const [subject, setSubject] = useState("");
@@ -30,11 +35,13 @@ const NewslettersPage = () => {
   const [monthlyTime, setMonthlyTime] = useState("09:00");
   const [cronExpr, setCronExpr] = useState("");
 
+  // Load
   const load = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get(SUBS_URL, { withCredentials: true });
+      const { data } = await axios.get(SUBS_URL);
       setSubs(Array.isArray(data?.items) ? data.items : []);
+      setPage(1);
     } catch {
       toast.error("Failed to load subscribers");
     } finally {
@@ -44,7 +51,7 @@ const NewslettersPage = () => {
 
   useEffect(() => { load(); }, []);
 
-  const buildPayload = () => {
+  const buildPayload = (overrideSchedule) => {
     const payload = {
       subject,
       headerHtml,
@@ -53,6 +60,7 @@ const NewslettersPage = () => {
       imageUrl: imageUrl?.trim() || null,
       schedule: { type: mode }
     };
+    if (overrideSchedule) payload.schedule = overrideSchedule;
     if (mode === "once" && onceAt) payload.schedule.when = new Date(onceAt).toISOString();
     if (mode === "weekly") payload.schedule.weekly = { dow: Number(weeklyDow), time: weeklyTime };
     if (mode === "monthly") payload.schedule.monthly = { dom: Number(monthlyDom), time: monthlyTime };
@@ -63,22 +71,35 @@ const NewslettersPage = () => {
   const sendNow = async () => {
     if (!subject.trim()) return toast.warning("Please enter a subject");
     try {
-      const { data } = await axios.post(`${CAMP_URL}`, { ...buildPayload(), schedule: { type: "now" } }, { withCredentials: true });
+      toast.info("Sending newsletter, please wait...");
+      const { data } = await axios.post(
+        `${CAMP_URL}`,
+        buildPayload({ type: "now" }),
+        { withCredentials: true }
+      );
       toast.success(`Newsletter sent to ${data?.sent || 0} subscribers!`);
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to send newsletter");
     }
   };
 
-  const schedule = async () => {
+  const scheduleCampaign = async () => {
     if (!subject.trim()) return toast.warning("Please enter a subject");
     try {
-      const { data } = await axios.post(`${CAMP_URL}`, buildPayload(), { withCredentials: true });
+      const { data } = await axios.post(
+        `${CAMP_URL}`,
+        buildPayload(),
+        { withCredentials: true }
+      );
       toast.success(`Campaign ${data?.status === "scheduled" ? "scheduled" : "saved"} successfully!`);
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to schedule campaign");
     }
   };
+
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(subs.length / PAGE_SIZE));
+  const pageSubs = subs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="max-w-7xl mx-auto w-full p-2">
@@ -189,11 +210,11 @@ const NewslettersPage = () => {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 mt-6">
-            <button className="btn-mono-sm flex-1" onClick={sendNow} disabled={!subject.trim()}>
+            <button className="btn-mono-sm flex-1" type="button" onClick={sendNow} disabled={!subject.trim()}>
               <Send size={18} />
               Send Now to All
             </button>
-            <button className="btn-mono-sm flex-1" onClick={schedule} disabled={!subject.trim()}>
+            <button className="btn-mono-sm flex-1" type="button" onClick={scheduleCampaign} disabled={!subject.trim()}>
               <CalendarClock size={18} />
               Save & Schedule
             </button>
@@ -300,7 +321,7 @@ const NewslettersPage = () => {
               </div>
             )}
           </motion.div>
-          {/* Subscribers Card */}
+          {/* Subscribers Card with Pagination */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -319,7 +340,7 @@ const NewslettersPage = () => {
                   <span className="text-sm">No subscribers yet</span>
                 </div>
               ) : (
-                subs.map((s) => (
+                pageSubs.map((s) => (
                   <div key={s._id} className="flex items-center gap-2 border-b last:border-0 border-black/10 py-1">
                     <Mail size={14} className="opacity-70" />
                     <span className="font-mono text-xs break-all">{s.email}</span>
@@ -328,6 +349,32 @@ const NewslettersPage = () => {
                 ))
               )}
             </div>
+            {/* Pagination controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-3 my-2 select-none text-base font-bold">
+                <button
+                  className="px-2 py-1 rounded hover:bg-black hover:text-white transition"
+                  onClick={() => setPage(page - 1)}
+                  disabled={page <= 1}
+                  aria-label="Previous Page"
+                  type="button"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <span>
+                  Page {page} / {totalPages}
+                </span>
+                <button
+                  className="px-2 py-1 rounded hover:bg-black hover:text-white transition"
+                  onClick={() => setPage(page + 1)}
+                  disabled={page >= totalPages}
+                  aria-label="Next Page"
+                  type="button"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            )}
             <a
               className="btn-mono-sm mt-1 flex items-center gap-2 justify-center"
               href={`${SUBS_URL}/export`}

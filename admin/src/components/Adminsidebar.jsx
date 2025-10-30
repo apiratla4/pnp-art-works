@@ -74,7 +74,7 @@ const AdminSidebar = ({ open, onClose }) => {
           <NavLink to="/admin/gallery" className={getClass} onClick={onClose}><Images size={19} /> Gallery</NavLink>
           <NavLink to="/admin/orders" className={getClass} onClick={onClose}><Receipt size={19} /> Orders</NavLink>
           <NavLink to="/admin/store-pickup-orders" className={getClass} onClick={onClose}><Receipt size={19} />Store Orders</NavLink>
-          <NavLink to="/admin/hero-sliders" className={getClass} onClick={onClose}><Images size={19} /> Hero Sliders</NavLink>
+          <NavLink to="/admin/hero-sliders" className={getClass} onClick={onClose}><Images size={19} /> Home sliders</NavLink>
           <NavLink to="/admin/testimonials" className={getClass} onClick={onClose}><Star size={18} /> Testimonials</NavLink>
           <NavLink to="/admin/coupons" className={getClass} onClick={onClose}><TicketPercent size={19} /> Coupons</NavLink>
           <NavLink to="/admin/newsletters" className={getClass} onClick={onClose}><Send size={18} /> Newsletters</NavLink>

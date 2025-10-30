@@ -1,20 +1,16 @@
-// src/routes/newsletter.routes.js
 import { Router } from "express";
 import {
   subscribe, listSubscribers, exportSubscribers,
-  createCampaign, listCampaigns, sendNowById, scheduleById
+  createCampaign, listCampaigns, sendNowById, scheduleById, checkSubscriber, claimCoupon
 } from "../controllers/newsletter.controller.js";
 
 const router = Router();
 
-// Public: subscribe
 router.post("/subscribe", subscribe);
-
-// Admin: subscribers
+router.get("/subscriber-exists", checkSubscriber);
+router.post("/claim-coupon", claimCoupon);
 router.get("/subscribers", listSubscribers);
 router.get("/subscribers/export", exportSubscribers);
-
-// Admin: campaigns
 router.get("/campaigns", listCampaigns);
 router.post("/campaigns", createCampaign);
 router.post("/campaigns/:id/send-now", sendNowById);

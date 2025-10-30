@@ -326,6 +326,19 @@ const CheckoutPage = () => {
         <div className="mb-5">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Checkout</h1>
         </div>
+        <div className="bg-white rounded-2xl shadow-sm mb-7 p-5">
+            <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
+              <Store size={18} /> Store Pickup
+            </h2>
+            <FancyButton
+              type="button"
+              className="w-full py-3 text-base mb-2"
+              onClick={() => setShowPickup(true)}
+              disabled={items.length === 0}
+            >
+              Place Store Pickup Order
+            </FancyButton>
+          </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form and Store Pickup in left/center */}
           <div className="lg:col-span-2">
@@ -493,20 +506,7 @@ const CheckoutPage = () => {
                 </div>
               )}
             </div>
-            {/* Store Pickup */}
-            <div className="bg-white rounded-2xl shadow-sm mb-7 p-5">
-              <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
-                <Store size={18} /> Store Pickup
-              </h2>
-              <FancyButton
-                type="button"
-                className="w-full py-3 text-base mb-2"
-                onClick={() => setShowPickup(true)}
-                disabled={items.length === 0}
-              >
-                Place Store Pickup Order
-              </FancyButton>
-            </div>
+      
           </div>
           {/* Order summary */}
           <div>

@@ -1,14 +1,19 @@
 import React, { useEffect, useRef, useState } from "react";
+import axios from "axios";
 import discountimg from "../assets/ma_durga.png";
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
+
 const DiscountPopup = ({ delayMs = 5000 }) => {
-  // Force always show in all environments (for dev/test)
   const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState(""); // "success"|"already"|"error"|backend error string
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
   const emailRef = useRef(null);
   const timeoutRef = useRef(null);
 
   useEffect(() => {
-    // Always show for every user/page refresh (disable localStorage logic)
     timeoutRef.current = setTimeout(() => setOpen(true), delayMs);
     return () => clearTimeout(timeoutRef.current);
   }, [delayMs]);
@@ -17,12 +22,37 @@ const DiscountPopup = ({ delayMs = 5000 }) => {
     if (open) emailRef.current?.focus();
   }, [open]);
 
-  const closeForNow = () => setOpen(false);
-
-  const onSubmit = (e) => {
-    e.preventDefault();
-    // Optionally, add newsletter subscription logic here
+  const closeForNow = () => {
     setOpen(false);
+    setEmail("");
+    setStatus("");
+    setCode("");
+    setLoading(false);
+  };
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setStatus("");
+    setCode("");
+    try {
+      const { data } = await axios.post(
+        `${API_BASE}/api/newsletters/claim-coupon`,
+        { email },
+        { withCredentials: true }
+      );
+      setStatus("success");
+      setCode(data?.code);
+    } catch (err) {
+      if (err.response && err.response.status === 409) {
+        setStatus("already");
+      } else if (err.response?.data?.message) {
+        setStatus(err.response.data.message);
+      } else {
+        setStatus("error");
+      }
+    }
+    setLoading(false);
   };
 
   if (!open) return null;
@@ -57,7 +87,6 @@ const DiscountPopup = ({ delayMs = 5000 }) => {
           }}
         />
 
-        {/* Popup content */}
         <div className="relative flex flex-col items-center justify-center px-6 sm:px-8 py-7 sm:py-10 w-full">
           <button
             type="button"
@@ -78,32 +107,54 @@ const DiscountPopup = ({ delayMs = 5000 }) => {
             </p>
           </div>
 
-          <form onSubmit={onSubmit} className="w-full flex flex-col gap-3">
-            <input
-              ref={emailRef}
-              type="email"
-              required
-              placeholder="Email address"
-              aria-label="Email address"
-              className="w-full px-4 py-3 rounded-lg border border-black bg-white text-black placeholder:text-black/50 outline-none focus:border-black/80 focus:ring-2 focus:ring-black"
-            />
-            <button
-              type="submit"
-              className="w-full px-4 py-3 rounded-lg border border-black bg-black text-white font-bold hover:bg-white hover:text-black transition-colors"
-            >
-              Claim discount
-            </button>
-            <button
-              type="button"
-              onClick={closeForNow}
-              className="w-full text-sm font-semibold text-blue-600 underline bg-transparent border-none py-1"
-            >
-              No, thanks
-            </button>
-            <small className="text-xs text-black/50 text-center mt-1">
-              You are signing up to receive communication via email and can unsubscribe at any time.
-            </small>
-          </form>
+          {status === "success" ? (
+            <div className="text-green-700 text-lg font-bold my-5">
+              Coupon code: <span className="font-mono bg-gray-200 py-1 px-2 rounded">{code}</span>
+              <br />
+              <span className="block text-xs text-black/80 mt-2">Your coupon was also emailed to you!</span>
+            </div>
+          ) : status === "already" ? (
+            <div className="text-yellow-600 my-5 font-semibold">
+              You have already claimed a new customer coupon. Check your mailbox!
+            </div>
+          ) : status === "error" ? (
+            <div className="text-red-600 my-5 font-semibold">
+              Something went wrong. Please try again.
+            </div>
+          ) : typeof status === "string" && status ? (
+            <div className="text-red-600 my-5 font-semibold">{status}</div>
+          ) : (
+            <form onSubmit={onSubmit} className="w-full flex flex-col gap-3">
+              <input
+                ref={emailRef}
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="Email address"
+                aria-label="Email address"
+                className="w-full px-4 py-3 rounded-lg border border-black bg-white text-black placeholder:text-black/50 outline-none focus:border-black/80 focus:ring-2 focus:ring-black"
+                disabled={loading}
+              />
+              <button
+                type="submit"
+                className="w-full px-4 py-3 rounded-lg border border-black bg-black text-white font-bold hover:bg-white hover:text-black transition-colors"
+                disabled={loading}
+              >
+                {loading ? "Processing..." : "Claim discount"}
+              </button>
+              <button
+                type="button"
+                onClick={closeForNow}
+                className="w-full text-sm font-semibold text-blue-600 underline bg-transparent border-none py-1"
+              >
+                No, thanks
+              </button>
+              <small className="text-xs text-black/50 text-center mt-1">
+                You are signing up to receive communication via email and can unsubscribe at any time.
+              </small>
+            </form>
+          )}
         </div>
       </div>
     </div>
