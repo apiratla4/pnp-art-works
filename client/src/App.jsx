@@ -91,7 +91,7 @@ const App = () => {
                 <Route path="/order/confirmation" element={<OrderSuccess />} />
                 <Route path="/track-order" element={<TrackOrderPage />} />
                 <Route path="/order/success-alt" element={<OrderConfirmation />} />
-                <Route path="/store-pickup/success" element={<StorePickupSuccessPage />} />
+                <Route path="/store-pickup-success" element={<StorePickupSuccessPage />} />
                 <Route path="*" element={<PageNotFound />} />
               </Routes>
             </main>
