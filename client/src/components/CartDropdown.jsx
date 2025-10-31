@@ -116,21 +116,31 @@ const CartDropdown = () => {
                     {state.items.map((item) => {
                       const url = getCover(item);
                       const safeSrc = typeof url === "string" && url ? url : FALLBACK_SVG;
+                      const productUrl = `/product-details?id=${item.productId || item.id}`;
                       return (
                         <div
                           key={item.id}
                           className="flex items-center mb-4 p-2 rounded-xl border border-black/20 bg-white/90"
                         >
-                          <img
-                            src={safeSrc}
-                            alt={item.title}
-                            className="rounded-lg mr-3"
-                            style={{ width: 60, height: 60, objectFit: "cover" }}
-                            loading="lazy"
-                            onError={handleImgError}
-                          />
+                          <Link to={productUrl} tabIndex={0}>
+                            <img
+                              src={safeSrc}
+                              alt={item.title}
+                              className="rounded-lg mr-3 cursor-pointer"
+                              style={{ width: 60, height: 60, objectFit: "cover" }}
+                              loading="lazy"
+                              onError={handleImgError}
+                              title={item.title}
+                            />
+                          </Link>
                           <div className="grow">
-                            <h6 className="font-semibold text-sm mb-1 text-black">{item.title}</h6>
+                            <Link
+                              to={productUrl}
+                              tabIndex={0}
+                              className="font-semibold text-sm mb-1 text-black block truncate hover:underline cursor-pointer"
+                            >
+                              {item.title}
+                            </Link>
                             <div className="font-bold text-black mb-1">
                               {typeof item.salePrice === "number" && item.salePrice !== null && item.salePrice < item.price ? (
                                 <>

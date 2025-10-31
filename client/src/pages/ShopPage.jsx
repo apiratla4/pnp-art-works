@@ -159,7 +159,7 @@ const ShopPage = () => {
   const niceCategory = currentCat || "All Artworks";
   const clearAll = () => {
     setSearchTerm(""); setMinPrice(""); setMaxPrice("");
-    setSortUI("newest"); 
+    setSortUI("newest");
     handleCategory(MAIN_CATEGORIES[0]);
   };
 
@@ -224,77 +224,77 @@ const ShopPage = () => {
         {/* FILTER PANEL */}
         {showFilters && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="w-full bg-white rounded-2xl shadow px-6 py-6 mb-6">
-              <div className="flex flex-wrap gap-3 mb-5">
-                {MAIN_CATEGORIES.map(cat => (
-                  <button key={cat}
-                    onClick={() => handleCategory(cat)}
-                    className={`px-5 py-2 rounded-full border transition text-base font-bold uppercase tracking-wide shrink-0 
+            <div className="flex flex-wrap gap-3 mb-5">
+              {MAIN_CATEGORIES.map(cat => (
+                <button key={cat}
+                  onClick={() => handleCategory(cat)}
+                  className={`px-5 py-2 rounded-full border transition text-base font-bold uppercase tracking-wide shrink-0 
                       ${currentCat === cat ? "bg-black text-white border-black" : "bg-white text-black border-black/30 hover:bg-black hover:text-white"}`}
-                  >{cat}</button>
+                >{cat}</button>
+              ))}
+            </div>
+            {subcategories.length > 0 && (
+              <div className="flex flex-wrap gap-3 mb-5">
+                {subcategories.map(sc =>
+                  typeof sc === "string" ? (
+                    <button key={sc}
+                      onClick={() => handleSubcat(sc)}
+                      className={`py-2 px-4 rounded-lg border font-medium text-base ${subcat === sc ? "bg-black text-white border-black" : "bg-white text-black border-black/30 hover:bg-black hover:text-white"}`}
+                    >{sc}</button>
+                  ) : (
+                    <button key={sc.label}
+                      onClick={() => handleSubcat(sc.label)}
+                      className={`py-2 px-4 rounded-lg border font-medium text-base ${subcat === sc.label ? "bg-black text-white border-black" : "bg-white text-black border-black/30 hover:bg-black hover:text-white"} ${sc.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                      disabled={!!sc.disabled}
+                    >{sc.label}</button>
+                  )
+                )}
+              </div>
+            )}
+            {subsubcatOptions.length > 0 && subcat === selectedSubcatObj?.label && (
+              <div className="flex flex-wrap gap-3 mb-5">
+                {subsubcatOptions.map(ssc => (
+                  <button key={ssc}
+                    onClick={() => handleSubsubcat(ssc)}
+                    className={`py-2 px-4 rounded-lg border font-medium text-base ${subsubcat === ssc ? "bg-black text-white border-black" : "bg-white text-black border-black/30 hover:bg-black hover:text-white"}`}
+                  >{ssc}</button>
                 ))}
               </div>
-              {subcategories.length > 0 && (
-                <div className="flex flex-wrap gap-3 mb-5">
-                  {subcategories.map(sc =>
-                    typeof sc === "string" ? (
-                      <button key={sc}
-                        onClick={() => handleSubcat(sc)}
-                        className={`py-2 px-4 rounded-lg border font-medium text-base ${subcat === sc ? "bg-black text-white border-black" : "bg-white text-black border-black/30 hover:bg-black hover:text-white"}`}
-                      >{sc}</button>
-                    ) : (
-                      <button key={sc.label}
-                        onClick={() => handleSubcat(sc.label)}
-                        className={`py-2 px-4 rounded-lg border font-medium text-base ${subcat === sc.label ? "bg-black text-white border-black" : "bg-white text-black border-black/30 hover:bg-black hover:text-white"} ${sc.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                        disabled={!!sc.disabled}
-                      >{sc.label}</button>
-                    )
-                  )}
-                </div>
-              )}
-              {subsubcatOptions.length > 0 && subcat === selectedSubcatObj?.label && (
-                <div className="flex flex-wrap gap-3 mb-5">
-                  {subsubcatOptions.map(ssc => (
-                    <button key={ssc}
-                      onClick={() => handleSubsubcat(ssc)}
-                      className={`py-2 px-4 rounded-lg border font-medium text-base ${subsubcat === ssc ? "bg-black text-white border-black" : "bg-white text-black border-black/30 hover:bg-black hover:text-white"}`}
-                    >{ssc}</button>
-                  ))}
-                </div>
-              )}
-              {/* Price range filter */}
-              <div className="flex flex-wrap gap-4 items-end mb-3 max-w-lg">
-                <div>
-                  <label className="block mb-1 text-black font-bold">Min Price</label>
-                  <input
-                    type="number"
-                    value={minPrice}
-                    onChange={e => { setMinPrice(e.target.value); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }}
-                    placeholder="Min"
-                    className="border border-black/30 rounded-lg py-2 px-3 w-28 text-black bg-white focus:border-black outline-none"
-                    min={0}
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 text-black font-bold">Max Price</label>
-                  <input
-                    type="number"
-                    value={maxPrice}
-                    onChange={e => { setMaxPrice(e.target.value); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }}
-                    placeholder="Max"
-                    className="border border-black/30 rounded-lg py-2 px-3 w-28 text-black bg-white focus:border-black outline-none"
-                    min={0}
-                  />
-                </div>
-                <button
-                  onClick={() => { setMinPrice(""); setMaxPrice(""); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }}
-                  className="text-black border border-black/30 rounded-lg px-4 py-2 font-semibold hover:bg-black hover:text-white"
-                >Clear Price</button>
+            )}
+            {/* Price range filter */}
+            <div className="flex flex-wrap gap-4 items-end mb-3 max-w-lg">
+              <div>
+                <label className="block mb-1 text-black font-bold">Min Price</label>
+                <input
+                  type="number"
+                  value={minPrice}
+                  onChange={e => { setMinPrice(e.target.value); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }}
+                  placeholder="Min"
+                  className="border border-black/30 rounded-lg py-2 px-3 w-28 text-black bg-white focus:border-black outline-none"
+                  min={0}
+                />
+              </div>
+              <div>
+                <label className="block mb-1 text-black font-bold">Max Price</label>
+                <input
+                  type="number"
+                  value={maxPrice}
+                  onChange={e => { setMaxPrice(e.target.value); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }}
+                  placeholder="Max"
+                  className="border border-black/30 rounded-lg py-2 px-3 w-28 text-black bg-white focus:border-black outline-none"
+                  min={0}
+                />
               </div>
               <button
-                onClick={clearAll}
-                className="border border-black/25 rounded-full px-6 py-2 font-semibold bg-gray-100 text-black hover:bg-black hover:text-white mr-3"
-              >Reset Filters</button>
-            </motion.div>
+                onClick={() => { setMinPrice(""); setMaxPrice(""); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }}
+                className="text-black border border-black/30 rounded-lg px-4 py-2 font-semibold hover:bg-black hover:text-white"
+              >Clear Price</button>
+            </div>
+            <button
+              onClick={clearAll}
+              className="border border-black/25 rounded-full px-6 py-2 font-semibold bg-gray-100 text-black hover:bg-black hover:text-white mr-3"
+            >Reset Filters</button>
+          </motion.div>
         )}
       </div>
       {/* PRODUCT GRIDS/LIST - show all filtered, never paginated */}
@@ -307,9 +307,9 @@ const ShopPage = () => {
         </div>
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 mb-16">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="h-[310px] rounded-2xl bg-gray-200/40 animate-pulse" />
-              ))}
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="h-[310px] rounded-2xl bg-gray-200/40 animate-pulse" />
+            ))}
           </div>
         ) : viewItems.length === 0 ? (
           <div className="text-center py-10 text-gray-500">
@@ -318,7 +318,7 @@ const ShopPage = () => {
             <div className="text-base">Try adjusting filters or search terms</div>
           </div>
         ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-7 mb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-7 mb-16">
             {viewItems.map((product, idx) => (
               <motion.div
                 key={product.id || idx}

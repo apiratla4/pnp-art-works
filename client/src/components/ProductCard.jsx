@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Heart, ShoppingCart } from 'lucide-react';
+import { Heart, ShoppingCart, Minus, Plus } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { formatUSD } from '../utils/currency';
 
@@ -11,6 +10,13 @@ function truncateWords(desc = '', n = 10) {
   if (words.length <= n) return desc;
   return words.slice(0, n).join(' ') + ' ...';
 }
+
+const isKolamMinQty = (subsub) =>
+  typeof subsub === "string" &&
+  ["kolam coasters", "kolam peetham"].includes(subsub.trim().toLowerCase());
+
+const MIN_KOLAM_QTY = 5;
+const MIN_DEFAULT_QTY = 1;
 
 const ProductCard = ({ product }) => {
   const { state, dispatch } = useCart();
@@ -41,6 +47,10 @@ const ProductCard = ({ product }) => {
       );
   };
 
+  const minQty =
+    isKolamMinQty(product.subsubcategory) ? MIN_KOLAM_QTY : MIN_DEFAULT_QTY;
+  const [qty, setQty] = useState(minQty);
+
   const addToCart = () => {
     if (!product?.inStock) return;
     dispatch({
@@ -55,7 +65,8 @@ const ProductCard = ({ product }) => {
         subcategory: product.subcategory,
         subsubcategory: product.subsubcategory,
         color: product.color,
-        description: product.description
+        description: product.description,
+        quantity: qty,
       }
     });
   };
@@ -128,10 +139,22 @@ const ProductCard = ({ product }) => {
           {product.category}
           {product.subcategory && ` • ${product.subcategory}`}
           {product.subsubcategory && ` • ${product.subsubcategory}`}
+          {isKolamMinQty(product.subsubcategory) ||
+          isKolamMinQty(product.subsubcategory) ||
+          isKolamMinQty(product.subsubcategory) ? null : null}
         </div>
         <p className="text-sm mb-4 line-clamp-2 text-black/80">
           {truncateWords(product.description, 10)}
         </p>
+
+        {/* Min Order badge if kolam */}
+        {isKolamMinQty(product.subsubcategory) && (
+          <div className="mb-3">
+            <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 font-bold rounded-full text-xs">
+              Min Order: {MIN_KOLAM_QTY}
+            </span>
+          </div>
+        )}
 
         <div className="mt-auto flex items-center justify-between pt-1">
           <div className="font-bold text-black flex flex-col text-base leading-tight">
@@ -144,7 +167,30 @@ const ProductCard = ({ product }) => {
               <span className="text-[1.07em]">{formatUSD(Number(product.price || 0))}</span>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {/* Quantity selector for kolam products */}
+            {isKolamMinQty(product.subsubcategory) && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className="w-7 h-7 rounded-full border border-black flex items-center justify-center text-black bg-white hover:bg-black hover:text-white transition-all"
+                  onClick={() => setQty(q => Math.max(MIN_KOLAM_QTY, q - 1))}
+                  disabled={qty <= MIN_KOLAM_QTY}
+                  aria-label="Decrease quantity"
+                >
+                  <Minus size={15} />
+                </button>
+                <span className="mx-1 font-bold">{qty}</span>
+                <button
+                  type="button"
+                  className="w-7 h-7 rounded-full border border-black flex items-center justify-center text-black bg-white hover:bg-black hover:text-white transition-all"
+                  onClick={() => setQty(q => q + 1)}
+                  aria-label="Increase quantity"
+                >
+                  <Plus size={15} />
+                </button>
+              </div>
+            )}
             <button
               type="button"
               onClick={addToCart}

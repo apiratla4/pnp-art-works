@@ -12,7 +12,6 @@ const ContactPage = () => {
     email: '',
     subject: '',
     message: '',
-    customOrder: false,
     phone: '',
     countryCode: '+1',
   });
@@ -21,7 +20,6 @@ const ContactPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Abridged for brevity (add more as desired)
   const COUNTRY_CODES = [
     { code: 'US', name: 'United States', dial: '+1', flag: '🇺🇸' },
     { code: 'IN', name: 'India', dial: '+91', flag: '🇮🇳' },
@@ -30,9 +28,9 @@ const ContactPage = () => {
 
   const contactInfo = [
     { icon: MapPin, title: 'Visit Our Studio', details: '579 Brook Meadow Dr Ballwin, MO 63021', subDetails: 'Missouri, United States' },
-    { icon: Phone,  title: 'Call Us',         details: '+1 (713) 576‑9741',   subDetails: 'Mon - Fri, 9am - 6pm' },
+    { icon: Phone,  title: 'Call Us',         details: '+1 (713) 576‑9741',   subDetails: 'Monday - Friday : 9AM - 6PM' },
     { icon: Mail,   title: 'Email Us',        details: 'pnp.artstudio7@gmail.com', subDetails: "We reply within 24 hours" },
-    { icon: Clock,  title: 'Studio Hours',    details: 'Mon-Fri: 9-6', subDetails: 'Sat-Sun: 10-4' }
+    { icon: Clock,  title: 'Studio Hours',    details: 'Monday - Friday : 9AM - 6PM', subDetails: 'Saturday - Sunday : 10AM - 4PM' }
   ];
 
   const socialLinks = [
@@ -42,8 +40,8 @@ const ContactPage = () => {
   ];
 
   const handleChange = e => {
-    const { name, value, checked, type } = e.target;
-    setFormData(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+    const { name, value } = e.target;
+    setFormData(f => ({ ...f, [name]: value }));
   };
 
   const handleSubmit = async e => {
@@ -63,7 +61,7 @@ const ContactPage = () => {
         phone: formData.phone ? `${formData.countryCode}${formData.phone}` : ''
       }, { withCredentials: true });
       setIsSubmitted(true);
-      setFormData({ name: '', email: '', subject: '', message: '', customOrder: false, phone: '', countryCode: '+1' });
+      setFormData({ name: '', email: '', subject: '', message: '', phone: '', countryCode: '+1' });
       setTimeout(() => setIsSubmitted(false), 5000);
     } catch (err) {
       setErrorMsg(
@@ -195,16 +193,6 @@ const ContactPage = () => {
                     name="message" required rows={6} value={formData.message} onChange={handleChange}
                     className="w-full border border-black/10 py-2 px-3 rounded-lg text-black bg-white focus:border-black focus:outline-none resize-none"
                     placeholder="Tell us about your inquiry, custom order details, or any questions you have..." />
-                </div>
-                <div className="md:col-span-2 flex items-center gap-2">
-                  <input
-                    type="checkbox" name="customOrder" id="customOrder"
-                    checked={formData.customOrder} onChange={handleChange}
-                    className="w-4 h-4 accent-black rounded"
-                  />
-                  <label htmlFor="customOrder" className="text-xs text-black">
-                    I'm interested in a custom order or commission
-                  </label>
                 </div>
                 <div className="md:col-span-2">
                   <FancyButton as="button" type="submit" className="fancy-sm w-full" disabled={submitting}>

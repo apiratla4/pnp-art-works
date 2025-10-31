@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Minus, X, ShoppingBag, ArrowLeft, Truck, Shield, Award } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -34,6 +34,7 @@ function wordLimitDesc(text, limit = 30) {
 }
 
 const CartPage = () => {
+  const navigate = useNavigate();
   const { state, dispatch, totalPrice, totalItems } = useCart();
   const [descExpanded, setDescExpanded] = useState({});
 
@@ -113,6 +114,9 @@ const CartPage = () => {
                 {state.items.map((item, index) => {
                   const desc = item.description || '';
                   const isLong = desc.trim().split(/\s+/).length > 30;
+                  // Build product details url
+                  const productUrl = `/product-details?id=${item.productId || item.id}`;
+
                   return (
                     <motion.div
                       key={item.id}
@@ -131,18 +135,27 @@ const CartPage = () => {
                       >
                         <X size={18} />
                       </button>
-                      {/* Image */}
-                      <img
-                        src={getCover(item) || FALLBACK_IMG}
-                        alt={item.title}
-                        className="rounded-md border border-black/10 bg-white object-cover shrink-0"
-                        style={{ width: 96, height: 96, minWidth: 96, minHeight: 96 }}
-                        loading="lazy"
-                        onError={handleImgError}
-                      />
+                      {/* Image - navigates to product view */}
+                      <Link to={productUrl} tabIndex={0}>
+                        <img
+                          src={getCover(item) || FALLBACK_IMG}
+                          alt={item.title}
+                          className="rounded-md border border-black/10 bg-white object-cover shrink-0 cursor-pointer"
+                          style={{ width: 96, height: 96, minWidth: 96, minHeight: 96 }}
+                          loading="lazy"
+                          onError={handleImgError}
+                        />
+                      </Link>
                       {/* Details */}
                       <div className="flex-1 min-w-0 w-full flex flex-col gap-1">
-                        <h3 className="font-bold text-black text-lg leading-tight">{item.title}</h3>
+                        {/* Product title also navigates to product view */}
+                        <Link
+                          to={productUrl}
+                          tabIndex={0}
+                          className="block font-bold text-black text-lg leading-tight cursor-pointer hover:underline outline-none"
+                        >
+                          {item.title}
+                        </Link>
                         <div className="text-sm text-gray-700 mb-1">{item.category}</div>
                         {/* Price (SALE logic) */}
                         <div className="font-black text-lg text-black mb-1">

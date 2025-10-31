@@ -142,7 +142,7 @@ const WishlistPage = () => {
               </div>
             </div>
             {/* Summary Panel */}
-            <div className="w-full max-w-sm shrink-0">
+            <div className="w-full max-w-sm shrink-0 mx-auto">
               <div className="bg-white shadow-lg rounded-2xl mb-4">
                 <div className="p-6">
                   <div className="font-extrabold mb-3 text-xl text-black">Summary</div>
@@ -154,13 +154,22 @@ const WishlistPage = () => {
                     <span>Estimated total</span>
                     <span>{fmtUSD.format(total)}</span>
                   </div>
-                  <FancyButton
-                    as="button"
-                    onClick={addAllToCartAndGo}
-                    className="fancy-sm w-full py-3 px-6 rounded-full font-bold text-base mt-1"
-                  >
-                    Continue shopping
-                  </FancyButton>
+                  <div className="flex flex-col gap-4">
+                    <FancyButton
+                      as="button"
+                      onClick={addAllToCartAndGo}
+                      className="fancy-sm w-full py-3 px-6 rounded-full font-bold text-base"
+                    >
+                      Move All to Cart
+                    </FancyButton>
+                    <FancyButton
+                      as="button"
+                      onClick={() => navigate("/shop")}
+                      className="fancy-sm w-full py-3 px-6 rounded-full font-bold text-base"
+                    >
+                      Continue Shopping
+                    </FancyButton>
+                  </div>
                   <div className="text-sm mt-4 text-gray-600">
                     All items will be moved to your cart for checkout.
                   </div>
@@ -170,6 +179,7 @@ const WishlistPage = () => {
                 Tip: Use your wishlist as a “save for later” — items can be added to your cart anytime.
               </div>
             </div>
+
           </div>
         )}
       </div>
