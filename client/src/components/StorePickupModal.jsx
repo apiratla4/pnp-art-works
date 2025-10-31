@@ -56,6 +56,7 @@ const StorePickupModal = ({ show, onClose, onSubmit }) => {
               className={`w-full rounded-lg border px-3 py-2 text-base outline-none focus:ring-2 focus:ring-black ${errors.fullName ? "border-red-500" : "border-gray-300"}`}
               placeholder="Full Name"
               value={form.fullName}
+              required
               onChange={handleChange}
             />
             {errors.fullName && <div className="text-red-600 text-xs mt-1">{errors.fullName}</div>}
@@ -69,6 +70,7 @@ const StorePickupModal = ({ show, onClose, onSubmit }) => {
               className={`w-full rounded-lg border px-3 py-2 text-base outline-none focus:ring-2 focus:ring-black ${errors.phone ? "border-red-500" : "border-gray-300"}`}
               placeholder="Phone"
               value={form.phone}
+              required
               onChange={handleChange}
             />
             {errors.phone && <div className="text-red-600 text-xs mt-1">{errors.phone}</div>}
@@ -83,6 +85,7 @@ const StorePickupModal = ({ show, onClose, onSubmit }) => {
               className={`w-full rounded-lg border px-3 py-2 text-base outline-none focus:ring-2 focus:ring-black ${errors.email ? "border-red-500" : "border-gray-300"}`}
               placeholder="Email"
               value={form.email}
+              required
               onChange={handleChange}
             />
             {errors.email && <div className="text-red-600 text-xs mt-1">{errors.email}</div>}

@@ -4,9 +4,12 @@ import Order from '../models/Order.js';
 export async function createOrder(req, res) {
   try {
     const orderData = req.body;
+
     if (!orderData.referenceId) {
       orderData.referenceId = 'ORD-' + Date.now().toString().slice(-6);
     }
+    if (!orderData.shippingAddress) throw new Error("Missing shipping address");
+    if (!orderData.billingAddress) orderData.billingAddress = { ...orderData.shippingAddress };
     const order = await Order.create(orderData);
     res.status(201).json({ success: true, orderId: order._id, referenceId: order.referenceId, order });
   } catch (e) {
@@ -14,6 +17,7 @@ export async function createOrder(req, res) {
     res.status(500).json({ success: false, error: 'Order creation failed', message: e.message });
   }
 }
+
 
 export async function getOrders(req, res) {
   try {

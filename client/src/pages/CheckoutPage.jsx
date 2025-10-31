@@ -19,7 +19,7 @@ function StorePickupModal({ show, onClose, onSubmit }) {
     const e = {};
     if (!fields.fullName.trim()) e.fullName = 'Required';
     if (!fields.phone.trim()) e.phone = 'Required';
-    if (fields.phone && !/^\+?[0-9 ()-]{7,}$/.test(fields.phone)) e.phone = 'Invalid phone';
+    if (fields.phone && !/^\+?[0-9 ()-]{10}$/.test(fields.phone)) e.phone = 'Invalid phone';
     if (!fields.email.trim()) e.email = 'Required';
     if (fields.email && !/^\S+@\S+\.\S+$/.test(fields.email)) e.email = 'Invalid email';
     return e;
@@ -45,7 +45,7 @@ function StorePickupModal({ show, onClose, onSubmit }) {
             .finally(() => setLoading(false));
         }} className="space-y-4">
           <div>
-            <label className="font-semibold block mb-1">Full Name</label>
+            <label className="font-semibold block mb-1">Full Names<span className="text-red-600">*</span></label>
             <input
               name="fullName"
               className={`w-full border rounded px-3 py-2 ${touched.fullName && errors.fullName ? "border-red-500" : "border-gray-300"}`}
@@ -57,7 +57,7 @@ function StorePickupModal({ show, onClose, onSubmit }) {
             {touched.fullName && errors.fullName && <div className="text-red-600 text-xs">{errors.fullName}</div>}
           </div>
           <div>
-            <label className="font-semibold block mb-1">Phone</label>
+            <label className="font-semibold block mb-1">Phone<span className="text-red-600">*</span></label>
             <input
               name="phone"
               className={`w-full border rounded px-3 py-2 ${touched.phone && errors.phone ? "border-red-500" : "border-gray-300"}`}
@@ -66,11 +66,12 @@ function StorePickupModal({ show, onClose, onSubmit }) {
               onBlur={handleBlur}
               disabled={loading}
               placeholder="+1 555 555 5555"
+              required
             />
             {touched.phone && errors.phone && <div className="text-red-600 text-xs">{errors.phone}</div>}
           </div>
           <div>
-            <label className="font-semibold block mb-1">Email</label>
+            <label className="font-semibold block mb-1">Email<span className="text-red-600">*</span></label>
             <input
               name="email"
               type="email"
@@ -93,7 +94,6 @@ function StorePickupModal({ show, onClose, onSubmit }) {
   );
 }
 
-// --- CheckoutPage component ---
 const API_ORIGIN = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const api = (path) => `${API_ORIGIN}/api${path}`;
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -133,14 +133,18 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const { state, clearCart } = useCart();
   const items = state.items || [];
-
   const [coupon, setCoupon] = useState({ code: '', percent: 0, status: '' });
   const [promoMsg, setPromoMsg] = useState('');
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: '', phone: '', address1: '', address2: '',
     city: '', state: '', zip: '', country: 'US', sameAsShipping: true, promo: ''
   });
+  const [billing, setBilling] = useState({
+    firstName: '', lastName: '', email: '', phone: '', address1: '', address2: '',
+    city: '', state: '', zip: '', country: 'US'
+  });
   const [touched, setTouched] = useState({});
+  const [touchedBilling, setTouchedBilling] = useState({});
   const [showPickup, setShowPickup] = useState(false);
 
   const subtotal = useMemo(
@@ -169,6 +173,8 @@ const CheckoutPage = () => {
     meta: it.meta || {}
   })), [items]);
   const setField = useCallback((name, value) => setForm((f) => ({ ...f, [name]: value })), []);
+  const setBillingField = useCallback((name, value) => setBilling((b) => ({ ...b, [name]: value })), []);
+
   const applyPromo = useCallback(async (e) => {
     e.preventDefault();
     const raw = form.promo.trim();
@@ -189,6 +195,7 @@ const CheckoutPage = () => {
       setPromoMsg('Unable to validate code. Try again.');
     }
   }, [form.promo]);
+
   const handleStorePickup = async (fields) => {
     try {
       await axios.post(api("/store-pickup-orders"), {
@@ -206,6 +213,7 @@ const CheckoutPage = () => {
   };
 
   const required = ['firstName', 'lastName', 'email', 'address1', 'city', 'state', 'zip'];
+  const requiredBilling = ['firstName', 'lastName', 'email', 'address1', 'city', 'state', 'zip'];
   const errors = useMemo(() => {
     const e = {};
     for (const k of required) {
@@ -213,10 +221,23 @@ const CheckoutPage = () => {
       if (!v) e[k] = 'Required';
     }
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) e.email = 'Invalid email';
-    if (form.phone && form.phone.trim() && !/^\+?[0-9 ()-]{7,}$/.test(form.phone)) e.phone = 'Invalid phone';
+    if (form.phone && form.phone.trim() && !/^\+?[0-9 ()-]{10}$/.test(form.phone)) e.phone = 'Invalid phone';
     return e;
   }, [form]);
+  const errorsBilling = useMemo(() => {
+    if (form.sameAsShipping) return {};
+    const e = {};
+    for (const k of requiredBilling) {
+      const v = (billing[k] || '').trim();
+      if (!v) e[k] = 'Required';
+    }
+    if (billing.email && !/^\S+@\S+\.\S+$/.test(billing.email)) e.email = 'Invalid email';
+    if (billing.phone && billing.phone.trim() && !/^\+?[0-9 ()-]{7,}$/.test(billing.phone)) e.phone = 'Invalid phone';
+    return e;
+  }, [billing, form.sameAsShipping]);
   const onBlur = useCallback((e) => setTouched((t) => ({ ...t, [e.target.name]: true })), []);
+  const onBillingBlur = useCallback((e) => setTouchedBilling((t) => ({ ...t, [e.target.name]: true })), []);
+
   const shippingAddress = useMemo(() => ({
     fullName: `${form.firstName} ${form.lastName}`.trim(),
     line1: form.address1,
@@ -228,22 +249,23 @@ const CheckoutPage = () => {
     phone: form.phone,
     email: form.email
   }), [form]);
-  const billingAddress = useMemo(
-    () => form.sameAsShipping
-      ? { ...shippingAddress }
-      : {
-        fullName: `${form.firstName} ${form.lastName}`.trim(),
-        line1: form.address1,
-        line2: form.address2,
-        city: form.city,
-        state: form.state,
-        postalCode: form.zip,
-        countryCode: form.country,
-        phone: form.phone,
-        email: form.email
-      },
-    [form, shippingAddress]
-  );
+  const billingAddress = useMemo(() => {
+    if (form.sameAsShipping) {
+      return { ...shippingAddress };
+    } else {
+      return {
+        fullName: `${billing.firstName} ${billing.lastName}`.trim(),
+        line1: billing.address1,
+        line2: billing.address2,
+        city: billing.city,
+        state: billing.state,
+        postalCode: billing.zip,
+        countryCode: billing.country,
+        phone: billing.phone,
+        email: billing.email
+      };
+    }
+  }, [form.sameAsShipping, billing, shippingAddress]);
   const totals = useMemo(() => ({
     subtotal, shipping, discount, grandTotal: total, currency: "USD"
   }), [subtotal, discount, total, shipping]);
@@ -264,7 +286,10 @@ const CheckoutPage = () => {
     return data;
   }, [form, itemsPayload, shippingAddress, billingAddress, totals]);
   const createPaypalOrder = useCallback(async () => {
-    if (Object.keys(errors).length > 0) return undefined;
+    if (
+      Object.keys(errors).length > 0 ||
+      Object.keys(errorsBilling).length > 0
+    ) return undefined;
     try {
       const { data } = await axios.post(api("/paypal/create-order"), {
         items: itemsPayload,
@@ -281,7 +306,7 @@ const CheckoutPage = () => {
       console.error('Create order failed:', err?.message || err);
       throw err;
     }
-  }, [errors, itemsPayload, form, shippingAddress, billingAddress, totals]);
+  }, [errors, errorsBilling, itemsPayload, form, shippingAddress, billingAddress, totals]);
   const onApprovePaypal = useCallback(async (data) => {
     try {
       const captureRes = await axios.post(api('/paypal/capture-order'), { orderId: data.orderID }, {
@@ -323,30 +348,16 @@ const CheckoutPage = () => {
         />
       )}
       <div className="max-w-7xl mx-auto p-2 sm:p-6">
-        <div className="mb-5">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Checkout</h1>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm mb-7 p-5">
-            <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
-              <Store size={18} /> Store Pickup
-            </h2>
-            <FancyButton
-              type="button"
-              className="w-full py-3 text-base mb-2"
-              onClick={() => setShowPickup(true)}
-              disabled={items.length === 0}
-            >
-              Place Store Pickup Order
-            </FancyButton>
-          </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Checkout</h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Form and Store Pickup in left/center */}
+          {/* Left: Shipping/Billing */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-sm mb-7 p-5">
               <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
                 <Truck size={18} /> Shipping & PayPal
               </h2>
               <form noValidate className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* SHIPPING ADDRESS FIELDS */}
                 <div>
                   <label className="block mb-1 text-sm font-bold text-gray-700">
                     First name<span className="text-red-600">*</span>
@@ -386,7 +397,7 @@ const CheckoutPage = () => {
                 </div>
                 <div className="md:col-span-2">
                   <label className="block mb-1 text-sm font-bold text-gray-700">
-                    Phone
+                    Phone<span className="text-red-600">*</span>
                   </label>
                   <input
                     name="phone"
@@ -431,6 +442,7 @@ const CheckoutPage = () => {
                     className="w-full rounded border bg-gray-50 px-3 py-2 text-base border-gray-300 focus:ring-2 focus:ring-black outline-none"
                     value={form.country}
                     onChange={e => setField('country', e.target.value)}
+                    required
                   >
                     <option value="US">United States</option>
                     <option value="IN">India</option>
@@ -487,6 +499,56 @@ const CheckoutPage = () => {
                     Billing address same as shipping
                   </label>
                 </div>
+                {/* Billing address fields if not same as shipping */}
+                {!form.sameAsShipping && (
+                  <div className="md:col-span-2 border-t pt-4 mt-5">
+                    <h3 className="font-bold text-base mb-2 text-gray-900">Billing address</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Full billing fields, validate and use billing state */}
+                      {[
+                        { name: 'firstName', label: 'First name' },
+                        { name: 'lastName', label: 'Last name' },
+                        { name: 'email', label: 'Email', type: 'email' },
+                        { name: 'phone', label: 'Phone', type: 'tel' },
+                        { name: 'address1', label: 'Address line 1' },
+                        { name: 'address2', label: 'Address line 2' },
+                        { name: 'country', label: 'Country', isSelect: true },
+                        { name: 'state', label: 'State' },
+                        { name: 'city', label: 'City' },
+                        { name: 'zip', label: 'ZIP' }
+                      ].map(f => (
+                        <div key={f.name} className={(f.name === 'address1' || f.name === 'address2' || f.name === 'email' || f.name === 'phone') ? "md:col-span-2" : ""}>
+                          <label className="block mb-1 text-sm font-bold text-gray-700">{f.label}{['firstName','lastName','email','address1','city','state','zip'].includes(f.name) && <span className="text-red-600">*</span>}</label>
+                          {f.isSelect ? (
+                            <select
+                              name={f.name}
+                              className="w-full rounded border bg-gray-50 px-3 py-2 text-base border-gray-300 focus:ring-2 focus:ring-black outline-none"
+                              value={billing[f.name]}
+                              onChange={e => setBillingField(f.name, e.target.value)}
+                            >
+                              <option value="US">United States</option>
+                              <option value="IN">India</option>
+                              <option value="GB">United Kingdom</option>
+                              <option value="AE">UAE</option>
+                            </select>
+                          ) : (
+                            <input
+                              name={f.name}
+                              type={f.type || 'text'}
+                              className={`w-full rounded border bg-gray-50 px-3 py-2 text-base focus:ring-2 focus:ring-black outline-none ${touchedBilling[f.name] && errorsBilling[f.name] ? "border-red-500" : "border-gray-300"}`}
+                              value={billing[f.name]}
+                              onChange={e => setBillingField(f.name, e.target.value)}
+                              onBlur={onBillingBlur}
+                            />
+                          )}
+                          {touchedBilling[f.name] && errorsBilling[f.name] && (
+                            <div className="text-red-600 text-xs">{errorsBilling[f.name]}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </form>
               {hasPayPalClient && (
                 <div className="mt-6">
@@ -497,7 +559,11 @@ const CheckoutPage = () => {
                     onApprove={onApprovePaypal}
                     onError={onErrorPaypal}
                     onCancel={onCancelPaypal}
-                    disabled={items.length === 0 || Object.keys(errors).length > 0}
+                    disabled={
+                      items.length === 0 ||
+                      Object.keys(errors).length > 0 ||
+                      Object.keys(errorsBilling).length > 0
+                    }
                   />
                   <div className="border border-black bg-white rounded-lg p-3 mt-3 flex items-center gap-2 text-black">
                     <ShieldCheck size={20} />
@@ -506,10 +572,22 @@ const CheckoutPage = () => {
                 </div>
               )}
             </div>
-      
           </div>
-          {/* Order summary */}
-          <div>
+          {/* Right: Order summary, Promo, Pickup */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-white rounded-2xl shadow-sm mb-7 p-5">
+              <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
+                <Store size={18} /> Store Pickup
+              </h2>
+              <FancyButton
+                type="button"
+                className="w-full py-3 text-base mb-2"
+                onClick={() => setShowPickup(true)}
+                disabled={items.length === 0}
+              >
+                Place Store Pickup Order
+              </FancyButton>
+            </div>
             <div className="bg-white rounded-2xl shadow-sm mb-7 p-4">
               <h2 className="font-bold text-lg mb-3">Order summary</h2>
               {items.length === 0 ? (
