@@ -10,6 +10,7 @@ const DiscountPopup = ({ delayMs = 5000 }) => {
   const [status, setStatus] = useState(""); // "success"|"already"|"error"|backend error string
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [inputError, setInputError] = useState("");
   const emailRef = useRef(null);
   const timeoutRef = useRef(null);
 
@@ -28,13 +29,30 @@ const DiscountPopup = ({ delayMs = 5000 }) => {
     setStatus("");
     setCode("");
     setLoading(false);
+    setInputError("");
+  };
+
+  // Basic email format validation
+  const validateEmail = (e) => {
+    const value = typeof e === "string" ? e : e.target.value;
+    setEmail(value);
+    setInputError("");
+    setStatus("");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      setInputError("Please enter a valid email address.");
+    }
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setInputError("");
     setStatus("");
     setCode("");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setInputError("Please enter a valid email address.");
+      return;
+    }
+    setLoading(true);
     try {
       const { data } = await axios.post(
         `${API_BASE}/api/newsletters/claim-coupon`,
@@ -47,7 +65,12 @@ const DiscountPopup = ({ delayMs = 5000 }) => {
       if (err.response && err.response.status === 409) {
         setStatus("already");
       } else if (err.response?.data?.message) {
-        setStatus(err.response.data.message);
+        // If backend gives "Invalid email" or any string, show below input
+        if (err.response.data.message.toLowerCase().includes("email")) {
+          setInputError(err.response.data.message);
+        } else {
+          setStatus(err.response.data.message);
+        }
       } else {
         setStatus("error");
       }
@@ -121,8 +144,6 @@ const DiscountPopup = ({ delayMs = 5000 }) => {
             <div className="text-red-600 my-5 font-semibold">
               Something went wrong. Please try again.
             </div>
-          ) : typeof status === "string" && status ? (
-            <div className="text-red-600 my-5 font-semibold">{status}</div>
           ) : (
             <form onSubmit={onSubmit} className="w-full flex flex-col gap-3">
               <input
@@ -130,12 +151,15 @@ const DiscountPopup = ({ delayMs = 5000 }) => {
                 type="email"
                 required
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={validateEmail}
                 placeholder="Email address"
                 aria-label="Email address"
-                className="w-full px-4 py-3 rounded-lg border border-black bg-white text-black placeholder:text-black/50 outline-none focus:border-black/80 focus:ring-2 focus:ring-black"
+                className={`w-full px-4 py-3 rounded-lg border ${inputError ? "border-red-500" : "border-black"} bg-white text-black placeholder:text-black/50 outline-none focus:border-black/80 focus:ring-2 focus:ring-black`}
                 disabled={loading}
               />
+              {inputError && (
+                <div className="text-red-600 text-sm w-full -mt-2 mb-1">{inputError}</div>
+              )}
               <button
                 type="submit"
                 className="w-full px-4 py-3 rounded-lg border border-black bg-black text-white font-bold hover:bg-white hover:text-black transition-colors"
