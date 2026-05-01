@@ -84,7 +84,6 @@ const DiscountPopup = ({ delayMs = 5000 }) => {
     <div
       className="fixed inset-0 bg-black/50 z-10000 flex items-end sm:items-center justify-center"
       onClick={closeForNow}
-      aria-hidden="true"
     >
       <div
         role="dialog"

@@ -14,8 +14,12 @@ const app = express();
 const isProd = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 4000;
 
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:5173', 'http://localhost:5175'];
+
 const corsOptions = {
-  origin: ['https://pnpartstudio.com', 'https://admin.pnpartstudio.com', 'http://localhost:5173', 'http://localhost:5175'],
+  origin: corsOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization'],
