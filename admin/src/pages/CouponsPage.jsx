@@ -201,7 +201,7 @@ export default function CouponsPage() {
                       <div className="text-sm text-gray-500 mt-1 font-mono">
                         {c.percent}% off • Uses {c.uses || 0}{c.maxUses === 0 ? " / ∞" : ` / ${c.maxUses}`}
                       </div>
-                      <div className="text-xs mt-1 font-mono">Expires: {c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "—"}</div>
+                      <div className="text-xs mt-1 font-mono">Expires: {c.expiresAt ? new Date(c.expiresAt).toLocaleString() : ""}</div>
                     </div>
                     <div className="flex flex-col gap-2 items-end ml-2">
                       <button className="btn-mono" title="Edit" onClick={() => openEdit(c)}>
@@ -254,7 +254,7 @@ export default function CouponsPage() {
                           {c.active ? "Active" : "Inactive"}
                         </span>
                       </td>
-                      <td className="p-2">{c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "—"}</td>
+                      <td className="p-2">{c.expiresAt ? new Date(c.expiresAt).toLocaleString() : ""}</td>
                       <td className="p-2 space-x-2">
                         <button className="btn-mono" title="Edit" onClick={() => openEdit(c)}>
                           <Pencil size={16} />

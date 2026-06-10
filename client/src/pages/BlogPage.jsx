@@ -51,7 +51,7 @@ const samplePosts = [
   {
     id: 'workshop-notes',
     title: 'Workshop Notes: Unlocking Gesture and Flow',
-    excerpt: 'Highlights from recent classes—exercises that free your hand, loosen composition, and build confidence.',
+    excerpt: 'Highlights from recent classesexercises that free your hand, loosen composition, and build confidence.',
     image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
     author: 'Education Team',
     date: '2025-06-10T14:00:00Z',
@@ -73,7 +73,7 @@ const samplePosts = [
   {
     id: 'studio-lighting',
     title: 'Studio Lighting: Seeing True Color',
-    excerpt: 'Neutral bulbs, CRI, and color temperature—how lighting choices affect what is seen and ultimately created.',
+    excerpt: 'Neutral bulbs, CRI, and color temperaturehow lighting choices affect what is seen and ultimately created.',
     image: 'https://images.pexels.com/photos/1858404/pexels-photo-1858404.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop',
     author: 'ArtistryStudio',
     date: '2025-05-12T16:00:00Z',

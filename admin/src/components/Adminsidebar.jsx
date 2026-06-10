@@ -39,16 +39,16 @@ const AdminSidebar = ({ open, onClose }) => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed z-99 top-0 left-0 w-[90vw] max-w-xs h-full bg-[#f4f4f4] shadow-2xl border-r border-black/10 flex flex-col
+          fixed z-99 top-0 left-0 w-[85vw] max-w-[280px] h-full bg-[#f4f4f4] shadow-2xl border-r border-black/10 flex flex-col
           transition-transform duration-200
           ${open ? "translate-x-0" : "-translate-x-full"}
-          lg:static lg:translate-x-0 lg:shadow-none lg:max-w-[260px]
+          lg:static lg:translate-x-0 lg:shadow-none lg:w-[240px] lg:max-w-[260px]
         `}
         role="navigation"
         aria-label="Admin Sidebar"
       >
         {/* Header */}
-        <div className="px-4 py-4 border-b border-black/15 bg-white shrink-0 relative flex items-center justify-between">
+        <div className="px-3 sm:px-4 py-3 sm:py-4 border-b border-black/15 bg-white shrink-0 relative flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="rounded-full flex items-center justify-center w-11 h-11 border border-black bg-black/80 text-white font-black text-2xl shadow-sm" aria-hidden="true">
               A
@@ -67,7 +67,7 @@ const AdminSidebar = ({ open, onClose }) => {
           </button>
         </div>
         {/* Main nav */}
-        <nav className="flex-1 flex flex-col p-3 gap-1.5 overflow-y-auto min-h-0">
+        <nav className="flex-1 flex flex-col p-2 sm:p-3 gap-1 sm:gap-1.5 overflow-y-auto min-h-0">
           <div className="px-1.5 pt-1 pb-1 text-xs font-bold tracking-wide uppercase text-gray-500">Management</div>
           <NavLink to="/admin/products" className={getClass} onClick={onClose}><Package size={20} /> Products</NavLink>
           <NavLink to="/admin/classes" className={getClass} onClick={onClose}><GraduationCap size={19} /> Classes</NavLink>
@@ -80,7 +80,7 @@ const AdminSidebar = ({ open, onClose }) => {
           <NavLink to="/admin/newsletters" className={getClass} onClick={onClose}><Send size={18} /> Newsletters</NavLink>
         </nav>
         {/* Footer */}
-        <footer className="mt-auto w-full px-6 py-5 bg-[#f4f4f4] flex flex-col gap-3 border-t border-black/15 shrink-0">
+        <footer className="mt-auto w-full px-4 sm:px-6 py-4 sm:py-5 bg-[#f4f4f4] flex flex-col gap-3 border-t border-black/15 shrink-0">
           <button
             type="button"
             className="btn-logout flex items-center gap-2 w-full justify-center"

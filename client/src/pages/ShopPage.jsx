@@ -166,17 +166,17 @@ const ShopPage = () => {
   return (
     <div className="min-h-screen bg-[#f1efef] pb-12">
       {/* HERO */}
-      <div className="w-full max-w-[1240px] mx-auto px-4 pt-10 pb-5">
-        <h1 className="font-black text-3xl md:text-5xl mb-1">{niceCategory}</h1>
-        <div className="mb-8 text-gray-700 text-lg md:text-xl font-medium">
+      <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-5 md:px-6 pt-8 sm:pt-10 pb-5">
+        <h1 className="font-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-1">{niceCategory}</h1>
+        <div className="mb-6 sm:mb-8 text-gray-700 text-base sm:text-lg md:text-xl font-medium">
           Discover unique, handcrafted artworks that bring beauty to your space.
         </div>
       </div>
       {/* CONTROLS */}
-      <div className="w-full max-w-[1240px] mx-auto px-2">
-        <div className="flex flex-col md:flex-row gap-3 md:gap-5 items-stretch md:items-end bg-white shadow rounded-2xl px-6 py-4 mb-6">
+      <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-5 md:px-6">
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end bg-white shadow rounded-2xl px-4 sm:px-5 md:px-6 py-3 sm:py-4 mb-6">
           {/* SEARCH */}
-          <div className="flex items-center flex-1 bg-white border border-black/15 rounded-xl pr-2 max-w-[420px]">
+          <div className="flex items-center flex-1 bg-white border border-black/15 rounded-xl pr-2 w-full sm:max-w-[420px]">
             <Search size={22} className="text-black/80 mx-3" />
             <input
               value={searchTerm}
@@ -191,10 +191,10 @@ const ShopPage = () => {
             )}
           </div>
           {/* SORT + VIEW MODE TOGGLES */}
-          <div className="flex flex-wrap md:justify-end gap-2 items-center">
+          <div className="flex flex-wrap sm:justify-end gap-2 items-center">
             <select value={sortUI}
               onChange={e => { setSortUI(e.target.value); updateUrl({ category: currentCat, subcategory: subcat, subsubcategory: subsubcat }); }}
-              className="border font-semibold text-black border-black/20 rounded-lg py-2 px-3 bg-white focus:border-black outline-none min-w-[150px]">
+              className="border font-semibold text-black border-black/20 rounded-lg py-2 px-3 bg-white focus:border-black outline-none w-full sm:w-auto sm:min-w-[150px]">
               <option value="featured">Featured</option>
               <option value="newest">Newest</option>
               <option value="price-low">Price: Low - High</option>
@@ -223,7 +223,7 @@ const ShopPage = () => {
         </div>
         {/* FILTER PANEL */}
         {showFilters && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="w-full bg-white rounded-2xl shadow px-6 py-6 mb-6">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="w-full bg-white rounded-2xl shadow px-4 sm:px-5 md:px-6 py-4 sm:py-6 mb-6">
             <div className="flex flex-wrap gap-3 mb-5">
               {MAIN_CATEGORIES.map(cat => (
                 <button key={cat}
@@ -298,15 +298,15 @@ const ShopPage = () => {
         )}
       </div>
       {/* PRODUCT GRIDS/LIST - show all filtered, never paginated */}
-      <div className="w-full max-w-[1240px] mx-auto px-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-black text-base mb-5">
+      <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-5 md:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-black text-sm sm:text-base mb-4 sm:mb-5">
           <span>
             Showing {viewItems.length} of {allItems.length} result{allItems.length !== 1 ? "s" : ""}
           </span>
           {error && <span className="bg-red-200 text-red-700 px-3 py-1 rounded-lg">{error}</span>}
         </div>
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 mb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 mb-16">
             {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="h-[310px] rounded-2xl bg-gray-200/40 animate-pulse" />
             ))}
@@ -318,7 +318,7 @@ const ShopPage = () => {
             <div className="text-base">Try adjusting filters or search terms</div>
           </div>
         ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-7 mb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-7 mb-16">
             {viewItems.map((product, idx) => (
               <motion.div
                 key={product.id || idx}
@@ -342,9 +342,9 @@ const ShopPage = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: idx * 0.05 }}
                   viewport={{ once: true }}
-                  className="rounded-2xl border border-black/10 bg-white flex items-center gap-5 p-4 shadow-sm"
+                  className="rounded-2xl border border-black/10 bg-white flex items-center gap-3 sm:gap-5 p-3 sm:p-4 shadow-sm"
                 >
-                  <Link to={`/product-details?id=${p.id}`} className="block w-20 h-20 rounded-xl overflow-hidden border border-gray-300 shrink-0">
+                  <Link to={`/product-details?id=${p.id}`} className="block w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-gray-300 shrink-0">
                     <img src={safeSrc} alt={p.title} className="w-full h-full object-cover" onError={handleImgError} loading="lazy" />
                   </Link>
                   <Link to={`/product-details?id=${p.id}`} className="flex-1 ml-2 min-w-0">

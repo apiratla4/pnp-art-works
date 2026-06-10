@@ -291,48 +291,61 @@ const GalleryPage = () => {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filteredItems.map((g, i) => {
-            const key = g._id || g.src || g.url || i;
-            const src = g.src || g.url || fallbackImg;
-            return (
-              <div
-                key={key}
-                className="flex flex-col rounded-2xl shadow border border-black/10 bg-white p-3 h-full relative"
-              >
-                <div className="aspect-square w-full mb-2 bg-gray-50 rounded-xl border border-black flex items-center justify-center overflow-hidden relative">
-                  <img
-                    src={src}
-                    alt={g.title || `gallery-${i}`}
-                    className="object-cover h-full w-full"
-                    onError={(e) => { e.currentTarget.src = fallbackImg; }}
-                  />
-                  {/* Always visible actions */}
-                  <div className="absolute top-2 right-2 flex gap-1 z-10">
-                    <button
-                      className="btn-mono-sm"
-                      onClick={() => startEdit(g)}
-                      title="Edit"
-                    ><Pencil size={16} /></button>
-                    <button
-                      className="btn-mono-sm"
-                      onClick={() => removeAt(g._id)}
-                      title="Delete"
-                    ><Trash2 size={16} /></button>
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs uppercase font-bold tracking-tight text-gray-700 mb-0.5">{g.category || "—"}</span>
-                  <h6 className="text-black font-bold text-lg mb-1 truncate">{g.title || "Untitled"}</h6>
-                  <div className="text-xs text-gray-500">
-                    {g.year && <span>{g.year}</span>}
-                    {g.medium && <span> · {g.medium}</span>}
-                  </div>
-                  <div className="mt-1 line-clamp-2 text-gray-700 text-xs">{g.description}</div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="rounded-2xl shadow bg-white overflow-hidden border border-gray-200">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-gray-300 bg-gray-50 text-left">
+                  <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide">Image</th>
+                  <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide">Title</th>
+                  <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide">Category</th>
+                  <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide">Year / Medium</th>
+                  <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredItems.map((g, i) => {
+                  const key = g._id || g.src || g.url || i;
+                  const src = g.src || g.url || fallbackImg;
+                  return (
+                    <tr key={key} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                      <td className="px-3 py-2.5">
+                        <img
+                          src={src}
+                          alt={g.title || `gallery-${i}`}
+                          className="w-12 h-12 object-cover rounded-lg border border-black/20 flex-shrink-0"
+                          onError={(e) => { e.currentTarget.src = fallbackImg; }}
+                        />
+                      </td>
+                      <td className="px-3 py-2.5 min-w-[160px] max-w-[240px]">
+                        <div className="font-bold text-black leading-tight line-clamp-1">{g.title || "Untitled"}</div>
+                        {g.description && (
+                          <div className="text-xs text-gray-500 mt-0.5 line-clamp-1">{g.description}</div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">
+                        <span className="text-xs font-semibold text-gray-700">{g.category || "—"}</span>
+                      </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">
+                        <div className="text-sm">{g.year || "—"}</div>
+                        {g.medium && <div className="text-xs text-gray-500">{g.medium}</div>}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex gap-1.5 justify-end">
+                          <button className="btn-mono-sm" onClick={() => startEdit(g)} title="Edit">
+                            <Pencil size={14} />
+                          </button>
+                          <button className="btn-mono-sm" onClick={() => removeAt(g._id)} title="Delete">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

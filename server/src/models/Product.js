@@ -53,6 +53,7 @@ const productSchema = new mongoose.Schema(
 
     inStock: { type: Boolean, default: true },
     featured: { type: Boolean, default: false },
+    donated: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

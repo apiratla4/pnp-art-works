@@ -184,19 +184,27 @@ const ProductViewPage = () => {
   const desc = product.description || "";
   const isLong = desc.trim().split(/\s+/).length > 30;
 
-  // Modern price
-  const renderPrice = () => (
-    <span className="font-black text-2xl md:text-3xl text-black">
-      {typeof product.salePrice === "number" && product.salePrice !== null && product.salePrice < product.price ? (
-        <>
-          <span className="line-through text-gray-400 mr-3 font-normal text-xl">{fmtUSD.format(product.price)}</span>
-          <span>{fmtUSD.format(product.salePrice)}</span>
-        </>
-      ) : (
-        fmtUSD.format(product.price)
-      )}
-    </span>
-  );
+  const renderPrice = () => {
+    if (product.donated) {
+      return (
+        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-300 text-amber-700 text-lg font-bold">
+          🙏 Donated
+        </span>
+      );
+    }
+    return (
+      <span className="font-black text-2xl md:text-3xl text-black">
+        {typeof product.salePrice === "number" && product.salePrice !== null && product.salePrice < product.price ? (
+          <>
+            <span className="line-through text-gray-400 mr-3 font-normal text-xl">{fmtUSD.format(product.price)}</span>
+            <span>{fmtUSD.format(product.salePrice)}</span>
+          </>
+        ) : (
+          fmtUSD.format(product.price)
+        )}
+      </span>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#f1efef]">
@@ -316,31 +324,35 @@ const ProductViewPage = () => {
                 </div>
               </div>
               <div className="flex flex-col gap-3">
-                {/* Quantity controls */}
-                <div className="flex items-center gap-3">
-                  <span className="font-medium text-black">Quantity:</span>
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                      className="w-8 h-8 rounded-lg border border-black flex items-center justify-center text-black transition hover:bg-black hover:text-white"
-                    >−</button>
-                    <span className="font-bold text-xl w-10 text-center">{quantity}</span>
-                    <button type="button" onClick={() => setQuantity(q => q + 1)}
-                      className="w-8 h-8 rounded-lg border border-black flex items-center justify-center text-black transition hover:bg-black hover:text-white"
-                    >+</button>
+                {/* Quantity controls — hidden for donated */}
+                {!product.donated && (
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium text-black">Quantity:</span>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                        className="w-8 h-8 rounded-lg border border-black flex items-center justify-center text-black transition hover:bg-black hover:text-white"
+                      >−</button>
+                      <span className="font-bold text-xl w-10 text-center">{quantity}</span>
+                      <button type="button" onClick={() => setQuantity(q => q + 1)}
+                        className="w-8 h-8 rounded-lg border border-black flex items-center justify-center text-black transition hover:bg-black hover:text-white"
+                      >+</button>
+                    </div>
                   </div>
-                </div>
+                )}
                 {/* BUTTONS */}
                 <div className="flex gap-2 mt-1">
-                  <FancyButton
-                    as="button"
-                    type="button"
-                    className="fancy-sm flex items-center justify-center gap-2 py-2 px-6 text-lg font-bold rounded-full"
-                    onClick={addToCart}
-                    disabled={!product.inStock}
-                  >
-                    <ShoppingCart size={20} className="inline-block -mt-0.5" />
-                    <span>Add to Cart</span>
-                  </FancyButton>
+                  {!product.donated && (
+                    <FancyButton
+                      as="button"
+                      type="button"
+                      className="fancy-sm flex items-center justify-center gap-2 py-2 px-6 text-lg font-bold rounded-full"
+                      onClick={addToCart}
+                      disabled={!product.inStock}
+                    >
+                      <ShoppingCart size={20} className="inline-block -mt-0.5" />
+                      <span>Add to Cart</span>
+                    </FancyButton>
+                  )}
                   <button
                     type="button"
                     onClick={toggleWishlist}

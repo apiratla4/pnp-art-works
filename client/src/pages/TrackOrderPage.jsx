@@ -152,7 +152,7 @@ const TrackOrderPage = () => {
               <div className="bg-gray-50 rounded-xl p-5 shadow-sm overflow-auto">
                 <h4 className="text-lg font-bold mb-3 text-black">Timeline</h4>
                 <div className="space-y-2 text-gray-800 text-sm leading-relaxed">
-                  <div><b>Placed:</b> {order.createdAt ? new Date(order.createdAt).toLocaleString() : "—"}</div>
+                  <div><b>Placed:</b> {order.createdAt ? new Date(order.createdAt).toLocaleString() : ""}</div>
                   <div><b>Status:</b> {order.status}</div>
                 </div>
               </div>
@@ -160,7 +160,7 @@ const TrackOrderPage = () => {
                 <h4 className="text-lg font-bold mb-3 text-black">Shipping</h4>
                 <div className="space-y-2 text-gray-800 text-sm leading-relaxed">
                   <div><b>Recipient:</b> {order.customer?.firstName} {order.customer?.lastName}</div>
-                  <div><b>Phone:</b> {order.shippingAddress?.phone || "—"}</div>
+                  <div><b>Phone:</b> {order.shippingAddress?.phone || ""}</div>
                   <div><b>Address:</b> {(order.shippingAddress?.line1 || "") + " " + (order.shippingAddress?.line2 || "")}, {order.shippingAddress?.city} {order.shippingAddress?.state} {order.shippingAddress?.postalCode}</div>
                 </div>
               </div>
@@ -168,11 +168,11 @@ const TrackOrderPage = () => {
                 <h4 className="text-lg font-bold mb-3 text-black">Payment & Totals</h4>
                 <div className="space-y-2 text-gray-800 text-sm leading-relaxed">
                   <div><b>Items:</b> {Array.isArray(order.items) ? order.items.length : 0}</div>
-                  <div><b>Subtotal:</b> {order?.subtotal != null ? fmtUSD.format(Number(order.subtotal)) : "—"}</div>
-                  <div><b>Shipping:</b> {order?.shipping != null ? fmtUSD.format(Number(order.shipping)) : "—"}</div>
+                  <div><b>Subtotal:</b> {order?.subtotal != null ? fmtUSD.format(Number(order.subtotal)) : ""}</div>
+                  <div><b>Shipping:</b> {order?.shipping != null ? fmtUSD.format(Number(order.shipping)) : ""}</div>
                   <div className="flex items-center gap-1">
                     <b>Total:</b>
-                    <span className="text-lg font-black ml-1">{order?.total != null ? fmtUSD.format(Number(order.total)) : "—"}</span>
+                    <span className="text-lg font-black ml-1">{order?.total != null ? fmtUSD.format(Number(order.total)) : ""}</span>
                   </div>
                 </div>
               </div>
@@ -197,7 +197,7 @@ const TrackOrderPage = () => {
                       <div className="text-gray-600 text-sm">Qty: {it.qty || it.quantity || it.qtyOrdered || 1}</div>
                     </div>
                     <div className="font-black text-black text-lg pl-2 min-w-20 text-right">
-                      {it.price != null ? fmtUSD.format(Number(it.price)) : "—"}
+                      {it.price != null ? fmtUSD.format(Number(it.price)) : ""}
                     </div>
                   </div>
                 ))}

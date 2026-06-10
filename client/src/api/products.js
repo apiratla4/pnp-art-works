@@ -31,6 +31,7 @@ export const mapProductFromApi = (doc = {}) => {
     image,
     images,
     slug: doc.slug || "",
+    donated: !!doc.donated,
   };
 };
 

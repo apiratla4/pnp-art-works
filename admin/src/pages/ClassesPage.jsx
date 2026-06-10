@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Edit, Trash2, Image as ImageIcon, DollarSign, Calendar, Users, Plus, Save } from "lucide-react";
+import { Edit, Trash2, Image as ImageIcon, Plus, Save, X } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -65,11 +65,11 @@ const inputStyle = "w-full rounded-lg border-black border px-3 py-2 bg-white foc
 const ClassesPage = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [form, setForm] = useState(EMPTY_CLASS);
   const [editingId, setEditingId] = useState("");
   const [coverPreview, setCoverPreview] = useState("");
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const fileRef = useRef(null);
   const [formError, setFormError] = useState("");
 
@@ -116,6 +116,7 @@ const ClassesPage = () => {
     setEditingId("");
     setCoverPreview("");
     setFormError("");
+    setShowForm(false);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -171,7 +172,10 @@ const ClassesPage = () => {
     setForm({ ...item });
     setCoverPreview(item.cover || "");
     setFormError("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setShowForm(true);
+    const main = document.querySelector("main");
+    if (main) main.scrollTo({ top: 0, behavior: "smooth" });
+    else window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const deleteClass = async (id) => {
@@ -196,201 +200,250 @@ const ClassesPage = () => {
             <h1 className="text-2xl font-black mb-0 text-black">Classes Management</h1>
             <p className="text-gray-700 mt-1">Create and manage upcoming art classes and workshops</p>
           </div>
-        </div>
-        {/* Add/Edit Form */}
-        <form className="rounded-2xl shadow bg-white mb-6 px-6 py-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-7"
-          autoComplete="off"
-          onSubmit={saveClass}
-        >
-          <div>
-            <label className="block text-sm font-medium mb-1">Title<span className="text-red-500">*</span></label>
-            <input
-              className={inputStyle}
-              placeholder="e.g., Watercolor Mastery"
-              value={form.title}
-              onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Mode</label>
-            <select
-              className={inputStyle}
-              value={form.mode}
-              onChange={(e) => setForm(f => ({ ...f, mode: e.target.value }))}
-            >
-              {modes.map(m => <option key={m}>{m}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Level</label>
-            <select
-              className={inputStyle}
-              value={form.level}
-              onChange={(e) => setForm(f => ({ ...f, level: e.target.value }))}
-            >
-              {levels.map(lvl => <option key={lvl}>{lvl}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Start Date<span className="text-red-500">*</span></label>
-            <input
-              type="date"
-              className={inputStyle}
-              value={form.startDate}
-              onChange={(e) => setForm(f => ({ ...f, startDate: e.target.value }))}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Duration (wks)</label>
-            <input
-              type="number"
-              min="1"
-              className={inputStyle}
-              value={form.durationWeeks}
-              onChange={(e) => setForm(f => ({ ...f, durationWeeks: Number(e.target.value || 1) }))}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Seats</label>
-            <input
-              type="number"
-              min="1"
-              className={inputStyle}
-              value={form.seats}
-              onChange={(e) => setForm(f => ({ ...f, seats: Number(e.target.value || 1) }))}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Price</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              className={inputStyle}
-              value={form.price}
-              onChange={(e) => setForm(f => ({ ...f, price: e.target.value }))}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Visibility</label>
-            <select
-              className={inputStyle}
-              value={form.published ? "published" : "draft"}
-              onChange={(e) => setForm(f => ({ ...f, published: e.target.value === "published" }))}
-            >
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-            </select>
-          </div>
-          <div className="col-span-full">
-            <label className="block text-sm font-medium mb-1">Cover Image</label>
-            <div className="flex items-center gap-3 flex-wrap">
-              <label className="inline-flex items-center gap-1 px-3 py-1 border border-black rounded-lg cursor-pointer bg-white font-medium">
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={(e) => handleCoverFile(e.target.files?.[0] || null)}
-                />
-                <ImageIcon size={18} />
-                {uploadingCover ? "Uploading…" : "Choose image"}
-              </label>
-              {(coverPreview || form.cover) && (
-                <img
-                  src={coverPreview || form.cover}
-                  alt="cover preview"
-                  className="w-20 h-20 object-cover rounded-lg border border-black"
-                />
-              )}
-              {(coverPreview || form.cover) && (
-                <button
-                  type="button"
-                  className="btn-mono-sm"
-                  onClick={() => handleCoverFile(null)}
-                >Remove</button>
-              )}
-            </div>
-          </div>
-          <div className="col-span-full">
-            <label className="block text-sm font-medium mb-1">Description</label>
-            <textarea
-              className={inputStyle}
-              rows={2}
-              placeholder="Outline, materials, and outcomes."
-              value={form.description}
-              onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
-            />
-          </div>
-          <div className="col-span-full flex gap-3 pt-1">
+          <div className="flex items-center gap-3">
+            {loading && <span className="text-sm text-gray-600">Loading…</span>}
             <button
-              type="submit"
-              className="btn-mono-sm flex items-center gap-2 font-bold"
-              disabled={loading || uploadingCover}
+              type="button"
+              className="btn-mono-sm flex items-center gap-2"
+              onClick={() => {
+                if (showForm && !editingId) {
+                  setShowForm(false);
+                  setForm(EMPTY_CLASS);
+                } else {
+                  setForm(EMPTY_CLASS);
+                  setEditingId("");
+                  setCoverPreview("");
+                  setFormError("");
+                  setShowForm(true);
+                }
+              }}
             >
-              <Save size={16} />
-              {editingId ? "Update Class" : "Add Class"}
+              {showForm && !editingId ? <X size={16} /> : <Plus size={16} />}
+              {showForm && !editingId ? "Cancel" : "Add Class"}
             </button>
-            <button type="button" className="btn-mono-sm" onClick={resetForm} disabled={loading || uploadingCover}>
-              Reset
-            </button>
-            {formError && <div className="text-sm text-red-600 font-bold pt-2">{formError}</div>}
           </div>
-        </form>
-        {/* Cards */}
+        </div>
+
+        {/* Add/Edit Form */}
+        {showForm && (
+          <form
+            className="rounded-2xl shadow bg-white mb-6 px-6 py-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-7"
+            autoComplete="off"
+            onSubmit={saveClass}
+          >
+            <div>
+              <label className="block text-sm font-medium mb-1">Title<span className="text-red-500">*</span></label>
+              <input
+                className={inputStyle}
+                placeholder="e.g., Watercolor Mastery"
+                value={form.title}
+                onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Mode</label>
+              <select
+                className={inputStyle}
+                value={form.mode}
+                onChange={(e) => setForm(f => ({ ...f, mode: e.target.value }))}
+              >
+                {modes.map(m => <option key={m}>{m}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Level</label>
+              <select
+                className={inputStyle}
+                value={form.level}
+                onChange={(e) => setForm(f => ({ ...f, level: e.target.value }))}
+              >
+                {levels.map(lvl => <option key={lvl}>{lvl}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Start Date<span className="text-red-500">*</span></label>
+              <input
+                type="date"
+                className={inputStyle}
+                value={form.startDate}
+                onChange={(e) => setForm(f => ({ ...f, startDate: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Duration (wks)</label>
+              <input
+                type="number"
+                min="1"
+                className={inputStyle}
+                value={form.durationWeeks}
+                onChange={(e) => setForm(f => ({ ...f, durationWeeks: Number(e.target.value || 1) }))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Seats</label>
+              <input
+                type="number"
+                min="1"
+                className={inputStyle}
+                value={form.seats}
+                onChange={(e) => setForm(f => ({ ...f, seats: Number(e.target.value || 1) }))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Price</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                className={inputStyle}
+                value={form.price}
+                onChange={(e) => setForm(f => ({ ...f, price: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Visibility</label>
+              <select
+                className={inputStyle}
+                value={form.published ? "published" : "draft"}
+                onChange={(e) => setForm(f => ({ ...f, published: e.target.value === "published" }))}
+              >
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
+            <div className="col-span-full">
+              <label className="block text-sm font-medium mb-1">Cover Image</label>
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="inline-flex items-center gap-1 px-3 py-1 border border-black rounded-lg cursor-pointer bg-white font-medium">
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={(e) => handleCoverFile(e.target.files?.[0] || null)}
+                  />
+                  <ImageIcon size={18} />
+                  {uploadingCover ? "Uploading…" : "Choose image"}
+                </label>
+                {(coverPreview || form.cover) && (
+                  <img
+                    src={coverPreview || form.cover}
+                    alt="cover preview"
+                    className="w-20 h-20 object-cover rounded-lg border border-black"
+                  />
+                )}
+                {(coverPreview || form.cover) && (
+                  <button
+                    type="button"
+                    className="btn-mono-sm"
+                    onClick={() => handleCoverFile(null)}
+                  >Remove</button>
+                )}
+              </div>
+            </div>
+            <div className="col-span-full">
+              <label className="block text-sm font-medium mb-1">Description</label>
+              <textarea
+                className={inputStyle}
+                rows={2}
+                placeholder="Outline, materials, and outcomes."
+                value={form.description}
+                onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
+              />
+            </div>
+            <div className="col-span-full flex gap-3 pt-1 items-center flex-wrap">
+              <button
+                type="submit"
+                className="btn-mono-sm flex items-center gap-2 font-bold"
+                disabled={loading || uploadingCover}
+              >
+                <Save size={16} />
+                {editingId ? "Update Class" : "Add Class"}
+              </button>
+              <button type="button" className="btn-mono-sm" onClick={resetForm} disabled={loading || uploadingCover}>
+                Cancel
+              </button>
+              {formError && <div className="text-sm text-red-600 font-bold">{formError}</div>}
+            </div>
+          </form>
+        )}
+
+        {/* Classes Table */}
         {loading && items.length === 0 ? (
           <div className="py-20 text-gray-400 text-center text-xl">Loading classes...</div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center gap-2 text-center text-gray-500 py-20">
             <ImageIcon size={64} className="mx-auto mb-4" />
             <h3 className="font-black text-lg">No classes found</h3>
-            <p>Start by adding your first class</p>
+            <p>Click "Add Class" to get started</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7 pb-5">
-            {items.map((c) => (
-              <div
-                key={c.id}
-                className="flex flex-col rounded-2xl shadow border border-black/10 bg-white p-4 h-full relative"
-              >
-                <div className="flex gap-3 mb-2 items-center">
-                  {c.cover ? (
-                    <img
-                      src={c.cover}
-                      alt={c.title}
-                      className="w-16 h-16 object-cover rounded-lg border border-black"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-lg border border-black flex items-center justify-center bg-white">
-                      <ImageIcon size={20} className="text-gray-400" />
-                    </div>
-                  )}
-                  <div className="flex flex-col flex-1">
-                    <span className="text-xs uppercase font-bold tracking-tight text-gray-700 mb-0.5">{c.level || "—"}</span>
-                    <h6 className="text-black font-bold text-lg mb-1 truncate">{c.title || "Untitled"}</h6>
-                    <div className="text-xs text-gray-500">{c.mode} | {c.seats} seats | {c.startDate}</div>
-                  </div>
-                  <div className="flex gap-1 z-10">
-                    <button className="btn-mono-sm" onClick={() => startEdit(c)} title="Edit"><Edit size={16} /></button>
-                    <button className="btn-mono-sm" onClick={() => deleteClass(c.id)} title="Delete"><Trash2 size={16} /></button>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-3 text-gray-800 font-medium items-center text-sm py-1">
-                  <span><Calendar size={14} className="inline mr-1" /> {c.startDate || "-"}</span>
-                  <span><Users size={14} className="inline mr-1" /> {c.seats} Seats</span>
-                  <span><DollarSign size={14} className="inline mr-1" />{fmtUSD.format(Number(c.price))}</span>
-                  <span>Duration: {c.durationWeeks} wks</span>
-                  <span className={`${c.published ? "bg-black text-white" : "bg-gray-300 text-black"} rounded-full px-3 py-0.5 text-xs font-bold`}>
-                    {c.published ? "Published" : "Draft"}
-                  </span>
-                </div>
-                <div className="line-clamp-2 text-gray-700 text-sm mb-1">{c.description}</div>
-              </div>
-            ))}
+          <div className="rounded-2xl shadow bg-white overflow-hidden border border-gray-200">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b-2 border-gray-300 bg-gray-50 text-left">
+                    <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide">Cover</th>
+                    <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide">Class</th>
+                    <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide">Schedule</th>
+                    <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide">Price / Seats</th>
+                    <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide">Status</th>
+                    <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((c) => (
+                    <tr key={c.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                      <td className="px-3 py-2.5">
+                        {c.cover ? (
+                          <img
+                            src={c.cover}
+                            alt={c.title}
+                            className="w-12 h-12 object-cover rounded-lg border border-black/20 flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg border border-black/20 flex items-center justify-center bg-gray-100 flex-shrink-0">
+                            <ImageIcon size={16} className="text-gray-400" />
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 min-w-[160px]">
+                        <div className="font-bold text-black leading-tight">{c.title || "Untitled"}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{c.level} • {c.mode}</div>
+                      </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">
+                        <div className="text-sm">{c.startDate || "—"}</div>
+                        <div className="text-xs text-gray-500">{c.durationWeeks} wks</div>
+                      </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">
+                        <div className="font-semibold">{fmtUSD.format(Number(c.price))}</div>
+                        <div className="text-xs text-gray-500">{c.seats} seats</div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-bold border ${c.published ? "bg-black text-white border-black" : "bg-white text-black border-black"}`}>
+                          {c.published ? "Published" : "Draft"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex gap-1.5 justify-end">
+                          <button className="btn-mono-sm" onClick={() => startEdit(c)} title="Edit">
+                            <Edit size={14} />
+                          </button>
+                          <button className="btn-mono-sm" onClick={() => deleteClass(c.id)} title="Delete">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
+
         <style>{`
           .btn-mono-sm {
             border: 1.5px solid #000;
@@ -405,16 +458,10 @@ const ClassesPage = () => {
             align-items: center;
             justify-content: center;
           }
-          .btn-mono-sm:hover, .btn-mono-sm:focus {
-            background: #000;
-            color: #fff;
-          }
+          .btn-mono-sm:hover, .btn-mono-sm:focus { background: #000; color: #fff; }
           .btn-mono-sm:active { transform: scale(0.97); }
-          .btn-mono-sm:focus-visible {
-            outline: none;
-            box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
-          }
-          .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+          .btn-mono-sm:focus-visible { outline: none; box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff; }
+          .btn-mono-sm:disabled { opacity: 0.5; cursor: not-allowed; }
         `}</style>
       </div>
     </div>

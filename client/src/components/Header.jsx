@@ -66,13 +66,13 @@ const Header = () => {
 
   return (
     <header className="w-full bg-white border-b border-gray-200 fixed z-40 top-0 left-0" style={{ minHeight: 80 }}>
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-2 md:px-6 py-2" style={{ minHeight: 80 }}>
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-2 sm:px-4 md:px-6 py-2" style={{ minHeight: 80 }}>
         {/* Logo */}
         <Link to="/" aria-label="Home" className="flex items-center gap-3 min-w-8">
           <motion.img
             src={logo}
             alt="PnPArtStudio"
-            className="h-20 md:h-24 w-auto"
+            className="h-16 sm:h-20 md:h-24 w-auto"
             height={88}
             width={140}
             whileHover={{ scale: 1.02 }}
@@ -80,7 +80,7 @@ const Header = () => {
           />
           {isDesktop && (
             <span>
-              <span className="font-bold text-[1.7rem] ml-1 tracking-tight text-gray-900 leading-tight block">PnPArtStudio</span>
+              <span className="ml-1 leading-tight block" style={{ fontFamily: "'Dancing Script', cursive", fontSize: "2rem", color: "#1a1a1a", fontWeight: 700 }}>PnP Artstudio</span>
               <span className="block text-sm text-gray-500 font-medium ml-1 leading-none">by priyanka vasista</span>
             </span>
           )}
@@ -171,7 +171,7 @@ const Header = () => {
           )}
         </ul>
         {/* Right actions: wishlist always, tracker only desktop, cart always */}
-        <div className="flex items-center gap-2 md:gap-3 min-w-28">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3 min-w-0">
           <NavLink to="/wishlist" className="p-2 rounded-full hover:bg-gray-100 relative" title="Wishlist">
             <Heart size={25} className="text-gray-700" />
             {wishlistCount > 0 && (

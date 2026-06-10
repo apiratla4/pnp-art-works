@@ -38,7 +38,7 @@ export const submitOrder = async (req, res) => {
       from: `"${name}" <${process.env.EMAIL_USER}>`,
       replyTo: email,
       to: 'contact@codewithjay.in',
-      subject: `Custom Art Request — ${name}`,
+      subject: `Custom Art Request  ${name}`,
       html,
       attachments: attachment ? [{
         filename: attachment.originalname,

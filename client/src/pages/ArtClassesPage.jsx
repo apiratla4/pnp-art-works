@@ -103,7 +103,7 @@ const ArtClassesPage = () => {
           <div className="text-center mb-3">
             <h1 className="font-bold text-2xl mb-2">Art Classes & Workshops</h1>
             <p>
-              Live, guided sessions to master techniques across drawing, watercolor, and acrylics — learn from anywhere or join in studio.
+              Live, guided sessions to master techniques across drawing, watercolor, and acrylics  learn from anywhere or join in studio.
             </p>
           </div>
           <div className="flex justify-center">

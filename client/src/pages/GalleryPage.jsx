@@ -85,7 +85,7 @@ const GalleryPage = () => {
     <div className="absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity z-10 rounded-b-2xl">
       <div className="text-white text-base font-bold line-clamp-2">{image.title || "Untitled"}</div>
       {(image.medium || image.year) && (
-        <div className="text-gray-200 text-xs mb-1 mt-0.5">{image.medium || "—"}{image.year ? ` • ${image.year}` : ""}</div>
+        <div className="text-gray-200 text-xs mb-1 mt-0.5">{image.medium || ""}{image.year ? ` • ${image.year}` : ""}</div>
       )}
       {image.description && (
         <div className="text-gray-300 text-xs line-clamp-2">{image.description}</div>
@@ -134,7 +134,7 @@ const GalleryPage = () => {
   };
   const shareImage = async (img) => {
     const title = img?.title || "Artwork";
-    const text = `${title}${img?.description ? " — " + img.description : ""}`;
+    const text = `${title}${img?.description ? "  " + img.description : ""}`;
     const src = img?.src;
     try {
       if (navigator.share && src) {
@@ -269,7 +269,7 @@ const GalleryPage = () => {
             />
             <span className="inline-block text-xs mb-2 font-semibold px-3 py-1 rounded-full border border-black bg-white text-black">{selected.category || "Other"}</span>
             <h2 className="text-xl font-extrabold mb-2 text-black">{selected.title || "Untitled"}</h2>
-            <p className="mb-0 text-gray-700">{selected.medium || "—"}{selected.year && <> • {selected.year}</>}</p>
+            <p className="mb-0 text-gray-700">{selected.medium || ""}{selected.year && <> • {selected.year}</>}</p>
             <p className="my-2 text-gray-600">{selected.description || <span className="italic text-gray-400">No description.</span>}</p>
             <div className="w-full flex flex-col sm:flex-row items-center gap-3 mt-4">
               <button

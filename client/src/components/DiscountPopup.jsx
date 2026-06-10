@@ -122,7 +122,7 @@ const DiscountPopup = ({ delayMs = 5000 }) => {
           <div className="text-center w-full">
             <div className="font-mono text-sm uppercase tracking-widest mb-2 font-bold">PNP ART STUDIO</div>
             <h2 id="discountTitle" className="font-serif font-extrabold text-2xl sm:text-3xl mb-3 text-black">
-              Get 35% OFF your order
+              Get 10% OFF your order
             </h2>
             <p id="discountDesc" className="text-black/80 mb-5">
               Sign up and unlock an instant discount.

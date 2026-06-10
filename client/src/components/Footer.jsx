@@ -115,16 +115,15 @@ const Footer = () => {
   return (
     <footer className="bg-black pt-5 text-white">
       <div className="w-full h-1 bg-white" />
-      <div className="max-w-7xl mx-auto px-3 md:px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-y-10 gap-x-9">
+      <div className="max-w-7xl mx-auto px-4 sm:px-5 md:px-6 py-8 sm:py-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-8 sm:gap-y-10 gap-x-8 lg:gap-x-9">
           {/* Brand/About & Subscriber */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
             <div className="flex gap-3 items-center mb-2">
               <img
                 src={logo}
-                alt="PnPArtStudio — by Priyanka Vasishta"
-                className="block rounded-lg"
-                style={{ height: 92, width: 92 }}
+                alt="PnPArtStudio by Priyanka Vasishta"
+                className="block rounded-lg w-16 h-16 sm:w-20 sm:h-20"
                 loading="eager"
                 decoding="async"
               />
@@ -148,7 +147,7 @@ const Footer = () => {
                 <input
                   id="news-email"
                   type="email"
-                  className="rounded-l-lg px-4 py-2 text-black text-base bg-white border-none focus:ring-2 focus:ring-[#9fe375] font-semibold w-full min-w-40"
+                  className="rounded-l-lg px-3 py-2 text-black text-sm sm:text-base bg-white border-none focus:ring-2 focus:ring-[#9fe375] font-semibold w-full min-w-0"
                   placeholder="Your email"
                   value={email}
                   disabled={subState.loading}
@@ -261,9 +260,9 @@ const Footer = () => {
           </div>
         </div>
         {/* Bottom bar */}
-        <div className="border-t border-white/25 mt-10 pt-5 flex flex-col md:flex-row md:justify-between items-center gap-2 text-sm">
-          <small className="text-white">&copy; {year} PnpArtStudio. All rights reserved.</small>
-          <div className="flex gap-5">
+        <div className="border-t border-white/25 mt-8 sm:mt-10 pt-5 flex flex-col sm:flex-row sm:justify-between items-center gap-2 text-sm">
+          <small className="text-white text-center sm:text-left">&copy; {year} PnpArtStudio. All rights reserved.</small>
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-5">
             {legalLinks.map(({ to, label }) => (
               <Link
                 key={label}

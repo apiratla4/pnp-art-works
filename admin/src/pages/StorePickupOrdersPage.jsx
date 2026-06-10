@@ -147,7 +147,7 @@ const StorePickupOrdersPage = () => {
                     <li key={i} className="">
                       <span className="font-medium">{it.name}</span> × {it.qty}
                       {it.variant && <span> [{it.variant}]</span>}
-                      {" — "}
+                      {"  "}
                       <span className="font-mono">${Number(it.price).toFixed(2)}</span>
                     </li>
                   )}

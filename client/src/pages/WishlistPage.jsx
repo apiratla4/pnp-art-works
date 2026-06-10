@@ -176,7 +176,7 @@ const WishlistPage = () => {
                 </div>
               </div>
               <div className="border border-black bg-white text-black rounded-xl px-4 py-3 text-base shadow mt-2">
-                Tip: Use your wishlist as a “save for later” — items can be added to your cart anytime.
+                Tip: Use your wishlist as a “save for later”  items can be added to your cart anytime.
               </div>
             </div>
 

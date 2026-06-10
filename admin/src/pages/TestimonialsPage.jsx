@@ -71,47 +71,66 @@ const TestimonialsPage = () => {
         <h1 className="text-2xl font-extrabold">Testimonials</h1>
         <button className="bg-black text-white px-5 py-2 rounded-lg font-semibold hover:bg-gray-900" onClick={handleAdd}>Add Testimonial</button>
       </div>
-      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-7">
-        {testimonials.length === 0 && (
-          <div className="col-span-full text-center text-gray-400 py-8 font-semibold">
-            No testimonials yet.
-          </div>
-        )}
-        {testimonials.map(t => (
-          <div key={t._id} className="bg-white rounded-2xl shadow-md border border-black/10 p-5 flex flex-col relative min-h-[220px]">
-            <div className="flex items-center gap-4 mb-2">
-              {t.imageUrl
-                ? <img src={t.imageUrl} alt={t.name} className="h-14 w-14 object-cover rounded-full border border-black/10" />
-                : <div className="h-14 w-14 bg-gray-100 rounded-full border border-black/10" />
-              }
-              <div className="flex flex-col">
-                <span className="font-bold text-lg text-black">{t.name}</span>
-                <span className="text-xs text-gray-500">{t.city}</span>
-                <span className="text-xs text-yellow-600 font-bold">Rating: {t.rating}/5</span>
-              </div>
-            </div>
-            <div className="my-2 grow italic text-gray-800 text-sm overflow-hidden line-clamp-5 wrap-break-word">
-              {t.review}
-            </div>
-            <div className="absolute top-3 right-3 flex gap-1">
-              <button
-                className="flex items-center gap-1 bg-white border border-gray-300 hover:border-black text-gray-600 hover:text-black rounded-full px-3 py-1 shadow-sm text-xs font-bold transition-all focus:outline-none"
-                onClick={() => handleEdit(t)}
-                title="Edit testimonial"
-              >
-                <Edit size={14} strokeWidth={2} />
-                Edit
-              </button>
-              <button
-                className="flex items-center gap-1 bg-white border border-gray-300 hover:border-black text-gray-600 hover:text-black rounded-full px-2 py-1 shadow-sm text-xs font-bold transition-all focus:outline-none"
-                onClick={() => handleDelete(t)}
-                title="Delete testimonial"
-              >
-                <Trash2 size={15} strokeWidth={2} />
-              </button>
-            </div>
-          </div>
-        ))}
+      <div className="rounded-2xl shadow bg-white overflow-hidden border border-gray-200">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b-2 border-gray-300 bg-gray-50 text-left">
+                <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide">Photo</th>
+                <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide">Name & City</th>
+                <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide text-center">Rating</th>
+                <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide">Review</th>
+                <th className="px-3 py-3 font-bold text-xs uppercase tracking-wide text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {testimonials.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-gray-400 font-semibold">No testimonials yet.</td>
+                </tr>
+              )}
+              {testimonials.map(t => (
+                <tr key={t._id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                  <td className="px-3 py-2.5">
+                    {t.imageUrl
+                      ? <img src={t.imageUrl} alt={t.name} className="w-12 h-12 object-cover rounded-full border border-black/20 flex-shrink-0" />
+                      : <div className="w-12 h-12 bg-gray-100 rounded-full border border-black/20 flex-shrink-0" />
+                    }
+                  </td>
+                  <td className="px-3 py-2.5 min-w-[130px]">
+                    <div className="font-bold text-black leading-tight">{t.name}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{t.city}</div>
+                  </td>
+                  <td className="px-3 py-2.5 text-center whitespace-nowrap">
+                    <span className="text-yellow-600 font-bold text-sm">{"★".repeat(Number(t.rating) || 0)}</span>
+                    <div className="text-xs text-gray-500">{t.rating}/5</div>
+                  </td>
+                  <td className="px-3 py-2.5 max-w-[340px]">
+                    <p className="text-gray-700 text-sm italic line-clamp-2">{t.review}</p>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex gap-1.5 justify-end">
+                      <button
+                        className="btn-mono-sm flex items-center gap-1"
+                        onClick={() => handleEdit(t)}
+                        title="Edit"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        className="btn-mono-sm"
+                        onClick={() => handleDelete(t)}
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       <TestimonialUploadModal
         show={showModal}
@@ -123,12 +142,15 @@ const TestimonialsPage = () => {
         editTestimonial={editTestimonial}
       />
       <style>{`
-        .line-clamp-5 {
-          display: -webkit-box;
-          -webkit-line-clamp: 5;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
+        .btn-mono-sm {
+          border: 1.5px solid #000; background: #fff; color: #000;
+          border-radius: 9999px; padding: 7px 16px; font-weight: 700;
+          font-size: 1.09em; transition: all .16s;
+          display: inline-flex; align-items: center; justify-content: center;
         }
+        .btn-mono-sm:hover, .btn-mono-sm:focus { background: #000; color: #fff; }
+        .btn-mono-sm:active { transform: scale(0.97); }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
     </div>
   );

@@ -344,7 +344,7 @@ const NewslettersPage = () => {
                   <div key={s._id} className="flex items-center gap-2 border-b last:border-0 border-black/10 py-1">
                     <Mail size={14} className="opacity-70" />
                     <span className="font-mono text-xs break-all">{s.email}</span>
-                    <span className="ml-auto text-xs text-gray-400">{s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "—"}</span>
+                    <span className="ml-auto text-xs text-gray-400">{s.createdAt ? new Date(s.createdAt).toLocaleDateString() : ""}</span>
                   </div>
                 ))
               )}
