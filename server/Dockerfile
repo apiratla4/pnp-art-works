@@ -21,4 +21,5 @@ USER appuser
 
 EXPOSE 4000
 
-CMD ["node", "src/index.js"]  # Prefer node directly over npm start
+# Use node directly (not npm start) for proper signal handling
+CMD ["node", "src/index.js"]
