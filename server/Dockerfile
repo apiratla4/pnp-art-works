@@ -22,4 +22,4 @@ USER appuser
 EXPOSE 4000
 
 # Use node directly (not npm start) for proper signal handling
-CMD ["node", "src/index.js"]
+CMD ["node", "server.js"]
