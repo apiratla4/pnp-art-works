@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Award, Palette, Users, Star, Heart } from 'lucide-react';
 import FancyButton from '../components/FancyButton';
+import priyankaBioImg from '../assets/priyanka bio img.jpeg';
 
 const achievements = [
   { icon: Award, number: '50+', label: 'Awards Won' },
@@ -45,8 +46,8 @@ const AboutPage = () => (
           <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="flex flex-col relative">
             <div className="rounded-3xl overflow-hidden shadow-xl relative">
               <img
-                src="https://images.pexels.com/photos/1183992/pexels-photo-1183992.jpeg?auto=compress&cs=tinysrgb&w=600&h=800&fit=crop"
-                alt="Artist at work"
+                src={priyankaBioImg}
+                alt="Priyanka Vasista - Artist"
                 className="block w-full h-[280px] sm:h-[360px] md:h-[420px] object-cover"
               />
               <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent pointer-events-none" />

@@ -29,7 +29,7 @@ const PRODUCT_CATEGORIES = {
 
 const EMPTY_PRODUCT = {
   id: "", title: "", category: "", subcategory: "", subsubcategory: "", price: "", salePrice: "", stock: 1,
-  images: [], description: "", published: true, dimensions: "", color: "", inStock: true, featured: false, donated: false
+  images: [], description: "", published: true, dimensions: "", color: "", inStock: true, featured: false, donated: false, contactForPrice: false
 };
 
 const toCapitalWords = (str) => String(str || "").toLowerCase().replace(/\b(\w)/g, (s) => s.toUpperCase());
@@ -45,7 +45,8 @@ const mapProductFromApi = (doc) => {
     color: toCapitalWords(doc.color || ""),
     inStock: typeof doc?.inStock === "boolean" ? doc.inStock : (typeof doc?.stock === "number" ? doc.stock > 0 : true),
     featured: !!doc?.featured,
-    donated: !!doc?.donated
+    donated: !!doc?.donated,
+    contactForPrice: !!doc?.contactForPrice
   };
 };
 
@@ -122,22 +123,23 @@ export default function ProductsPage() {
   const saveProduct = async (e) => {
     e?.preventDefault?.();
     if (!form.title.trim()) return toast.warning("Product title is required");
-    if (!form.donated && (!form.price || Number(form.price) <= 0)) return toast.warning("Valid price is required");
+    if (!form.donated && !form.contactForPrice && (!form.price || Number(form.price) <= 0)) return toast.warning("Valid price is required");
     if (!form.category) return toast.warning("Select a category");
     if (form.category === "All Products" && !form.subcategory) return toast.warning("Select a subcategory");
     if (form.category === "Indian Products" && !form.subcategory) return toast.warning("Select a subcategory");
     if (form.subcategory === "Return gifts" && !form.subsubcategory) return toast.warning("Select return gift");
-    if (!form.donated && form.salePrice !== "" && form.salePrice !== null && Number(form.salePrice) > Number(form.price)) return toast.warning("Sale price cannot exceed price");
+    if (!form.donated && !form.contactForPrice && form.salePrice !== "" && form.salePrice !== null && Number(form.salePrice) > Number(form.price)) return toast.warning("Sale price cannot exceed price");
     try {
       const payload = {
         title: form.title, category: form.category, subcategory: form.subcategory,
         subsubcategory: form.subsubcategory ? form.subsubcategory : undefined,
-        price: form.donated ? 0 : Number(form.price),
-        salePrice: form.donated ? null : (form.salePrice !== "" && form.salePrice !== null ? Number(form.salePrice) : null),
+        price: (form.donated || form.contactForPrice) ? 0 : Number(form.price),
+        salePrice: (form.donated || form.contactForPrice) ? null : (form.salePrice !== "" && form.salePrice !== null ? Number(form.salePrice) : null),
         stock: Number(form.stock || 0), images: Array.isArray(form.images) ? form.images.map(String) : [],
         description: form.description || "", published: !!form.published,
         dimensions: form.dimensions || "", color: toCapitalWords(form.color),
-        inStock: !!form.inStock, featured: !!form.featured, donated: !!form.donated
+        inStock: !!form.inStock, featured: !!form.featured, donated: !!form.donated,
+        contactForPrice: !!form.contactForPrice
       };
       if (editingId) {
         await refetchAfter(async () => {
@@ -310,7 +312,7 @@ export default function ProductsPage() {
               <label className="block font-semibold text-sm mb-1">Donated</label>
               <select className="w-full rounded-lg border border-black px-3 py-2 bg-white"
                 value={form.donated ? "true" : "false"}
-                onChange={e => setForm((f) => ({ ...f, donated: e.target.value === "true" }))}>
+                onChange={e => setForm((f) => ({ ...f, donated: e.target.value === "true", contactForPrice: false }))}>
                 <option value="false">No</option>
                 <option value="true">Yes – Donated (no price shown)</option>
               </select>
@@ -318,8 +320,23 @@ export default function ProductsPage() {
                 <p className="text-xs text-amber-600 mt-1">Price hidden on storefront. Shown as "Donated".</p>
               )}
             </div>
-            {/* Price fields — hidden when donated */}
+            {/* Contact for Price */}
             {!form.donated && (
+              <div>
+                <label className="block font-semibold text-sm mb-1">Price Required?</label>
+                <select className="w-full rounded-lg border border-black px-3 py-2 bg-white"
+                  value={form.contactForPrice ? "true" : "false"}
+                  onChange={e => setForm((f) => ({ ...f, contactForPrice: e.target.value === "true" }))}>
+                  <option value="false">Yes – Show Price</option>
+                  <option value="true">No – Contact on WhatsApp</option>
+                </select>
+                {form.contactForPrice && (
+                  <p className="text-xs text-green-700 mt-1">Price hidden. "Contact on WhatsApp" button shown to customers.</p>
+                )}
+              </div>
+            )}
+            {/* Price fields — hidden when donated or contactForPrice */}
+            {!form.donated && !form.contactForPrice && (
               <>
                 <div>
                   <label className="block font-semibold text-sm mb-1">Price</label>
@@ -474,6 +491,10 @@ export default function ProductsPage() {
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-300 text-amber-700 text-xs font-semibold">
                           🙏 Donated
                         </span>
+                      ) : p.contactForPrice ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 border border-green-300 text-green-700 text-xs font-semibold">
+                          💬 Contact
+                        </span>
                       ) : sale !== null ? (
                         <div className="leading-tight">
                           <span className="line-through text-gray-400 text-xs block">${priceNum}</span>
@@ -494,6 +515,9 @@ export default function ProductsPage() {
                         )}
                         {p.donated && (
                           <span className="rounded-full px-2 py-0.5 text-xs font-bold border border-amber-300 bg-amber-50 text-amber-700">Donated</span>
+                        )}
+                        {p.contactForPrice && (
+                          <span className="rounded-full px-2 py-0.5 text-xs font-bold border border-green-300 bg-green-50 text-green-700">💬 Contact</span>
                         )}
                         {(!p.inStock || Number(p.stock) === 0) && (
                           <span className="rounded-full px-2 py-0.5 text-xs font-bold border border-red-300 bg-red-50 text-red-600">Out of Stock</span>
@@ -577,6 +601,8 @@ export default function ProductsPage() {
               <div className="flex gap-4 items-end mb-2">
                 {active.donated ? (
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-50 border border-amber-300 text-amber-700 text-sm font-semibold">🙏 Donated</span>
+                ) : active.contactForPrice ? (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-50 border border-green-300 text-green-700 text-sm font-semibold">💬 Contact for Price</span>
                 ) : (
                   <>
                     <span className="font-bold text-xl text-black">${active.salePrice ? active.salePrice : active.price}</span>

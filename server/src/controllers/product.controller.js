@@ -42,7 +42,7 @@ function validate(b = {}) {
 
   if (!b.title || !String(b.title).trim()) errors.title = 'Title is required';
   const price = Number(b.price);
-  if (!b.donated && (!Number.isFinite(price) || price <= 0)) errors.price = 'Price must be a positive number';
+  if (!b.donated && !b.contactForPrice && (!Number.isFinite(price) || price <= 0)) errors.price = 'Price must be a positive number';
   if (b.salePrice !== undefined && b.salePrice !== null && b.salePrice !== '') {
     const sp = Number(b.salePrice);
     if (!Number.isFinite(sp) || sp < 0) errors.salePrice = 'Sale price must be a non-negative number';
@@ -94,6 +94,7 @@ export async function createProduct(req, res, next) {
       inStock: typeof b.inStock === 'boolean' ? b.inStock : (Number(b.stock || 0) > 0),
       featured: !!b.featured,
       donated: !!b.donated,
+      contactForPrice: !!b.contactForPrice,
     };
 
     const doc = await Product.create(payload);
@@ -124,6 +125,7 @@ export async function updateProduct(req, res, next) {
       ...(b.inStock !== undefined && { inStock: !!b.inStock }),
       ...(b.featured !== undefined && { featured: !!b.featured }),
       ...(b.donated !== undefined && { donated: !!b.donated }),
+      ...(b.contactForPrice !== undefined && { contactForPrice: !!b.contactForPrice }),
     };
 
     const doc = await Product.findByIdAndUpdate(req.params.id, patch, { new: true, runValidators: true });

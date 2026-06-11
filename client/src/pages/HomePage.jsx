@@ -9,6 +9,7 @@ import HeroCarousel from '../components/HeroCarousel';
 import ProductCard from '../components/ProductCard';
 import FancyButton from '../components/FancyButton';
 import TestimonialsCarousel from '../components/TestimonialsCarousel';
+import priyankaBioImg from '../assets/priyanka bio img.jpeg';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -106,8 +107,8 @@ function HomePage() {
             <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
               <div className="rounded-3xl overflow-hidden shadow-xl relative">
                 <img
-                  src="https://images.pexels.com/photos/1183992/pexels-photo-1183992.jpeg?auto=compress&cs=tinysrgb&w=600&h=800&fit=crop"
-                  alt="Priyanka Vasista  Artist"
+                  src={priyankaBioImg}
+                  alt="Priyanka Vasista - Artist"
                   className="block w-full h-[300px] sm:h-[380px] md:h-[460px] object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
