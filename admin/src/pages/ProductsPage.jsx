@@ -52,6 +52,49 @@ const mapProductFromApi = (doc) => {
 
 const slugify = (s) => (s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
 
+function applyWatermark(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const fontSize = Math.max(28, Math.floor(img.naturalWidth * 0.06));
+
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(-Math.PI / 6); // 30° diagonal
+
+      ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Dark stroke outline for visibility on light backgrounds
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.lineWidth = fontSize * 0.08;
+      ctx.strokeText('© pnpartstudio', 0, 0);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillText('© pnpartstudio', 0, 0);
+
+      ctx.restore();
+
+      URL.revokeObjectURL(objectUrl);
+      canvas.toBlob(
+        (blob) => resolve(new File([blob], file.name, { type: 'image/jpeg' })),
+        'image/jpeg',
+        0.92
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
+    img.src = objectUrl;
+  });
+}
+
 async function uploadToCloudinary(file, folder = "pnpartproducts") {
   if (!CLOUD_NAME || !UPLOAD_PRESET) throw new Error("Cloudinary env missing");
   const fd = new FormData();
@@ -93,7 +136,8 @@ export default function ProductsPage() {
       setUploadingImgs(true);
       const urls = [];
       for (const f of list) {
-        const { url } = await uploadToCloudinary(f);
+        const watermarked = await applyWatermark(f);
+        const { url } = await uploadToCloudinary(watermarked);
         urls.push(String(url));
       }
       setForm(prev => {

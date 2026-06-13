@@ -43,27 +43,25 @@ const AboutPage = () => (
               <span className="px-3 py-1.5 rounded-full border bg-white text-black shadow-sm font-medium text-sm">💝 Custom Creations</span>
             </div>
           </motion.div>
-          <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="flex flex-col relative">
-            <div className="rounded-3xl overflow-hidden shadow-xl relative">
+          <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="flex flex-col gap-4">
+            <div className="rounded-3xl overflow-hidden shadow-xl">
               <img
                 src={priyankaBioImg}
                 alt="Priyanka Vasista - Artist"
-                className="block w-full h-[280px] sm:h-[360px] md:h-[420px] object-cover"
+                className="block w-full h-auto object-contain"
               />
-              <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-              {/* Rating card */}
-              <div className="absolute left-3 sm:left-4 bottom-3 sm:bottom-4">
-                <div className="bg-white p-3 sm:p-4 rounded-xl shadow-lg text-black min-w-[140px] sm:min-w-[170px]">
-                  <div className="flex gap-0.5 sm:gap-1 mb-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span key={i} className="inline-flex items-center justify-center border border-black rounded-md p-0.5 sm:p-1">
-                        <Star size={14} color="#000" fill="#000" />
-                      </span>
-                    ))}
-                  </div>
-                  <div className="text-xs sm:text-sm">4.9/5 Customer Rating</div>
-                  <div className="font-semibold text-xs sm:text-sm">1000+ Happy Customers</div>
-                </div>
+            </div>
+            <div className="bg-white p-3 sm:p-4 rounded-xl shadow-lg text-black flex items-center gap-4">
+              <div className="flex gap-0.5 sm:gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i} className="inline-flex items-center justify-center border border-black rounded-md p-0.5 sm:p-1">
+                    <Star size={14} color="#000" fill="#000" />
+                  </span>
+                ))}
+              </div>
+              <div>
+                <div className="text-xs sm:text-sm">4.9/5 Customer Rating</div>
+                <div className="font-semibold text-xs sm:text-sm">1000+ Happy Customers</div>
               </div>
             </div>
           </motion.div>

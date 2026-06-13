@@ -116,7 +116,7 @@ function TestimonialsRow({ testimonials, direction }) {
         className="py-2"
       >
         {items.map((t, i) => (
-          <TestimonialCard key={`${t.id || t._id || i}-${direction}`} testimonial={t} onShowMore={setModal} />
+          <TestimonialCard key={`${t.id || t._id || i}-${direction}-${i}`} testimonial={t} onShowMore={setModal} />
         ))}
       </ThreeDScrollTriggerRow>
       {modal && <ReviewModal testimonial={modal} onClose={() => setModal(null)} />}

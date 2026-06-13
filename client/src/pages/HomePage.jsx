@@ -104,20 +104,21 @@ function HomePage() {
               </div>
               <FancyButton to="/about" className="fancy-sm">Read Full Story</FancyButton>
             </motion.div>
-            <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
-              <div className="rounded-3xl overflow-hidden shadow-xl relative">
+            <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} className="flex flex-col gap-4">
+              <div className="rounded-3xl overflow-hidden shadow-xl">
                 <img
                   src={priyankaBioImg}
                   alt="Priyanka Vasista - Artist"
-                  className="block w-full h-[300px] sm:h-[380px] md:h-[460px] object-cover"
+                  className="block w-full h-auto object-contain"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl shadow px-5 py-3">
-                  <div className="flex gap-1 mb-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} size={16} color="#000" fill="#000" />
-                    ))}
-                  </div>
+              </div>
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow px-5 py-3 flex items-center gap-4">
+                <div className="flex gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} size={16} color="#000" fill="#000" />
+                  ))}
+                </div>
+                <div>
                   <div className="text-sm font-semibold text-black">4.9 / 5 Rating</div>
                   <div className="text-xs text-black/60">1000+ happy customers</div>
                 </div>
