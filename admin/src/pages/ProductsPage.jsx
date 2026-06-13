@@ -103,21 +103,24 @@ function applyWatermark(file, opts = {}) {
 }
 
 const PALETTE = [
-  '#ffffff','#000000','#ff0000','#ff5500','#ffcc00','#00cc44',
-  '#00cccc','#0077ff','#7700ff','#ff00bb','#ffaaaa','#aaffcc',
-  '#aaccff','#ffddaa','#cccccc','#555555',
+  '#ffffff','#000000','#ff3b30','#ff9500','#ffcc00','#34c759',
+  '#00c7be','#007aff','#5856d6','#af52de','#ff2d55','#a2845e',
+  '#8e8e93','#636366','#48484a','#1c1c1e',
 ];
 
 function SliderRow({ label, value, min, max, step, unit, onChange }) {
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex justify-between items-center">
-        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">{label}</span>
-        <span className="text-xs font-mono font-bold bg-black text-white px-2 py-0.5 rounded-full">{value}{unit}</span>
+    <div>
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-[11px] font-semibold tracking-wider text-gray-400 uppercase">{label}</span>
+        <span className="text-[11px] font-bold tabular-nums text-gray-700">{value}{unit}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-1.5 accent-black cursor-pointer rounded-full" />
+      <div className="relative h-4 flex items-center">
+        <input type="range" min={min} max={max} step={step} value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="w-full accent-black cursor-pointer"
+          style={{ height: 4 }} />
+      </div>
     </div>
   );
 }
@@ -197,59 +200,71 @@ function WatermarkPositionModal({ files, onConfirm, onCancel }) {
       </div>
 
       {/* Right — 30% controls panel */}
-      <div className="flex flex-col bg-white overflow-hidden" style={{ width: '30%' }}>
+      <div className="flex flex-col overflow-hidden" style={{ width: '30%', background: '#fafafa', borderLeft: '1px solid #e5e7eb' }}>
         {/* Header */}
-        <div className="flex-shrink-0 px-4 py-3 border-b border-gray-100">
-          <div className="font-black text-base leading-tight">Watermark</div>
-          <div className="text-[11px] text-gray-400">Customize and position</div>
+        <div className="flex-shrink-0 px-5 pt-4 pb-3">
+          <div className="font-black text-base text-gray-900">Watermark</div>
+          <div className="text-[11px] text-gray-400 mt-0.5">Drag on image to reposition</div>
         </div>
 
-        {/* Controls — no scroll, all visible */}
-        <div className="flex-1 flex flex-col justify-between px-4 py-3 gap-3 overflow-hidden">
-          {/* Sliders */}
-          <div className="flex flex-col gap-3">
+        {/* Controls */}
+        <div className="flex-1 flex flex-col px-4 gap-3 overflow-hidden pb-3">
+
+          {/* Sliders card */}
+          <div className="bg-white rounded-2xl px-4 py-3 flex flex-col gap-3 shadow-sm border border-gray-100">
             <SliderRow label="Opacity" value={opacity} min={10} max={100} step={1} unit="%" onChange={setOpacity} />
+            <div style={{ height: 1, background: '#f0f0f0' }} />
             <SliderRow label="Angle" value={angle} min={-180} max={180} step={1} unit="°" onChange={setAngle} />
+            <div style={{ height: 1, background: '#f0f0f0' }} />
             <SliderRow label="Font Size" value={fontSize} min={10} max={120} step={1} unit="px" onChange={setFontSize} />
           </div>
 
-          {/* Color palette */}
-          <div>
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Color</div>
-            <div className="grid grid-cols-8 gap-1 mb-2">
+          {/* Color card */}
+          <div className="bg-white rounded-2xl px-4 py-3 flex flex-col gap-2.5 shadow-sm border border-gray-100">
+            <span className="text-[11px] font-semibold tracking-wider text-gray-400 uppercase">Color</span>
+            <div className="grid grid-cols-8 gap-1.5">
               {PALETTE.map(c => (
                 <button key={c} type="button" onClick={() => pickColor(c)}
-                  className="w-6 h-6 rounded-md transition-all hover:scale-110 active:scale-95"
+                  className="aspect-square rounded-lg transition-transform hover:scale-110 active:scale-95"
                   style={{
                     background: c,
-                    border: color === c ? '2px solid #000' : '1px solid #e5e7eb',
-                    boxShadow: color === c ? '0 0 0 1px #fff inset' : 'none',
+                    outline: color === c ? '2.5px solid #000' : '1.5px solid #e5e7eb',
+                    outlineOffset: color === c ? '2px' : '0',
                   }}
                 />
               ))}
             </div>
-            {/* Custom picker row — at bottom of color section */}
-            <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 rounded-md border border-gray-200 flex-shrink-0" style={{ background: color }} />
+            {/* Custom color input */}
+            <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-1.5 border border-gray-100">
+              <label className="cursor-pointer flex-shrink-0 relative" title="Pick color">
+                <div className="w-7 h-7 rounded-lg border-2 border-white shadow-sm"
+                  style={{ background: color, boxShadow: '0 0 0 1px #e5e7eb' }} />
+                <input type="color" value={color} onChange={(e) => pickColor(e.target.value)} className="sr-only" />
+              </label>
               <input type="text" value={hexInput} onChange={(e) => handleHex(e.target.value)}
                 placeholder="#ffffff" maxLength={7}
-                className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs font-mono focus:ring-1 focus:ring-black outline-none"
+                className="flex-1 bg-transparent text-xs font-mono text-gray-700 outline-none border-none w-0"
               />
-              <label className="cursor-pointer rounded-md border border-gray-200 bg-white px-2 py-1 hover:border-black transition text-sm leading-none">
-                🎨
+              <label className="cursor-pointer text-gray-400 hover:text-gray-700 transition text-sm pr-1" title="Open color picker">
+                ⌗
                 <input type="color" value={color} onChange={(e) => pickColor(e.target.value)} className="sr-only" />
               </label>
             </div>
           </div>
         </div>
 
-        {/* Footer buttons */}
-        <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 flex flex-col gap-1.5">
-          <button className="btn-mono-sm w-full py-2 text-sm"
+        {/* Footer */}
+        <div className="flex-shrink-0 px-4 pb-4 flex flex-col gap-2">
+          <button
+            className="w-full py-2.5 rounded-2xl bg-black text-white text-sm font-bold hover:bg-gray-800 transition active:scale-95"
             onClick={() => onConfirm({ pos, opacity, angle, fontSize, color })}>
             Apply & Upload
           </button>
-          <button className="btn-mono-sm w-full py-2 text-sm" onClick={onCancel}>Cancel</button>
+          <button
+            className="w-full py-2.5 rounded-2xl bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition active:scale-95"
+            onClick={onCancel}>
+            Cancel
+          </button>
         </div>
       </div>
     </div>
