@@ -52,7 +52,15 @@ const mapProductFromApi = (doc) => {
 
 const slugify = (s) => (s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
 
-function applyWatermark(file) {
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return { r, g, b };
+}
+
+function applyWatermark(file, opts = {}) {
+  const { pos = { x: 50, y: 50 }, opacity = 70, angle = 0, fontSize: wmFontSize = 36, color = '#ffffff' } = opts;
   return new Promise((resolve) => {
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
@@ -63,24 +71,23 @@ function applyWatermark(file) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
 
-      const fontSize = Math.max(28, Math.floor(img.naturalWidth * 0.06));
+      const fontSize = Math.max(10, Math.floor((wmFontSize / 520) * img.naturalWidth));
+      const x = (pos.x / 100) * canvas.width;
+      const y = (pos.y / 100) * canvas.height;
+      const { r, g, b } = hexToRgb(color);
+      const alpha = opacity / 100;
 
       ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(-Math.PI / 6); // 30° diagonal
-
+      ctx.translate(x, y);
+      ctx.rotate((angle * Math.PI) / 180);
       ctx.font = `bold ${fontSize}px Arial, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-
-      // Dark stroke outline for visibility on light backgrounds
-      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.strokeStyle = `rgba(0,0,0,${Math.min(1, alpha * 0.6)})`;
       ctx.lineWidth = fontSize * 0.08;
       ctx.strokeText('© pnpartstudio', 0, 0);
-
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
       ctx.fillText('© pnpartstudio', 0, 0);
-
       ctx.restore();
 
       URL.revokeObjectURL(objectUrl);
@@ -93,6 +100,160 @@ function applyWatermark(file) {
     img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
     img.src = objectUrl;
   });
+}
+
+const PALETTE = [
+  '#ffffff','#000000','#ff0000','#ff5500','#ffcc00','#00cc44',
+  '#00cccc','#0077ff','#7700ff','#ff00bb','#ffaaaa','#aaffcc',
+  '#aaccff','#ffddaa','#cccccc','#555555',
+];
+
+function SliderRow({ label, value, min, max, step, unit, onChange }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex justify-between items-center">
+        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">{label}</span>
+        <span className="text-xs font-mono font-bold bg-black text-white px-2 py-0.5 rounded-full">{value}{unit}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-1.5 accent-black cursor-pointer rounded-full" />
+    </div>
+  );
+}
+
+function WatermarkPositionModal({ files, onConfirm, onCancel }) {
+  const [pos, setPos] = React.useState({ x: 50, y: 50 });
+  const [dragging, setDragging] = React.useState(false);
+  const [previewUrl, setPreviewUrl] = React.useState('');
+  const [opacity, setOpacity] = React.useState(70);
+  const [angle, setAngle] = React.useState(0);
+  const [fontSize, setFontSize] = React.useState(36);
+  const [color, setColor] = React.useState('#ffffff');
+  const [hexInput, setHexInput] = React.useState('#ffffff');
+  const containerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!files?.[0]) return;
+    const url = URL.createObjectURL(files[0]);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [files]);
+
+  const calcPos = (e) => {
+    const rect = containerRef.current.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100)),
+      y: Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100)),
+    };
+  };
+
+  const pickColor = (c) => { setColor(c); setHexInput(c); };
+  const handleHex = (v) => { setHexInput(v); if (/^#[0-9a-fA-F]{6}$/.test(v)) setColor(v); };
+
+  return (
+    <div className="fixed top-0 bottom-0 right-0 left-0 lg:left-[240px] flex overflow-hidden" style={{ zIndex: 9999, background: 'rgba(0,0,0,0.85)' }}>
+      {/* Left — 70% image canvas */}
+      <div className="relative overflow-hidden flex items-center justify-center" style={{ width: '70%', background: '#111' }}>
+        <div
+          ref={containerRef}
+          className="relative select-none cursor-crosshair"
+          style={{ width: '100%', height: '100%', background: '#111' }}
+          onMouseMove={(e) => { if (dragging) setPos(calcPos(e)); }}
+          onMouseUp={() => setDragging(false)}
+          onMouseLeave={() => setDragging(false)}
+          onTouchMove={(e) => { e.preventDefault(); if (dragging) setPos(calcPos(e)); }}
+          onTouchEnd={() => setDragging(false)}
+          onClick={(e) => setPos(calcPos(e))}
+        >
+          {previewUrl && (
+            <img src={previewUrl} alt="preview"
+              className="w-full h-full object-contain block pointer-events-none"
+              draggable={false} />
+          )}
+          <div
+            className="absolute font-bold pointer-events-auto select-none"
+            style={{
+              left: `${pos.x}%`, top: `${pos.y}%`,
+              transform: `translate(-50%, -50%) rotate(${angle}deg)`,
+              fontSize: `${fontSize}px`,
+              color, opacity: opacity / 100,
+              textShadow: '1px 1px 8px rgba(0,0,0,0.95)',
+              cursor: dragging ? 'grabbing' : 'grab',
+              whiteSpace: 'nowrap', userSelect: 'none',
+              letterSpacing: '0.02em',
+            }}
+            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(true); }}
+            onTouchStart={(e) => { e.stopPropagation(); setDragging(true); }}
+          >
+            © pnpartstudio
+          </div>
+          <div className="absolute bottom-2 left-0 right-0 text-center text-white/40 text-[10px] pointer-events-none select-none">
+            click or drag to position
+          </div>
+        </div>
+      </div>
+
+      {/* Right — 30% controls panel */}
+      <div className="flex flex-col bg-white overflow-hidden" style={{ width: '30%' }}>
+        {/* Header */}
+        <div className="flex-shrink-0 px-4 py-3 border-b border-gray-100">
+          <div className="font-black text-base leading-tight">Watermark</div>
+          <div className="text-[11px] text-gray-400">Customize and position</div>
+        </div>
+
+        {/* Controls — no scroll, all visible */}
+        <div className="flex-1 flex flex-col justify-between px-4 py-3 gap-3 overflow-hidden">
+          {/* Sliders */}
+          <div className="flex flex-col gap-3">
+            <SliderRow label="Opacity" value={opacity} min={10} max={100} step={1} unit="%" onChange={setOpacity} />
+            <SliderRow label="Angle" value={angle} min={-180} max={180} step={1} unit="°" onChange={setAngle} />
+            <SliderRow label="Font Size" value={fontSize} min={10} max={120} step={1} unit="px" onChange={setFontSize} />
+          </div>
+
+          {/* Color palette */}
+          <div>
+            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Color</div>
+            <div className="grid grid-cols-8 gap-1 mb-2">
+              {PALETTE.map(c => (
+                <button key={c} type="button" onClick={() => pickColor(c)}
+                  className="w-6 h-6 rounded-md transition-all hover:scale-110 active:scale-95"
+                  style={{
+                    background: c,
+                    border: color === c ? '2px solid #000' : '1px solid #e5e7eb',
+                    boxShadow: color === c ? '0 0 0 1px #fff inset' : 'none',
+                  }}
+                />
+              ))}
+            </div>
+            {/* Custom picker row — at bottom of color section */}
+            <div className="flex items-center gap-1.5">
+              <div className="w-7 h-7 rounded-md border border-gray-200 flex-shrink-0" style={{ background: color }} />
+              <input type="text" value={hexInput} onChange={(e) => handleHex(e.target.value)}
+                placeholder="#ffffff" maxLength={7}
+                className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs font-mono focus:ring-1 focus:ring-black outline-none"
+              />
+              <label className="cursor-pointer rounded-md border border-gray-200 bg-white px-2 py-1 hover:border-black transition text-sm leading-none">
+                🎨
+                <input type="color" value={color} onChange={(e) => pickColor(e.target.value)} className="sr-only" />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer buttons */}
+        <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 flex flex-col gap-1.5">
+          <button className="btn-mono-sm w-full py-2 text-sm"
+            onClick={() => onConfirm({ pos, opacity, angle, fontSize, color })}>
+            Apply & Upload
+          </button>
+          <button className="btn-mono-sm w-full py-2 text-sm" onClick={onCancel}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 async function uploadToCloudinary(file, folder = "pnpartproducts") {
@@ -116,6 +277,8 @@ export default function ProductsPage() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(null);
   const [slide, setSlide] = useState(0);
+  const [pendingFiles, setPendingFiles] = useState(null);
+  const [showWmModal, setShowWmModal] = useState(false);
 
   const load = async () => {
     try {
@@ -129,14 +292,23 @@ export default function ProductsPage() {
   };
   useEffect(() => { load(); }, []);
 
-  const handleFiles = async (files) => {
+  const handleFiles = (files) => {
     const list = Array.from(files || []);
     if (!list.length) return;
+    setPendingFiles(list);
+    setShowWmModal(true);
+  };
+
+  const handleWmConfirm = async (opts) => {
+    setShowWmModal(false);
+    const list = pendingFiles;
+    setPendingFiles(null);
+    if (!list?.length) return;
     try {
       setUploadingImgs(true);
       const urls = [];
       for (const f of list) {
-        const watermarked = await applyWatermark(f);
+        const watermarked = await applyWatermark(f, opts);
         const { url } = await uploadToCloudinary(watermarked);
         urls.push(String(url));
       }
@@ -151,6 +323,12 @@ export default function ProductsPage() {
       setUploadingImgs(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const handleWmCancel = () => {
+    setShowWmModal(false);
+    setPendingFiles(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const removeImageAt = (idx) => setForm((f) => ({ ...f, images: (f.images || []).filter((_, i) => i !== idx) }));
@@ -593,6 +771,15 @@ export default function ProductsPage() {
           )}
         </div>
       </div>
+
+      {/* WATERMARK POSITION MODAL */}
+      {showWmModal && pendingFiles && (
+        <WatermarkPositionModal
+          files={pendingFiles}
+          onConfirm={handleWmConfirm}
+          onCancel={handleWmCancel}
+        />
+      )}
 
       {/* EXPAND MODAL */}
       {open && active && (
