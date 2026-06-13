@@ -129,7 +129,7 @@ function WatermarkPositionModal({ files, onConfirm, onCancel }) {
   const [pos, setPos] = React.useState({ x: 50, y: 50 });
   const [dragging, setDragging] = React.useState(false);
   const [previewUrl, setPreviewUrl] = React.useState('');
-  const [opacity, setOpacity] = React.useState(70);
+  const [opacity, setOpacity] = React.useState(20);
   const [angle, setAngle] = React.useState(0);
   const [fontSize, setFontSize] = React.useState(36);
   const [color, setColor] = React.useState('#ffffff');
@@ -234,19 +234,23 @@ function WatermarkPositionModal({ files, onConfirm, onCancel }) {
                 />
               ))}
             </div>
-            {/* Custom color input */}
-            <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-1.5 border border-gray-100">
-              <label className="cursor-pointer flex-shrink-0 relative" title="Pick color">
-                <div className="w-7 h-7 rounded-lg border-2 border-white shadow-sm"
-                  style={{ background: color, boxShadow: '0 0 0 1px #e5e7eb' }} />
+          </div>
+
+          {/* Custom Color Picker — separate card */}
+          <div className="bg-white rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-sm border border-gray-100">
+            <span className="text-[11px] font-semibold tracking-wider text-gray-400 uppercase">Custom Color Picker</span>
+            <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-2 border border-gray-100">
+              <label className="cursor-pointer flex-shrink-0 relative" title="Click to open color picker">
+                <div className="w-8 h-8 rounded-lg border-2 border-white shadow"
+                  style={{ background: color, boxShadow: '0 0 0 1.5px #e5e7eb' }} />
                 <input type="color" value={color} onChange={(e) => pickColor(e.target.value)} className="sr-only" />
               </label>
               <input type="text" value={hexInput} onChange={(e) => handleHex(e.target.value)}
                 placeholder="#ffffff" maxLength={7}
-                className="flex-1 bg-transparent text-xs font-mono text-gray-700 outline-none border-none w-0"
+                className="flex-1 bg-transparent text-xs font-mono text-gray-700 outline-none border-none w-0 min-w-0"
               />
-              <label className="cursor-pointer text-gray-400 hover:text-gray-700 transition text-sm pr-1" title="Open color picker">
-                ⌗
+              <label className="cursor-pointer flex items-center gap-1 text-[11px] font-semibold text-gray-500 hover:text-black transition bg-white border border-gray-200 rounded-lg px-2 py-1" title="Open native color picker">
+                Pick
                 <input type="color" value={color} onChange={(e) => pickColor(e.target.value)} className="sr-only" />
               </label>
             </div>
