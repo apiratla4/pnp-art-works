@@ -27,3 +27,23 @@
   outline: none;
   box-shadow: 0 0 0 2px #000, 0 0 0 5px #fff;
 }
+
+.btn-outline {
+  border: 2px solid #1e293b;
+  background: #fff;
+  color: #1e293b;
+  border-radius: 12px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all .16s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.btn-outline:hover, .btn-outline:focus {
+  background: #1e293b;
+  color: #fff;
+}
+.btn-outline:active { transform: scale(0.97); }

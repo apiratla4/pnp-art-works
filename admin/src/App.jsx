@@ -12,6 +12,7 @@ import NewslettersPage from "./pages/NewslettersPage.jsx";
 import TestimonialsPage from "./pages/TestimonialsPage.jsx";
 import StorePickupOrdersPage from "./pages/StorePickupOrdersPage.jsx";
 import AdminHeroSliderPage from "./pages/AdminHeroSliderPage.jsx";
+import BulkWatermarkPage from "./pages/BulkWatermarkPage.jsx";
 
 function RequireAdmin() {
   const location = useLocation();
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="newsletters" element={<NewslettersPage />} />
             <Route path="store-pickup-orders" element={<StorePickupOrdersPage />} />
             <Route path="hero-sliders" element={<AdminHeroSliderPage />} />
+            <Route path="bulk-watermark" element={<BulkWatermarkPage />} />
           </Route>
         </Route>
         {/* Fallbacks */}

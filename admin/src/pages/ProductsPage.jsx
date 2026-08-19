@@ -2,17 +2,16 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Edit, Trash2, Image as ImageIcon, Plus, Info,
-  Maximize2, X, ChevronLeft, ChevronRight
+  Maximize2, X, ChevronLeft, ChevronRight, Droplets
 } from "lucide-react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { applyWatermark, uploadToCloudinary, urlToFile } from "../utils/watermark.js";
+import { WatermarkPositionModal } from "../components/WatermarkModal.jsx";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const PRODUCTS_URL = `${API_BASE}/api/products`;
-const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-
 axios.defaults.withCredentials = true;
 
 const PRODUCT_CATEGORIES = {
@@ -52,238 +51,6 @@ const mapProductFromApi = (doc) => {
 
 const slugify = (s) => (s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
 
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return { r, g, b };
-}
-
-function applyWatermark(file, opts = {}) {
-  const { pos = { x: 50, y: 50 }, opacity = 70, angle = 0, fontSize: wmFontSize = 36, color = '#ffffff' } = opts;
-  return new Promise((resolve) => {
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-
-      const fontSize = Math.max(10, Math.floor((wmFontSize / 520) * img.naturalWidth));
-      const x = (pos.x / 100) * canvas.width;
-      const y = (pos.y / 100) * canvas.height;
-      const { r, g, b } = hexToRgb(color);
-      const alpha = opacity / 100;
-
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate((angle * Math.PI) / 180);
-      ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.strokeStyle = `rgba(0,0,0,${Math.min(1, alpha * 0.6)})`;
-      ctx.lineWidth = fontSize * 0.08;
-      ctx.strokeText('© pnpartstudio', 0, 0);
-      ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
-      ctx.fillText('© pnpartstudio', 0, 0);
-      ctx.restore();
-
-      URL.revokeObjectURL(objectUrl);
-      canvas.toBlob(
-        (blob) => resolve(new File([blob], file.name, { type: 'image/jpeg' })),
-        'image/jpeg',
-        0.92
-      );
-    };
-    img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
-    img.src = objectUrl;
-  });
-}
-
-const PALETTE = [
-  '#ffffff','#000000','#ff3b30','#ff9500','#ffcc00','#34c759',
-  '#00c7be','#007aff','#5856d6','#af52de','#ff2d55','#a2845e',
-  '#8e8e93','#636366','#48484a','#1c1c1e',
-];
-
-function SliderRow({ label, value, min, max, step, unit, onChange }) {
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-1">
-        <span className="text-[11px] font-semibold tracking-wider text-gray-400 uppercase">{label}</span>
-        <span className="text-[11px] font-bold tabular-nums text-gray-700">{value}{unit}</span>
-      </div>
-      <div className="relative h-4 flex items-center">
-        <input type="range" min={min} max={max} step={step} value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="w-full accent-black cursor-pointer"
-          style={{ height: 4 }} />
-      </div>
-    </div>
-  );
-}
-
-function WatermarkPositionModal({ files, onConfirm, onCancel }) {
-  const [pos, setPos] = React.useState({ x: 50, y: 50 });
-  const [dragging, setDragging] = React.useState(false);
-  const [previewUrl, setPreviewUrl] = React.useState('');
-  const [opacity, setOpacity] = React.useState(20);
-  const [angle, setAngle] = React.useState(0);
-  const [fontSize, setFontSize] = React.useState(36);
-  const [color, setColor] = React.useState('#ffffff');
-  const [hexInput, setHexInput] = React.useState('#ffffff');
-  const containerRef = React.useRef(null);
-
-  React.useEffect(() => {
-    if (!files?.[0]) return;
-    const url = URL.createObjectURL(files[0]);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [files]);
-
-  const calcPos = (e) => {
-    const rect = containerRef.current.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-      x: Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100)),
-      y: Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100)),
-    };
-  };
-
-  const pickColor = (c) => { setColor(c); setHexInput(c); };
-  const handleHex = (v) => { setHexInput(v); if (/^#[0-9a-fA-F]{6}$/.test(v)) setColor(v); };
-
-  return (
-    <div className="fixed top-0 bottom-0 right-0 left-0 lg:left-[240px] flex overflow-hidden" style={{ zIndex: 9999, background: 'rgba(0,0,0,0.85)' }}>
-      {/* Left — 70% image canvas */}
-      <div className="relative overflow-hidden flex items-center justify-center" style={{ width: '70%', background: '#111' }}>
-        <div
-          ref={containerRef}
-          className="relative select-none cursor-crosshair"
-          style={{ width: '100%', height: '100%', background: '#111' }}
-          onMouseMove={(e) => { if (dragging) setPos(calcPos(e)); }}
-          onMouseUp={() => setDragging(false)}
-          onMouseLeave={() => setDragging(false)}
-          onTouchMove={(e) => { e.preventDefault(); if (dragging) setPos(calcPos(e)); }}
-          onTouchEnd={() => setDragging(false)}
-          onClick={(e) => setPos(calcPos(e))}
-        >
-          {previewUrl && (
-            <img src={previewUrl} alt="preview"
-              className="w-full h-full object-contain block pointer-events-none"
-              draggable={false} />
-          )}
-          <div
-            className="absolute font-bold pointer-events-auto select-none"
-            style={{
-              left: `${pos.x}%`, top: `${pos.y}%`,
-              transform: `translate(-50%, -50%) rotate(${angle}deg)`,
-              fontSize: `${fontSize}px`,
-              color, opacity: opacity / 100,
-              textShadow: '1px 1px 8px rgba(0,0,0,0.95)',
-              cursor: dragging ? 'grabbing' : 'grab',
-              whiteSpace: 'nowrap', userSelect: 'none',
-              letterSpacing: '0.02em',
-            }}
-            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(true); }}
-            onTouchStart={(e) => { e.stopPropagation(); setDragging(true); }}
-          >
-            © pnpartstudio
-          </div>
-          <div className="absolute bottom-2 left-0 right-0 text-center text-white/40 text-[10px] pointer-events-none select-none">
-            click or drag to position
-          </div>
-        </div>
-      </div>
-
-      {/* Right — 30% controls panel */}
-      <div className="flex flex-col overflow-hidden" style={{ width: '30%', background: '#fafafa', borderLeft: '1px solid #e5e7eb' }}>
-        {/* Header */}
-        <div className="flex-shrink-0 px-5 pt-4 pb-3">
-          <div className="font-black text-base text-gray-900">Watermark</div>
-          <div className="text-[11px] text-gray-400 mt-0.5">Drag on image to reposition</div>
-        </div>
-
-        {/* Controls */}
-        <div className="flex-1 flex flex-col px-4 gap-3 overflow-hidden pb-3">
-
-          {/* Sliders card */}
-          <div className="bg-white rounded-2xl px-4 py-3 flex flex-col gap-3 shadow-sm border border-gray-100">
-            <SliderRow label="Opacity" value={opacity} min={10} max={100} step={1} unit="%" onChange={setOpacity} />
-            <div style={{ height: 1, background: '#f0f0f0' }} />
-            <SliderRow label="Angle" value={angle} min={-180} max={180} step={1} unit="°" onChange={setAngle} />
-            <div style={{ height: 1, background: '#f0f0f0' }} />
-            <SliderRow label="Font Size" value={fontSize} min={10} max={120} step={1} unit="px" onChange={setFontSize} />
-          </div>
-
-          {/* Color card */}
-          <div className="bg-white rounded-2xl px-4 py-3 flex flex-col gap-2.5 shadow-sm border border-gray-100">
-            <span className="text-[11px] font-semibold tracking-wider text-gray-400 uppercase">Color</span>
-            <div className="grid grid-cols-8 gap-1.5">
-              {PALETTE.map(c => (
-                <button key={c} type="button" onClick={() => pickColor(c)}
-                  className="aspect-square rounded-lg transition-transform hover:scale-110 active:scale-95"
-                  style={{
-                    background: c,
-                    outline: color === c ? '2.5px solid #000' : '1.5px solid #e5e7eb',
-                    outlineOffset: color === c ? '2px' : '0',
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Custom Color Picker — separate card */}
-          <div className="bg-white rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-sm border border-gray-100">
-            <span className="text-[11px] font-semibold tracking-wider text-gray-400 uppercase">Custom Color Picker</span>
-            <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-2 border border-gray-100">
-              <label className="cursor-pointer flex-shrink-0 relative" title="Click to open color picker">
-                <div className="w-8 h-8 rounded-lg border-2 border-white shadow"
-                  style={{ background: color, boxShadow: '0 0 0 1.5px #e5e7eb' }} />
-                <input type="color" value={color} onChange={(e) => pickColor(e.target.value)} className="sr-only" />
-              </label>
-              <input type="text" value={hexInput} onChange={(e) => handleHex(e.target.value)}
-                placeholder="#ffffff" maxLength={7}
-                className="flex-1 bg-transparent text-xs font-mono text-gray-700 outline-none border-none w-0 min-w-0"
-              />
-              <label className="cursor-pointer flex items-center gap-1 text-[11px] font-semibold text-gray-500 hover:text-black transition bg-white border border-gray-200 rounded-lg px-2 py-1" title="Open native color picker">
-                Pick
-                <input type="color" value={color} onChange={(e) => pickColor(e.target.value)} className="sr-only" />
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex-shrink-0 px-4 pb-4 flex flex-col gap-2">
-          <button
-            className="w-full py-2.5 rounded-2xl bg-black text-white text-sm font-bold hover:bg-gray-800 transition active:scale-95"
-            onClick={() => onConfirm({ pos, opacity, angle, fontSize, color })}>
-            Apply & Upload
-          </button>
-          <button
-            className="w-full py-2.5 rounded-2xl bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition active:scale-95"
-            onClick={onCancel}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-async function uploadToCloudinary(file, folder = "pnpartproducts") {
-  if (!CLOUD_NAME || !UPLOAD_PRESET) throw new Error("Cloudinary env missing");
-  const fd = new FormData();
-  fd.append("file", file); fd.append("upload_preset", UPLOAD_PRESET); fd.append("folder", folder);
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: fd });
-  const data = await res.json();
-  if (!res.ok || !data.secure_url) throw new Error(data?.error?.message || "Cloudinary upload failed");
-  return { url: String(data.secure_url), publicId: data.public_id };
-}
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
@@ -298,6 +65,8 @@ export default function ProductsPage() {
   const [slide, setSlide] = useState(0);
   const [pendingFiles, setPendingFiles] = useState(null);
   const [showWmModal, setShowWmModal] = useState(false);
+  const [rewmMode, setRewmMode] = useState(false);
+  const [rewmLoading, setRewmLoading] = useState(false);
 
   const load = async () => {
     try {
@@ -331,11 +100,17 @@ export default function ProductsPage() {
         const { url } = await uploadToCloudinary(watermarked);
         urls.push(String(url));
       }
-      setForm(prev => {
-        const next = Array.from(new Set([...(prev.images || []), ...urls]));
-        return { ...prev, images: next };
-      });
-      toast.success("Images uploaded");
+      if (rewmMode) {
+        setForm(prev => ({ ...prev, images: urls }));
+        toast.success(`Re-watermarked ${urls.length} image${urls.length !== 1 ? 's' : ''}`);
+      } else {
+        setForm(prev => {
+          const next = Array.from(new Set([...(prev.images || []), ...urls]));
+          return { ...prev, images: next };
+        });
+        toast.success("Images uploaded");
+      }
+      setRewmMode(false);
     } catch (e) {
       console.error(e); toast.error(e.message || "Cloudinary upload failed");
     } finally {
@@ -347,7 +122,25 @@ export default function ProductsPage() {
   const handleWmCancel = () => {
     setShowWmModal(false);
     setPendingFiles(null);
+    setRewmMode(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleRewatermarkClick = async () => {
+    if (!form.images?.length) return;
+    setRewmLoading(true);
+    try {
+      const files = await Promise.all(
+        form.images.map((url, i) => urlToFile(url, `img-${i}.jpg`))
+      );
+      setRewmMode(true);
+      setPendingFiles(files);
+      setShowWmModal(true);
+    } catch {
+      toast.error('Failed to fetch images for re-watermarking');
+    } finally {
+      setRewmLoading(false);
+    }
   };
 
   const removeImageAt = (idx) => setForm((f) => ({ ...f, images: (f.images || []).filter((_, i) => i !== idx) }));
@@ -672,6 +465,15 @@ export default function ProductsPage() {
                   <ImageIcon size={18} />
                   {uploadingImgs ? "Uploading…" : "Add Images"}
                 </label>
+                {form.images?.length > 0 && (
+                  <button type="button"
+                    className="inline-flex items-center gap-2 rounded-lg border border-blue-600 text-blue-600 px-3 py-2 font-semibold bg-white hover:bg-blue-50 transition disabled:opacity-50"
+                    onClick={handleRewatermarkClick}
+                    disabled={rewmLoading || uploadingImgs}>
+                    <Droplets size={17} />
+                    {rewmLoading ? "Loading…" : "Re-watermark Images"}
+                  </button>
+                )}
               </div>
             </div>
             <div className="col-span-full flex flex-col sm:flex-row gap-2 mt-2">

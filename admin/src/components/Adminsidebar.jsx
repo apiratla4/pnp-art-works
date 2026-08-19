@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Package, GraduationCap, Images, Receipt, LogOut, TicketPercent, Send, Star, X } from "lucide-react";
+import { Package, GraduationCap, Images, Receipt, LogOut, TicketPercent, Send, Star, X, Droplets } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -78,6 +78,7 @@ const AdminSidebar = ({ open, onClose }) => {
           <NavLink to="/admin/testimonials" className={getClass} onClick={onClose}><Star size={18} /> Testimonials</NavLink>
           <NavLink to="/admin/coupons" className={getClass} onClick={onClose}><TicketPercent size={19} /> Coupons</NavLink>
           <NavLink to="/admin/newsletters" className={getClass} onClick={onClose}><Send size={18} /> Newsletters</NavLink>
+          <NavLink to="/admin/bulk-watermark" className={getClass} onClick={onClose}><Droplets size={18} /> Bulk Watermark</NavLink>
         </nav>
         {/* Footer */}
         <footer className="mt-auto w-full px-4 sm:px-6 py-4 sm:py-5 bg-[#f4f4f4] flex flex-col gap-3 border-t border-black/15 shrink-0">
